@@ -3,6 +3,7 @@
 GiftSense is monthly-only. All of Commerce's hardening is kept: see
 docs/SHOPIFY_PLAYBOOK.md §4 for why each guard exists.
 """
+import asyncio
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -28,6 +29,11 @@ from core.shopify_deps import get_current_shop
 
 logger = structlog.get_logger()
 router = APIRouter()
+
+# Billing callback subscription lookup: Shopify can take a moment to make a
+# just-approved charge queryable. ~3s total before leaving it to the webhook.
+_SUBSCRIPTION_LOOKUP_ATTEMPTS = 4
+_SUBSCRIPTION_LOOKUP_DELAY_SECS = 1.0
 
 _APP_SUBSCRIPTION_CREATE = """
 mutation appSubscriptionCreate(
@@ -215,36 +221,41 @@ async def billing_callback(
     access_token = await get_valid_access_token(shop_record, db)
     gid = f"gid://shopify/AppSubscription/{charge_id}"
 
-    async with httpx.AsyncClient(timeout=15) as client:
-        resp = await client.post(
-            f"https://{shop}/admin/api/{settings.shopify_api_version}/graphql.json",
-            headers={
-                "X-Shopify-Access-Token": access_token,
-                "Content-Type": "application/json",
-            },
-            json={"query": _APP_SUBSCRIPTION_QUERY, "variables": {"id": gid}},
-        )
-
+    # SECURITY: only a subscription Shopify actually returns may activate a
+    # plan. Right after approval the node can briefly be null (Shopify writes
+    # the charge asynchronously), so retry for a few seconds. Commerce instead
+    # activated optimistically on a null node, taking the tier from the plan=
+    # param — but a made-up charge_id ALSO returns null, so anyone could get
+    # Pro for free. A genuine charge that is still null after the retries is
+    # activated by the app_subscriptions/update webhook instead.
     status = ""
     sub: dict = {}
-    if resp.status_code == 200:
-        sub = resp.json().get("data", {}).get("node") or {}
-        status = sub.get("status", "").lower()
-        # Shopify's appSubscription query occasionally returns null immediately after
-        # the merchant approves — the charge write is async on Shopify's side.
-        # The returnUrl redirect is only sent after merchant action, so a null body
-        # on a 200 response means "still processing", not "declined". Activate
-        # optimistically; the webhook (which fires within seconds) is authoritative
-        # and will correct the status to "declined" if needed.
-        if not status:
-            logger.info("billing_callback_null_status_treating_as_active", shop=shop, charge_id=charge_id)
-            status = "active"
-        else:
+    for attempt in range(_SUBSCRIPTION_LOOKUP_ATTEMPTS):
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                f"https://{shop}/admin/api/{settings.shopify_api_version}/graphql.json",
+                headers={
+                    "X-Shopify-Access-Token": access_token,
+                    "Content-Type": "application/json",
+                },
+                json={"query": _APP_SUBSCRIPTION_QUERY, "variables": {"id": gid}},
+            )
+        if resp.status_code != 200:
+            # A genuine API error — don't activate. The merchant lands on the
+            # plan picker and can retry, or the webhook activates the charge.
+            logger.error("billing_status_fetch_failed", status=resp.status_code)
+            break
+        sub = (resp.json().get("data") or {}).get("node") or {}
+        if sub:
+            status = (sub.get("status") or "").lower()
             logger.info("billing_callback_status", shop=shop, charge_id=charge_id, status=status)
-    else:
-        logger.error("billing_status_fetch_failed", status=resp.status_code)
-        # A non-200 response is a genuine API error — don't activate. The merchant
-        # will land on the plan picker and can retry, or wait for the webhook.
+            break
+        if attempt < _SUBSCRIPTION_LOOKUP_ATTEMPTS - 1:
+            await asyncio.sleep(_SUBSCRIPTION_LOOKUP_DELAY_SECS)
+
+    if not sub:
+        logger.warning("billing_callback_subscription_not_found", shop=shop, charge_id=charge_id)
+        return RedirectResponse(f"https://{shop}/admin/apps/{settings.shopify_api_key}")
 
     # SECURITY: `plan` and `deferred` are query params on an UNAUTHENTICATED
     # redirect URL the merchant can see and replay/edit. Never trust them for

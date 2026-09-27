@@ -22,6 +22,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.config import settings
 from core.db.models import Shop
 from core.db.session import get_db
 from core.shopify_auth import (
@@ -163,9 +164,13 @@ async def get_current_shop(
                 )
             raise HTTPException(status_code=401, detail="Invalid session token")
 
-    # --- 2. ?shop= fallback (local dev) ---
+    # --- 2. ?shop= fallback (local dev ONLY) ---
+    # SECURITY: this resolves a shop from an unauthenticated query param, so it
+    # must never work in production — anyone could act as any installed store.
+    # Real embedded requests always carry a session token (path 1). Commerce
+    # has this fallback ungated; see tests/integration/test_shop_param_fallback.py.
     if not shop_domain:
-        if shop:
+        if shop and not settings.is_production:
             shop_domain = shop
         else:
             raise HTTPException(

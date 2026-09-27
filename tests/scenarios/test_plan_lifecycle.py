@@ -802,28 +802,28 @@ class TestBillingCallbackEdgeCases:
         assert shop.uninstalled_at is None
 
     @pytest.mark.asyncio
-    async def test_empty_graphql_status_activates_shop_optimistically(self, db_session):
+    async def test_subscription_found_on_retry_activates(self, db_session):
         """
-        Race condition: Shopify billing callback fires before subscription is queryable.
-        Empty status from GraphQL (200 + null body) → activate optimistically so the
-        merchant lands on the dashboard, not the plan picker. The webhook confirms
-        or corrects the status within seconds.
+        Race: the callback fires before Shopify's subscription is queryable
+        (node null), then it appears on a retry → activate normally.
         """
         shop = make_shop(plan_tier="growth", plan_status="pending")
         shop.access_token_encrypted = encrypt_token("tok")
         db_session.add(shop)
         await db_session.commit()
 
-        empty_response = MagicMock(
-            status_code=200,
-            json=lambda: {"data": {"node": None}},
-        )
+        empty = MagicMock(status_code=200, json=lambda: {"data": {"node": None}})
+        found = MagicMock(status_code=200, json=lambda: {"data": {"node": {
+            "id": "gid://shopify/AppSubscription/1", "status": "ACTIVE",
+            "name": "GiftSense Growth Monthly Plan",
+        }}})
         mock = AsyncMock()
         mock.__aenter__ = AsyncMock(return_value=mock)
         mock.__aexit__ = AsyncMock(return_value=False)
-        mock.post = AsyncMock(return_value=empty_response)
+        mock.post = AsyncMock(side_effect=[empty, found])
 
-        with patch("app.routes.billing.httpx.AsyncClient", return_value=mock):
+        with patch("app.routes.billing.httpx.AsyncClient", return_value=mock), \
+             patch("app.routes.billing.asyncio.sleep", AsyncMock()):
             for client in _make_client(db_session):
                 resp = client.get(
                     f"/billing/callback?shop={TEST_SHOP_DOMAIN}&charge_id=1&plan=growth",
@@ -832,9 +832,43 @@ class TestBillingCallbackEdgeCases:
 
         assert resp.status_code in (301, 302, 307, 308)
         await db_session.refresh(shop)
-        # Growth plan with unused trial → activates as trial_active
         assert shop.plan_status == "trial_active"
         assert shop.plan_tier == "growth"
+
+    @pytest.mark.asyncio
+    async def test_subscription_never_found_does_not_activate(self, db_session):
+        """
+        SECURITY: a made-up charge_id also returns node null. Commerce activated
+        optimistically here (tier from the plan= URL param), so anyone could get
+        Pro for free with /billing/callback?charge_id=<anything>&plan=pro.
+        GiftSense retries, then leaves the shop untouched; the
+        app_subscriptions/update webhook activates genuine charges.
+        """
+        shop = make_shop(plan_tier="none", plan_status="pending")
+        shop.access_token_encrypted = encrypt_token("tok")
+        db_session.add(shop)
+        await db_session.commit()
+
+        empty = MagicMock(status_code=200, json=lambda: {"data": {"node": None}})
+        mock = AsyncMock()
+        mock.__aenter__ = AsyncMock(return_value=mock)
+        mock.__aexit__ = AsyncMock(return_value=False)
+        mock.post = AsyncMock(return_value=empty)
+
+        with patch("app.routes.billing.httpx.AsyncClient", return_value=mock), \
+             patch("app.routes.billing.asyncio.sleep", AsyncMock()):
+            for client in _make_client(db_session):
+                resp = client.get(
+                    f"/billing/callback?shop={TEST_SHOP_DOMAIN}&charge_id=999999&plan=pro",
+                    follow_redirects=False,
+                )
+
+        assert resp.status_code in (301, 302, 307, 308)
+        await db_session.refresh(shop)
+        assert shop.plan_status == "pending"
+        assert shop.plan_tier == "none"
+        assert shop.shopify_charge_id is None
+        assert shop.trial_used is False
 
 
 # ── Grace period: cancel webhook then attempt generation ─────────────────────
