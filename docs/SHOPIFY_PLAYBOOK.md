@@ -19,6 +19,7 @@ Source: `core/shopify_deps.py`, `core/shopify_auth.py`.
 - **Concurrent first loads:** `shop_domain` is UNIQUE. On `IntegrityError`, roll back and re-read the existing row.
 - **After provisioning,** a best-effort GraphQL `shop { ianaTimezone email }` stores `store_timezone` and `shop_owner_email`. Digest emails need a real owner email: `owner@<domain>` bounces.
 - **The frontend routes `pending` to the plan picker.** A fresh install must never land on Home.
+- **The `?shop=` fallback in `get_current_shop` works outside production only.** ⚠️ **GiftSense departs from Commerce here:** Commerce accepts `?shop=` unauthenticated in every environment, which would let anyone act as any installed store in production. Real embedded requests always carry a session token. Pinned by `tests/integration/test_shop_param_fallback.py`.
 - **Legacy `/auth` + `/auth/callback`** stay as a manual, non-embedded fallback only. It includes nonce/state, HMAC and a 5-minute timestamp check. `/auth` short-circuits for active shops *after* probing the token: a 401 means a missed uninstall, so it runs the uninstall handler and continues into OAuth.
 - **Session-token verification:** HS256, audience = API key, `leeway=10`, `verify_iat=False`. Expired tokens log at **info** level: the frontend `shopifyFetch` retries once with a fresh token, so these shouldn't land in Sentry.
 - **Never register webhooks at runtime.** Commerce did both runtime and toml registration and got every event twice with different webhook IDs, which bypassed idempotency.
@@ -53,7 +54,7 @@ Source: `app/routes/billing.py`, `app/config.py`, `core/config.py`.
 ### `/billing/callback` (unauthenticated and replayable, so trust nothing in the URL)
 
 1. Re-query the subscription by GID (`node(id)`: status, name, line-item interval).
-2. **A null node on HTTP 200** means Shopify is still processing. Activate optimistically; the webhook corrects it. On a non-200 response, don't activate.
+2. **A null node on HTTP 200:** retry for about 3 seconds (Shopify writes new charges asynchronously). If it is still null, **do not activate**; the `app_subscriptions/update` webhook activates genuine charges. ⚠️ **GiftSense departs from Commerce here:** Commerce activates optimistically on a null node with the tier from the `plan=` param, but a made-up `charge_id` also returns null, so anyone could get Pro free. On a non-200 response, don't activate.
 3. **Derive tier and interval from the subscription name**, never from the `plan`/`interval`/`deferred` query params.
 4. **Replay guard:** if this is the same `charge_id` the shop is already active or trialing on, do nothing. Otherwise a merchant could reopen the URL to reset their monthly quota.
 5. **Recompute deferral server-side.** For a deferred change, record `scheduled_plan_tier` and `scheduled_change_at = cycle_start + 30 or 365 days`, and log a `change_scheduled` BillingEvent. Don't touch the tier, status or cycle start. First refresh the row: on dev stores the "next cycle" can already have been applied by the webhook.
