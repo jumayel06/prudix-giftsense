@@ -1,0 +1,10 @@
+type = "frontend"
+webhook_subscription_check = true
+
+[dev]
+port = 8001
+
+[commands]
+dev = "./start_backend.sh"
+build = "echo 'no build step'"
+deploy = "echo 'no deploy step'"

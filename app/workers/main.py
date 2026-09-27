@@ -1,0 +1,321 @@
+"""ARQ background worker.
+
+Start with:
+    arq app.workers.main.WorkerSettings
+
+Foundation crons are copied from Prudix Commerce (see docs/SHOPIFY_PLAYBOOK.md
+§7). Each cron isolates failures per shop, so one bad shop never aborts a
+sweep, and ends with a `*_complete` log line carrying counts.
+"""
+
+import asyncio
+import uuid
+from datetime import datetime, timedelta, timezone
+
+import structlog
+from arq import cron
+from arq.connections import RedisSettings
+from sqlalchemy import delete, select
+
+from app.config import GRACE_PERIOD_DAYS, derive_tier_from_subscription_name
+from app.purge import purge_shop_data
+from core.config import settings
+from core.db.models import BillingEvent, ProcessedWebhook, Shop
+from core.db.session import AsyncSessionLocal
+from core.shopify_auth import get_valid_access_token
+from core.shopify_graphql import shopify_graphql_post
+
+logger = structlog.get_logger()
+
+
+async def startup(ctx: dict) -> None:
+    logger.info("worker_starting")
+
+
+async def shutdown(ctx: dict) -> None:
+    logger.info("worker_stopping")
+
+
+# ── Shared Shopify helpers ────────────────────────────────────────────────────
+
+_ACTIVE_SUBSCRIPTIONS_QUERY = """
+query {
+  currentAppInstallation {
+    activeSubscriptions {
+      id
+      name
+      status
+    }
+  }
+}
+"""
+
+# Sentinel: the API answered and there is no ACTIVE subscription.
+NO_ACTIVE_SUBSCRIPTION = object()
+
+
+async def _active_subscription(shop_domain: str, token: str):
+    """Return the shop's ACTIVE AppSubscription dict, NO_ACTIVE_SUBSCRIPTION if
+    Shopify answered with none, or None when there's no definitive answer
+    (non-200 / GraphQL errors), in which case callers leave state alone."""
+    resp = await shopify_graphql_post(shop_domain, token, _ACTIVE_SUBSCRIPTIONS_QUERY)
+    if resp.status_code != 200:
+        return None
+    body = resp.json()
+    if body.get("errors"):
+        return None
+    subs = ((body.get("data") or {}).get("currentAppInstallation") or {}).get("activeSubscriptions") or []
+    for s in subs:
+        if (s.get("status") or "").upper() == "ACTIVE":
+            return s
+    return NO_ACTIVE_SUBSCRIPTION
+
+
+def _as_utc(dt: datetime | None) -> datetime | None:
+    if dt is not None and dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+# ── Crons ─────────────────────────────────────────────────────────────────────
+
+async def cleanup_processed_webhooks(ctx: dict) -> None:
+    """Delete webhook idempotency rows older than 72 hours."""
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=72)
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            delete(ProcessedWebhook).where(ProcessedWebhook.received_at < cutoff)
+        )
+        await db.commit()
+    logger.info("processed_webhooks_cleaned", deleted=result.rowcount)
+
+
+async def reconcile_uninstalled_shops(ctx: dict) -> None:
+    """Detect uninstalls that never delivered `app/uninstalled`.
+
+    Webhook delivery is "at least once" in theory; in practice events go
+    missing. Without this cron, a shop that uninstalled without a webhook stays
+    active in our DB forever: stale tokens, blocked reinstalls, and no data
+    retention timer.
+
+    For each active-ish shop, ping the cheapest Admin GraphQL query. A 401 means
+    the token was revoked: wait 5s and re-probe (Shopify auth can blip), and if
+    it's still 401 run the same handler the webhook would have. Anything else
+    (200, timeout, 5xx, network error) is a no-op, so healthy shops are never
+    marked uninstalled.
+    """
+    from app.routes.webhooks import _handle_uninstalled
+
+    async def _probe(shop_domain: str, token: str) -> int:
+        resp = await shopify_graphql_post(shop_domain, token, "query { shop { id } }")
+        return resp.status_code
+
+    caught = 0
+    async with AsyncSessionLocal() as db:
+        shops = (await db.execute(
+            select(Shop).where(
+                Shop.plan_status.in_(["active", "trial_active", "grace", "pending"]),
+                Shop.access_token_encrypted != "",
+            )
+        )).scalars().all()
+        for shop in shops:
+            try:
+                token = await get_valid_access_token(shop, db)
+                if await _probe(shop.shop_domain, token) != 401:
+                    continue
+                await asyncio.sleep(5)
+                if await _probe(shop.shop_domain, token) != 401:
+                    logger.info("reconcile_401_recovered", shop=shop.shop_domain)
+                    continue
+                logger.info("reconcile_uninstall_detected", shop=shop.shop_domain)
+                await _handle_uninstalled(shop.shop_domain, db, authoritative=True)
+                caught += 1
+            except Exception as e:  # noqa: BLE001 — per-shop defensive
+                logger.warning(
+                    "reconcile_uninstall_probe_failed",
+                    shop=shop.shop_domain, error=str(e),
+                )
+    logger.info("reconcile_uninstalled_shops_complete", scanned=len(shops), caught=caught)
+
+
+async def purge_uninstalled_shops(ctx: dict) -> None:
+    """Delete all data for shops whose 30-day retention window has expired.
+
+    Safety net for shops that never received (or whose app missed) the
+    shop/redact GDPR webhook. Runs once daily.
+    """
+    now = datetime.now(timezone.utc)
+    async with AsyncSessionLocal() as db:
+        shops = (await db.execute(
+            select(Shop).where(
+                Shop.plan_status == "uninstalled",
+                Shop.data_purge_at.is_not(None),
+                Shop.data_purge_at <= now,
+            )
+        )).scalars().all()
+        for shop in shops:
+            await purge_shop_data(shop.id, db)
+    logger.info("purge_uninstalled_shops_complete", purged=len(shops))
+
+
+async def reconcile_scheduled_plan_changes(ctx: dict) -> None:
+    """Safety net for deferred plan changes whose activation webhook was missed.
+
+    A deferred downgrade is normally applied by the `app_subscriptions/update`
+    webhook when Shopify activates the new plan at the cycle boundary. If that
+    webhook is dropped, `scheduled_plan_tier` would stick forever and our
+    records would disagree with Shopify's billing. Reconcile any shop at least
+    an hour past its `scheduled_change_at` (so we never race the webhook)
+    against Shopify's live active subscription.
+    """
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(hours=1)
+    reconciled = 0
+    async with AsyncSessionLocal() as db:
+        shops = (await db.execute(
+            select(Shop).where(
+                Shop.scheduled_change_at.is_not(None),
+                Shop.scheduled_change_at <= cutoff,
+                Shop.access_token_encrypted != "",
+            )
+        )).scalars().all()
+
+        for shop in shops:
+            try:
+                token = await get_valid_access_token(shop, db)
+                active = await _active_subscription(shop.shop_domain, token)
+                if active is None or active is NO_ACTIVE_SUBSCRIPTION:
+                    # No definitive answer, or no active subscription (the
+                    # cancel/uninstall paths own those states). Try next run.
+                    continue
+
+                actual_tier = derive_tier_from_subscription_name(
+                    active.get("name"), fallback=shop.plan_tier,
+                )
+                if actual_tier != shop.plan_tier:
+                    # The activation webhook was missed: apply the switch now,
+                    # anchoring the new cycle at the boundary Shopify actually
+                    # switched so the quota window isn't stretched.
+                    shop.plan_tier = actual_tier
+                    shop.plan_status = "active"
+                    shop.grace_period_ends_at = None
+                    shop.billing_cycle_start = _as_utc(shop.scheduled_change_at) or now
+                    db.add(BillingEvent(
+                        id=uuid.uuid4(),
+                        shop_id=shop.id,
+                        event_type="change_reconciled",
+                        plan_tier=actual_tier,
+                        shopify_charge_id=str(shop.shopify_charge_id or ""),
+                    ))
+                    logger.info(
+                        "scheduled_change_reconciled",
+                        shop=shop.shop_domain, applied_tier=actual_tier,
+                    )
+                    reconciled += 1
+
+                # Applied here or by the webhook: the pending change is resolved.
+                shop.scheduled_plan_tier = None
+                shop.scheduled_change_at = None
+                await db.commit()
+            except Exception as e:  # noqa: BLE001 — per-shop defensive
+                await db.rollback()
+                logger.warning(
+                    "scheduled_change_reconcile_failed",
+                    shop=shop.shop_domain, error=str(e),
+                )
+
+    logger.info(
+        "reconcile_scheduled_plan_changes_complete",
+        scanned=len(shops), reconciled=reconciled,
+    )
+
+
+async def reconcile_trial_conversions(ctx: dict) -> None:
+    """Safety net for trials whose conversion (or expiry) webhook was missed.
+
+    Trial → paid relies on Shopify's `app_subscriptions/update` ACTIVE webhook
+    after the trial ends. Commerce had no fallback for a dropped one (listed as
+    tech debt 2026-09-19): the shop would stay `trial_active` on trial limits
+    forever. For shops at least an hour past `trial_ends_at`, check Shopify's
+    live subscription:
+      - ACTIVE subscription → converted: `active`, cycle anchored at trial end.
+      - No active subscription → the trial ended unpaid: `expired` with the
+        same 7-day read-only grace the EXPIRED webhook applies.
+      - No definitive answer → leave it for the next run.
+    """
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(hours=1)
+    converted = 0
+    expired = 0
+    async with AsyncSessionLocal() as db:
+        shops = (await db.execute(
+            select(Shop).where(
+                Shop.plan_status == "trial_active",
+                Shop.trial_ends_at.is_not(None),
+                Shop.trial_ends_at <= cutoff,
+                Shop.access_token_encrypted != "",
+            )
+        )).scalars().all()
+
+        for shop in shops:
+            try:
+                token = await get_valid_access_token(shop, db)
+                active = await _active_subscription(shop.shop_domain, token)
+                if active is None:
+                    continue
+                if active is NO_ACTIVE_SUBSCRIPTION:
+                    shop.plan_status = "expired"
+                    shop.grace_period_ends_at = now + timedelta(days=GRACE_PERIOD_DAYS)
+                    event_type = "trial_expired_reconciled"
+                    expired += 1
+                else:
+                    shop.plan_status = "active"
+                    shop.plan_tier = derive_tier_from_subscription_name(
+                        active.get("name"), fallback=shop.plan_tier,
+                    )
+                    shop.shopify_charge_id = str(active.get("id", "")).rsplit("/", 1)[-1] or shop.shopify_charge_id
+                    shop.grace_period_ends_at = None
+                    shop.billing_cycle_start = _as_utc(shop.trial_ends_at) or now
+                    event_type = "trial_converted_reconciled"
+                    converted += 1
+                db.add(BillingEvent(
+                    id=uuid.uuid4(),
+                    shop_id=shop.id,
+                    event_type=event_type,
+                    plan_tier=shop.plan_tier,
+                    shopify_charge_id=str(shop.shopify_charge_id or ""),
+                ))
+                await db.commit()
+                logger.info("trial_reconciled", shop=shop.shop_domain, outcome=event_type)
+            except Exception as e:  # noqa: BLE001 — per-shop defensive
+                await db.rollback()
+                logger.warning(
+                    "trial_reconcile_failed",
+                    shop=shop.shop_domain, error=str(e),
+                )
+
+    logger.info(
+        "reconcile_trial_conversions_complete",
+        scanned=len(shops), converted=converted, expired=expired,
+    )
+
+
+class WorkerSettings:
+    redis_settings = RedisSettings.from_dsn(settings.redis_url)
+    on_startup = startup
+    on_shutdown = shutdown
+    max_jobs = 10
+    job_timeout = 60
+    max_tries = 3
+    keep_result = 3600
+
+    cron_jobs = [
+        cron(cleanup_processed_webhooks, hour={0, 6, 12, 18}, minute=0),
+        # Missed `app/uninstalled` safety net. 01:00 UTC, before the purge.
+        cron(reconcile_uninstalled_shops, hour=1, minute=0),
+        # Missed deferred-plan-change webhook safety net. Hourly at :20.
+        cron(reconcile_scheduled_plan_changes, minute=20),
+        # Missed trial conversion/expiry webhook safety net. Hourly at :40.
+        cron(reconcile_trial_conversions, minute=40),
+        cron(purge_uninstalled_shops, hour=3, minute=0),
+    ]

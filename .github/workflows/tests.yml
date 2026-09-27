@@ -1,0 +1,51 @@
+name: tests
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs when new commits land on the same ref within the
+# in-flight window. Saves minutes when iterating with several quick pushes.
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run pytest
+        env:
+          # Dummy values just to satisfy module-level engine/settings imports.
+          # Tests override the DB via in-memory aiosqlite (tests/conftest.py::engine
+          # fixture) and mock external services; these values are never actually
+          # used to connect anywhere.
+          # Fake Postgres URL — core/db/session.py sets pool_size/max_overflow which
+          # SQLite dialect rejects. Engine constructs but never actually connects;
+          # tests override get_db() via in-memory aiosqlite (tests/conftest.py:engine).
+          DATABASE_URL: "postgresql+asyncpg://ci:ci@localhost:5432/ci"
+          REDIS_URL: "redis://localhost:6379"
+          SHOPIFY_API_KEY: "ci-test-key"
+          SHOPIFY_API_SECRET: "ci-test-secret"
+          TOKEN_ENCRYPTION_KEY: "4SGyJ5MRTaXNlMS4q9_Vy-wmMZfuToGpstQM9ORJ9VA="
+          OPENAI_API_KEY: "sk-test"
+          ANTHROPIC_API_KEY: "sk-ant-test"
+          APP_ENV: "test"
+        run: pytest tests/ -x --tb=short -q

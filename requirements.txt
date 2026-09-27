@@ -1,0 +1,46 @@
+# Web framework
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+gunicorn==23.0.0
+python-multipart==0.0.20  # multipart form parsing (CSV/media uploads)
+
+# Database
+sqlalchemy[asyncio]==2.0.40
+asyncpg==0.30.0
+alembic==1.15.2
+
+# Background jobs
+arq==0.26.3
+redis[asyncio]==5.2.1
+
+
+# LLM providers
+openai==1.77.0
+anthropic==0.52.0
+
+# Validation and config
+pydantic-settings==2.9.1
+
+# Templating (internal admin dashboard)
+jinja2==3.1.6
+
+# Observability
+sentry-sdk[fastapi]==2.27.0
+structlog==25.3.0
+
+# Security
+cryptography==44.0.3
+PyJWT==2.10.1
+
+
+# HTTP client
+httpx==0.28.1
+
+# Testing
+pytest==8.3.5
+pytest-asyncio==0.26.0
+pytest-mock==3.14.0
+aiosqlite==0.21.0
+
+# Security scanning
+pip-audit==2.9.0
