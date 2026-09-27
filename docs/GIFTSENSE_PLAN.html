@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GiftSense Build Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --paper:#FFFFFF; --surface:#FFFFFF; --sunk:#F1F4F5;
+  --ink:#172026; --muted:#56636B; --line:#D5DCE0;
+  --teal:#0D6B66; --teal-soft:#DDEFEC;
+  --gold:#8A6212; --gold-soft:#F4EAD2;
+  --plum:#7A2E55; --plum-soft:#F3E2EA;
+  --good:#1F7A3A; --warn:#9A5B00; --warn-soft:#FBEBD2; --bad:#A12B2B;
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --body:"Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;padding-inline:20px;padding-block:0 64px}
+.wrap{max-width:1080px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(2rem,5vw,3rem);letter-spacing:-.01em}
+h2{font-size:1.75rem;margin-bottom:6px}
+h3{font-size:1.2rem}
+p{margin:0}
+.prose{max-width:68ch}
+a{color:var(--teal)}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+header.top{padding-block:40px 24px;display:grid;gap:14px}
+header.top .lede{font-size:1.1rem;color:var(--muted);max-width:66ch}
+
+nav.jump{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line);padding-block:10px;margin-bottom:8px}
+nav.jump ul{list-style:none;margin:0;padding:0;display:flex;gap:6px 18px;flex-wrap:wrap}
+nav.jump a{text-decoration:none;color:var(--muted);font-size:.9rem;font-weight:500}
+nav.jump a:hover,nav.jump a:focus-visible{color:var(--teal)}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:3px}
+
+section{padding-block:40px 8px;display:grid;gap:18px;scroll-margin-top:60px}
+.sub{color:var(--muted);max-width:68ch}
+
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:6px;align-content:start}
+.fact strong{font-family:var(--display);font-size:1.05rem}
+.fact p{color:var(--muted);font-size:.95rem}
+
+.pill{display:inline-block;font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-starter{background:var(--sunk);color:var(--ink)}
+.p-growth{background:var(--teal-soft);color:var(--teal)}
+.p-pro{background:var(--gold-soft);color:var(--gold)}
+.p-ai{background:var(--plum-soft);color:var(--plum)}
+.p-risk{background:var(--warn-soft);color:var(--warn)}
+
+.group-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.group-title h3{font-size:1.35rem}
+.features{display:grid;gap:12px}
+details.feat{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+details.feat summary{list-style:none;cursor:pointer;padding:16px 18px;display:grid;grid-template-columns:auto 1fr auto;gap:4px 14px;align-items:start}
+details.feat summary::-webkit-details-marker{display:none}
+.fnum{font-family:var(--mono);color:var(--muted);font-size:.85rem;padding-top:3px;min-width:1.6em}
+.ftitle{display:grid;gap:4px}
+.ftitle h4{font-family:var(--display);font-size:1.1rem;margin:0}
+.ftitle p{color:var(--muted);font-size:.95rem}
+.tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:220px}
+.chev{grid-column:3;justify-self:end;color:var(--muted);font-size:.8rem}
+details.feat[open] .chev{transform:rotate(180deg)}
+.fbody{padding:0 18px 18px 18px;display:grid;gap:14px;border-top:1px solid var(--line);padding-top:14px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px 22px}
+.cols h5{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+.cols ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.cols p{font-size:.95rem}
+.meta{display:flex;gap:8px 20px;flex-wrap:wrap;font-size:.88rem;color:var(--muted);border-top:1px dashed var(--line);padding-top:10px}
+.meta b{color:var(--ink);font-weight:600}
+
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:.95rem}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{font-family:var(--display);font-size:1rem;background:var(--sunk)}
+tbody tr:last-child td{border-bottom:none}
+td.c,th.c{text-align:center}
+td.r,th.r{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr.sep td{background:var(--sunk);font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-block:6px}
+.yes{color:var(--good);font-weight:700}
+.no{color:var(--muted)}
+tr.total td{font-weight:700;border-top:2px solid var(--ink)}
+tr.margin td{font-weight:700;color:var(--good)}
+
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.plan{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:grid;gap:10px;align-content:start}
+.plan.mid{border:2px solid var(--teal)}
+.plan .price{font-family:var(--display);font-size:2.2rem;line-height:1}
+.plan .price small{font-family:var(--body);font-size:.95rem;color:var(--muted);font-weight:400}
+.plan ul{margin:0;padding-left:18px;display:grid;gap:3px;font-size:.95rem}
+.plan .who{color:var(--muted);font-size:.95rem}
+.marginbar{display:grid;gap:4px}
+.bar{height:10px;border-radius:999px;background:var(--sunk);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--good)}
+.marginbar .lbl{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted)}
+.marginbar .lbl b{color:var(--good);font-family:var(--mono)}
+
+.costgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px}
+.costgrid .tbl table{min-width:0}
+
+.note{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:8px;padding:14px 16px;display:grid;gap:6px}
+.note.warn{border-left-color:var(--warn)}
+.note h4{font-family:var(--display);font-size:1.05rem;margin:0}
+.note ul{margin:0;padding-left:18px;display:grid;gap:4px}
+
+.timeline{display:grid;gap:0;border-left:2px solid var(--line);margin-left:6px}
+.wk{display:grid;grid-template-columns:88px 1fr;gap:12px;padding:10px 0 10px 18px;position:relative}
+.wk::before{content:"";position:absolute;left:-7px;top:16px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--teal)}
+.wk.gate::before{background:var(--gold);border-color:var(--gold)}
+.wk .when{font-family:var(--mono);font-size:.85rem;color:var(--muted);padding-top:2px}
+.wk .what{display:grid;gap:2px}
+.wk .what b{font-family:var(--display);font-size:1.05rem;font-weight:600}
+.wk .what span{color:var(--muted);font-size:.95rem}
+
+ol.decide{margin:0;padding-left:22px;display:grid;gap:10px;max-width:72ch}
+ol.decide b{font-family:var(--display);font-weight:600}
+
+footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padding-top:14px}
+
+@media (max-width:560px){
+  details.feat summary{grid-template-columns:auto 1fr}
+  .tags{grid-column:2;justify-content:flex-start;max-width:none}
+  .chev{display:none}
+  .wk{grid-template-columns:1fr;gap:2px}
+}
+@media (prefers-reduced-motion:no-preference){ .chev{transition:transform .15s} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header class="top">
+  <span class="eyebrow">Prudix GiftSense · Agreed plan · 27 Sep 2026</span>
+  <h1>GiftSense build plan</h1>
+  <p class="lede">Every feature we plan to launch with, what it does in plain words, which plan it belongs to, and what each merchant costs us in the worst case. Registries and recipient's choice from the original spec's later phases are in the first release. Corporate and group gifting are left out for now.</p>
+</header>
+
+<nav class="jump" aria-label="Sections">
+  <ul>
+    <li><a href="#summary">Summary</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#plans">Plans</a></li>
+    <li><a href="#costs">Cost per merchant</a></li>
+    <li><a href="#reuse">Reuse from Prudix Commerce</a></li>
+    <li><a href="#timeline">Timeline</a></li>
+    <li><a href="#risks">Shopify review check</a></li>
+    <li><a href="#decide">Decisions</a></li>
+  </ul>
+</nav>
+
+<section id="summary">
+  <h2>Summary</h2>
+  <div class="facts">
+    <div class="fact"><span class="eyebrow">Features</span><strong>15 features, one release</strong><p>Gift finder, notes, wrap, delivery dates, voice and video messages, recipient's choice, registries and analytics.</p></div>
+    <div class="fact"><span class="eyebrow">Plans</span><strong>3 plans: $19 · $49 · $99</strong><p>Suggested prices. Every limit is a setting, so prices and limits can change later without code changes.</p></div>
+    <div class="fact"><span class="eyebrow">Worst-case profit</span><strong>83% – 86% per merchant</strong><p>Even if a merchant uses 100% of every AI limit, every month. Normal usage will be much higher.</p></div>
+    <div class="fact"><span class="eyebrow">Timeline</span><strong>About 10 weeks</strong><p>Copying the setup work from Prudix Commerce saves roughly 3–4 weeks of plumbing.</p></div>
+  </div>
+  <div class="note">
+    <h4>How we guarantee the cost limit</h4>
+    <p class="prose">Every AI feature has a monthly limit per plan. When a store reaches a limit, the feature keeps working in a simpler non-AI mode instead of turning off. For example, the gift finder still shows matching products, with a standard reason line instead of an AI-written one. That way AI cost can never run past the numbers on this page, and shoppers never see a broken widget.</p>
+  </div>
+</section>
+
+<section id="features">
+  <h2>Features</h2>
+  <p class="sub">Tap a feature to see how it works. Tags show the lowest plan that includes it, and whether it uses AI.</p>
+
+  <div class="group-title"><h3>Finding the gift</h3></div>
+  <div class="features">
+
+    <details class="feat" open>
+      <summary><span class="fnum">1</span><span class="ftitle"><h4>AI Gift Finder</h4><p>Shopper answers 4 quick questions and gets 3–5 real products from the store, each with one line explaining why.</p></span><span class="tags"><span class="pill p-starter">Starter</span><span class="pill p-ai">AI</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>What the shopper sees</h5><ul><li>A "Find a gift" button or floating bubble.</li><li>Questions: who it's for, the occasion, budget, 2–3 words that describe them. Under 30 seconds.</li><li>3–5 different products (not near-copies), each with a short honest reason.</li><li>"None of these": one follow-up question, then fresh picks.</li></ul></div>
+          <div><h5>How it works</h5><ul><li>When the app is installed, AI reads each product once and writes a "gift profile": who it suits, which occasions, what kind of person.</li><li>Shopper answers are matched against those profiles. Products outside the budget are never shown.</li><li>AI picks the best few and writes the reasons, using only facts about the product.</li><li>Stores with fewer than ~60 products skip the matching step, and the AI looks at the whole catalog directly.</li></ul></div>
+        </div>
+        <div class="meta"><span><b>AI cost:</b> uses AI generations: 1 to 4 per search, depending on the AI model the merchant picks (see Plans)</span><span><b>Reuse:</b> storefront widget, security checks and budget counters from the Commerce AI Concierge</span></div>
+      </div>
+    </details>
+
+    <details class="feat">
+      <summary><span class="fnum">2</span><span class="ftitle"><h4>Catalog control and test area</h4><p>The merchant decides which products the gift finder can suggest, fixes any AI profile, and tries the finder before shoppers do.</p></span><span class="tags"><span class="pill p-starter">Starter</span><span class="pill p-ai">AI</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>What the merchant gets</h5><ul><li>"Analyzing your catalog… 340 of 1,200" progress on install.</li><li>A product list with each gift profile. Edit tags, or hide a product from suggestions.</li><li>Choose which collections count, for stores larger than the plan's product limit.</li><li>A test screen: answer the questions as a shopper and see exactly what they'd get.</li></ul></div>
+          <div><h5>How it works</h5><ul><li>Products stay in sync automatically when the merchant edits them.</li><li>Only products whose text changed are re-read by AI, overnight, at half price (bulk processing).</li><li>Price and stock changes update instantly with no AI cost.</li></ul></div>
+        </div>
+        <div class="meta"><span><b>AI cost:</b> about $0.0015 per product read</span><span><b>Reuse:</b> product sync pattern from Commerce</span></div>
+      </div>
+    </details>
+
+    <details class="feat">
+      <summary><span class="fnum">3</span><span class="ftitle"><h4>Storefront placements</h4><p>Everywhere the gift experience can appear on the store, with no code needed from the merchant.</p></span><span class="tags"><span class="pill p-starter">Starter</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>Options</h5><ul><li>Floating "Find a gift" bubble on every page.</li><li>"Find a gift" button the merchant drops into the homepage or a collection page.</li><li>Optional popup (after a delay or when the shopper is about to leave). Off by default.</li><li>"This is a gift" block on product pages and the cart page.</li><li>Optional "Is this a gift?" prompt when the shopper clicks Checkout. This works with slide-out carts too.</li></ul></div>
+          <div><h5>How it works</h5><ul><li>Added through the theme editor, like any theme app.</li><li>Colors, text and position are customizable.</li><li>Starter shows a small "Gift finder by GiftSense" link; Growth and Pro can hide it.</li><li>Loads a tiny script first and the rest only when used, so the store stays fast. Shopify checks this for the "Built for Shopify" badge.</li></ul></div>
+        </div>
+        <div class="meta"><span><b>AI cost:</b> none</span><span><b>Reuse:</b> theme extension layout and widget code from Commerce</span></div>
+      </div>
+    </details>
+
+    <details class="feat">
+      <summary><span class="fnum">4</span><span class="ftitle"><h4>Shopper's own language</h4><p>Widget text and AI replies follow the language the shopper is browsing in.</p></span><span class="tags"><span class="pill p-starter">Starter</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>How it works</h5><ul><li>Button and question text is translated once into common languages.</li><li>AI reasons and notes are written in the shopper's language at no extra cost.</li><li>Budgets are shown in the shopper's currency.</li></ul></div>
+        </div>
+        <div class="meta"><span><b>AI cost:</b> none extra</span><span><b>Reuse:</b> language handling from Commerce's translation feature</span></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="group-title"><h3>Preparing the gift</h3></div>
+  <div class="features">
+
+    <details class="feat">
+      <summary><span class="fnum">5</span><span class="ftitle"><h4>AI gift notes</h4><p>A ready-written note about the actual product, the person and the occasion. The shopper edits it or writes their own.</p></span><span class="tags"><span class="pill p-starter">Starter</span><span class="pill p-ai">AI</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>What the shopper sees</h5><ul><li>A note box already filled in, like "Happy 60th, Mom. I thought of you the moment I saw this…".</li><li>Buttons to rewrite (up to 3 times), edit, or clear it.</li><li>If they skipped the gift finder, two quick taps (who and occasion) come first.</li></ul></div>
+          <div><h5>What the merchant controls</h5><ul><li>Tone: warm and casual, minimal and elegant, playful, or formal.</li><li>Words the AI must never use, and a maximum length that fits their cards.</li><li>Notes are never sent automatically. The shopper always sees and approves them.</li></ul></div>
+        </div>
+        <div class="meta"><span><b>AI cost:</b> uses AI generations: 1 to 4 per note, depending on the model (each rewrite counts)</span><span><b>Reuse:</b> AI safety checks and Brand Profile tone idea from Commerce</span></div>
+      </div>
+    </details>
+
+    <details class="feat">
+      <summary><span class="fnum">6</span><span class="ftitle"><h4>Several gifts in one order</h4><p>Handles both "ship it straight to them" and "ship it all to me, I'll hand out gifts to Mom, Dad and the kids".</p></span><span class="tags"><span class="pill p-starter">Starter</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>What the shopper sees</h5><ul><li>One question: "Where is this going? Straight to the recipient / To me, I'll hand them out."</li><li>Sent to the recipient: the whole order is one gift with one note.</li><li>Sent to themselves: each item is labelled with who it's for ("Mom", "Dad"), and each gift gets its own note, wrap and card.</li><li>Items found through the gift finder are labelled automatically, because the finder already asked who it's for.</li></ul></div>
+          <div><h5>What the merchant sees</h5><ul><li>Each item in the order shows "Gift for: Mom" in normal Shopify order pages and packing slips.</li><li>One printed card per gift.</li></ul></div>
+        </div>
+        <div class="meta"><span><b>AI cost:</b> none (notes counted under feature 5)</span><span><b>Reuse:</b> order webhook handling from Commerce</span></div>
+      </div>
+    </details>
+
+    <details class="feat">
+      <summary><span class="fnum">7</span><span class="ftitle"><h4>Gift wrap</h4><p>2–3 wrap styles with prices, chosen per gift.</p></span><span class="tags"><span class="pill p-starter">Starter</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>How it works</h5><ul><li>The merchant turns styles on or off and sets names, photos and prices.</li><li>Wrap is never pre-selected and its price is always shown. Shopify requires the shopper to choose any extra charge.</li><li>The app creates a hidden "Gift wrap" product, so wrap shows up as a normal paid line in cart and checkout.</li><li>Removing a gift from the cart also removes its wrap.</li><li>The order is tagged so staff can filter orders that need wrapping.</li></ul></div>
+        </div>
+        <div class="meta"><span><b>AI cost:</b> none</span><span><b>Reuse:</b> product-writing helpers from Commerce</span></div>
+      </div>
+    </details>
+
+    <details class="feat">
+      <summary><span class="fnum">8</span><span class="ftitle"><h4>Arrive-by dates</h4><p>The shopper picks when the gift should arrive, and the order is held until the right shipping day.</p></span><span class="tags"><span class="pill p-growth">Growth</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>What the shopper sees</h5><ul><li>A date picker labelled "Arrive by (estimated)". Only dates that can realistically be met are selectable.</li></ul></div>
+          <div><h5>How it works</h5><ul><li>The merchant sets processing days, typical delivery days, shipping weekdays, holidays and a daily cutoff time.</li><li>The app works out a "ship by" date and puts the order on hold until then, then releases it automatically.</li><li>Items shipped by a third-party warehouse (3PL) aren't held; the order is only tagged with the ship-by date. This keeps us to one fulfillment permission.</li><li>The order is tagged with the ship-by date so staff can plan.</li><li>We can't promise carrier delivery, so the wording always says "estimated".</li></ul></div>
+        </div>
+        <div class="meta"><span><b>AI cost:</b> none</span><span><b>Reuse:</b> background jobs and scheduled tasks from Commerce</span></div>
+      </div>
+    </details>
+
+    <details class="feat">
+      <summary><span class="fnum">9</span><span class="ftitle"><h4>Printable gift cards and tags</h4><p>From the Shopify order page, print one card per gift with the note, recipient label and QR code.</p></span><span class="tags"><span class="pill p-starter">Starter</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>How it works</h5><ul><li>A "Print gift cards" option appears in the order's print menu in Shopify.</li><li>Print cards for many selected orders at once from the orders list.</li><li>Card sizes: 4×6 in, A6, and a small tag.</li><li>Prices are never printed on cards.</li></ul></div>
+        </div>
+        <div class="meta"><span><b>AI cost:</b> none</span><span><b>Reuse:</b> none (new Shopify admin extension)</span></div>
+      </div>
+    </details>
+
+    <details class="feat">
+      <summary><span class="fnum">10</span><span class="ftitle"><h4>Gift receipt (hide prices)</h4><p>The shopper asks for prices to be hidden, and staff see a clear "no prices" flag.</p></span><span class="tags"><span class="pill p-starter">Starter</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>How it works</h5><ul><li>A checkbox in the gift panel.</li><li>The order is tagged "Gift receipt", and staff print a price-free gift packing slip from the same print menu as the gift cards (feature 9). No template or code changes for the merchant.</li></ul></div>
+        </div>
+        <div class="meta"><span><b>AI cost:</b> none</span></div>
+      </div>
+    </details>
+
+    <details class="feat">
+      <summary><span class="fnum">11</span><span class="ftitle"><h4>Voice and video messages</h4><p>The shopper records a message. The recipient scans a QR code on the card to listen or watch. Voice on Growth, voice and video on Pro.</p></span><span class="tags"><span class="pill p-growth">Growth: voice</span><span class="pill p-pro">Pro: video</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>What the shopper sees</h5><ul><li>"Record a voice note" next to the note box (Growth and Pro), up to 2 minutes.</li><li>"Record a video" as well on Pro, up to 60 seconds.</li><li>Or "Record after checkout": the order confirmation page shows a link and QR code to record on their phone later.</li></ul></div>
+          <div><h5>How it works</h5><ul><li>Before recording, the shopper sees: "Anyone with the QR code or link can watch or listen to this."</li><li>Recordings are stored in cheap cloud storage (Cloudflare R2), behind private links that search engines can't find.</li><li>The record-after-checkout block on the order confirmation page shows no GiftSense branding (a Shopify rule for checkout pages).</li><li>The QR code goes on the printed card (feature 9) and opens a private page with the store's branding.</li><li>Recordings are deleted automatically after a set time (default 90 days after delivery).</li><li>Recordings for abandoned carts are deleted after 7 days.</li></ul></div>
+        </div>
+        <div class="meta"><span><b>Cost:</b> about $0.0005 per voice note, $0.002 per video (storage and processing)</span><span><b>Reuse:</b> none (new)</span></div>
+      </div>
+    </details>
+
+    <details class="feat">
+      <summary><span class="fnum">12</span><span class="ftitle"><h4>Recipient's choice</h4><p>The recipient can swap size or color before the gift ships.</p></span><span class="tags"><span class="pill p-pro">Pro</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>What happens</h5><ul><li>The buyer ticks "Let them choose size or color".</li><li>After checkout, the buyer gets a private link to send to the recipient. We don't send emails.</li><li>The recipient opens it, sees the gift without a price, and picks a size or color.</li><li>The app updates the order automatically, then releases it for shipping.</li></ul></div>
+          <div><h5>Rules that keep it simple</h5><ul><li>Only options at the same price, so no refunds or extra charges.</li><li>A deadline (default 5 days). If nobody chooses, the buyer's pick ships.</li><li>Only works before the order is shipped.</li><li>Only offered when the shopper pays in the store's own currency. Shopify can't edit orders paid in another currency, so the option is hidden for those shoppers.</li></ul></div>
+        </div>
+        <div class="meta"><span><b>AI cost:</b> none</span><span><b>Reuse:</b> webhook and job patterns from Commerce</span></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="group-title"><h3>Registries</h3></div>
+  <div class="features">
+
+    <details class="feat">
+      <summary><span class="fnum">13</span><span class="ftitle"><h4>Gift registries with AI suggestions</h4><p>Shoppers build wedding, baby or birthday lists, share them, and guests buy from them.</p></span><span class="tags"><span class="pill p-pro">Pro</span><span class="pill p-ai">AI</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>What shoppers see</h5><ul><li>"Add to registry" on product pages (account login required).</li><li>A shareable registry page showing what's still wanted and what's already bought.</li><li>Guests buying from a registry get the note and wrap steps automatically.</li><li>Guests enter the delivery address in Shopify's normal checkout, so the app never sees or stores addresses.</li><li>AI suggestions for the owner: "Couples who added this also need…", picked from the store's own products.</li></ul></div>
+          <div><h5>Why merchants care</h5><ul><li>Every shared registry brings new shoppers to the store.</li><li>A registry report shows new visitors and sales from shared lists.</li></ul></div>
+        </div>
+        <div class="meta"><span><b>AI cost:</b> uses AI generations, the same as a gift search</span><span><b>Reuse:</b> matching engine from feature 1</span></div>
+      </div>
+    </details>
+
+  </div>
+
+  <div class="group-title"><h3>Proving it pays off</h3></div>
+  <div class="features">
+    <details class="feat">
+      <summary><span class="fnum">14</span><span class="ftitle"><h4>Basic analytics</h4><p>How many shoppers used the gift finder, how many bought, and sales from gift orders.</p></span><span class="tags"><span class="pill p-starter">Starter</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>Shown</h5><ul><li>Gift finder uses, completions and purchases.</li><li>Sales from gift orders this month.</li><li>Usage against the plan's limits.</li></ul></div>
+          <div><h5>How it works</h5><ul><li>Purchases are matched to gift finder visits with an anonymous ID carried through the cart. No customer personal data is needed.</li></ul></div>
+        </div>
+        <div class="meta"><span><b>AI cost:</b> none</span><span><b>Reuse:</b> usage card and analytics page from Commerce</span></div>
+      </div>
+    </details>
+
+    <details class="feat">
+      <summary><span class="fnum">15</span><span class="ftitle"><h4>Full analytics and weekly email</h4><p>Conversion compared to the rest of the store, note and wrap attach rates, top occasions and budgets, and a Monday summary email.</p></span><span class="tags"><span class="pill p-growth">Growth</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <div class="fbody">
+        <div class="cols">
+          <div><h5>Shown</h5><ul><li>Gift finder conversion compared to the whole store.</li><li>How often shoppers keep the AI note as written, lightly edit it, or rewrite it.</li><li>Wrap, note and video attach rates.</li><li>Top occasions, recipients and budgets; direct vs. self-shipped gifts; gifts per order.</li><li>Registry results: new visitors and sales from shared lists.</li></ul></div>
+          <div><h5>Weekly email</h5><ul><li>Sent every Monday: "GiftSense drove $X in sales this week".</li><li>This is the main thing that keeps merchants past their first bill.</li></ul></div>
+        </div>
+        <div class="meta"><span><b>AI cost:</b> none</span><span><b>Reuse:</b> weekly email system (Postmark, templates, unsubscribe) from Commerce's digests</span></div>
+      </div>
+    </details>
+  </div>
+
+  <div class="note">
+    <h4>Not in this release</h4>
+    <ul>
+      <li><b>Corporate and bulk gifting</b> and <b>group gifting</b>: small, unproven demand; the most work to build; and they need names and addresses, which triggers Shopify's stricter customer-data review. If merchants ask for corporate gifting, a light first version ("paste a list of names and hints, AI writes a note for each, print the cards") needs no addresses and can ship as an update.</li>
+      <li>Permanently out of scope, as in the spec: standalone gift cards, loyalty/rewards, and free-gift or BOGO promotions.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="plans">
+  <h2>Plans</h2>
+  <p class="sub">Three plans, set up the same way as Prudix Commerce: each plan unlocks more features and more AI models, and all AI use comes out of one monthly pool of AI generations. Prices are a starting point and can be revised later.</p>
+
+  <div class="plans">
+    <div class="plan">
+      <span class="pill p-starter" style="justify-self:start">Starter</span>
+      <div class="price num">$19<small> /month</small></div>
+      <p class="who">Stores starting out with gifting.</p>
+      <ul>
+        <li>AI Gift Finder and AI notes</li>
+        <li>Several gifts per order, gift wrap, printable cards, gift receipt</li>
+        <li>Basic analytics</li>
+        <li>AI models: GPT-4o mini, Claude Haiku 4.5</li>
+        <li><span class="num">600</span> AI generations a month</li>
+        <li>Up to <span class="num">250</span> products</li>
+        <li>Small "by GiftSense" link on the widget</li>
+      </ul>
+      <div class="marginbar"><div class="lbl"><span>Worst-case profit</span><b>83%</b></div><div class="bar"><span style="width:83%"></span></div></div>
+    </div>
+    <div class="plan mid">
+      <span class="pill p-growth" style="justify-self:start">Growth</span>
+      <div class="price num">$49<small> /month</small></div>
+      <p class="who">Stores that want a complete gift checkout.</p>
+      <ul>
+        <li>Everything in Starter</li>
+        <li>Arrive-by dates with automatic shipping holds</li>
+        <li>Voice messages with QR codes</li>
+        <li>Full analytics and weekly sales email</li>
+        <li>Hide the GiftSense link</li>
+        <li>Adds the GPT-4.1 model</li>
+        <li><span class="num">1,750</span> AI generations a month</li>
+        <li>Up to <span class="num">2,000</span> products</li>
+        <li><span class="num">200</span> voice messages</li>
+      </ul>
+      <div class="marginbar"><div class="lbl"><span>Worst-case profit</span><b>86%</b></div><div class="bar"><span style="width:86%"></span></div></div>
+    </div>
+    <div class="plan">
+      <span class="pill p-pro" style="justify-self:start">Pro</span>
+      <div class="price num">$99<small> /month</small></div>
+      <p class="who">Bigger stores that want every gifting tool and the strongest AI model.</p>
+      <ul>
+        <li>Everything in Growth</li>
+        <li>Adds the Claude Sonnet 5 model</li>
+        <li>Gift registries with AI suggestions</li>
+        <li>Recipient's choice (swap size or color before shipping)</li>
+        <li>Video messages</li>
+        <li>Priority support</li>
+        <li><span class="num">4,500</span> AI generations a month</li>
+        <li>Up to <span class="num">5,000</span> products</li>
+        <li><span class="num">500</span> voice or video messages</li>
+      </ul>
+      <div class="marginbar"><div class="lbl"><span>Worst-case profit</span><b>84%</b></div><div class="bar"><span style="width:84%"></span></div></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <h4>How AI models and generations work (same as Prudix Commerce)</h4>
+    <ul>
+      <li>The merchant picks the AI model in Settings, from the models their plan includes. Each plan has a default: Haiku 4.5 on Starter, GPT-4.1 on Growth, Sonnet 5 on Pro.</li>
+      <li>Every AI gift search, AI note and registry suggestion uses generations. Stronger models use more generations per use, in proportion to what they cost us.</li>
+      <li>So a merchant can trade volume for quality: 600 generations on Starter is 600 searches or notes with GPT-4o mini, or 300 with Haiku 4.5.</li>
+      <li>Reading the catalog doesn't use generations. It always runs on Haiku 4.5 overnight, within the plan's product limit.</li>
+      <li>Every model on this list must pass the week-2 quality test for gift picks. A model that fails isn't offered.</li>
+    </ul>
+  </div>
+
+  <div class="tbl">
+    <table>
+      <thead><tr><th>AI model</th><th class="c">Generations per use</th><th class="c">Starter</th><th class="c">Growth</th><th class="c">Pro</th></tr></thead>
+      <tbody>
+        <tr><td>GPT-4o mini</td><td class="c num">1</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>Claude Haiku 4.5</td><td class="c num">2</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>GPT-4.1</td><td class="c num">4</td><td class="c no">–</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>Claude Sonnet 5</td><td class="c num">4</td><td class="c no">–</td><td class="c no">–</td><td class="c yes">✓</td></tr>
+        <tr class="sep"><td colspan="5">What a month's generations buy (gift searches or notes)</td></tr>
+        <tr><td>With GPT-4o mini</td><td class="c no">–</td><td class="c num">600</td><td class="c num">1,750</td><td class="c num">4,500</td></tr>
+        <tr><td>With Claude Haiku 4.5</td><td class="c no">–</td><td class="c num">300</td><td class="c num">875</td><td class="c num">2,250</td></tr>
+        <tr><td>With GPT-4.1</td><td class="c no">–</td><td class="c no">–</td><td class="c num">437</td><td class="c num">1,125</td></tr>
+        <tr><td>With Claude Sonnet 5</td><td class="c no">–</td><td class="c no">–</td><td class="c no">–</td><td class="c num">1,125</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="sub">Claude Sonnet 5 costs less per use than the Sonnet 4.6 that Prudix Commerce offers, so it counts 4 generations here instead of 6.</p>
+
+  <div class="note">
+    <h4>Why a merchant moves up</h4>
+    <ul>
+      <li><b>Starter to Growth:</b> arrive-by dates for birthdays and holidays, voice messages, a weekly email that shows the sales GiftSense made, the GPT-4.1 model, and about 3× the AI generations.</li>
+      <li><b>Growth to Pro:</b> the strongest AI model (Claude Sonnet 5), registries that bring in new shoppers every time a list is shared, recipient's choice that avoids wrong-size exchanges, video messages, and about 2.5× the AI generations.</li>
+    </ul>
+  </div>
+
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Feature</th><th class="c">Starter</th><th class="c">Growth</th><th class="c">Pro</th></tr></thead>
+      <tbody>
+        <tr class="sep"><td colspan="4">Finding the gift</td></tr>
+        <tr><td>1. AI Gift Finder</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>2. Catalog control and test area</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>3. Storefront placements</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>&nbsp;&nbsp;&nbsp;Hide the "by GiftSense" link</td><td class="c no">–</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>4. Shopper's own language</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr class="sep"><td colspan="4">Preparing the gift</td></tr>
+        <tr><td>5. AI gift notes</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>6. Several gifts in one order</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>7. Gift wrap</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>8. Arrive-by dates</td><td class="c no">–</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>9. Printable gift cards and tags</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>10. Gift receipt (hide prices)</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>11. Voice messages</td><td class="c no">–</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>11. Video messages</td><td class="c no">–</td><td class="c no">–</td><td class="c yes">✓</td></tr>
+        <tr><td>12. Recipient's choice</td><td class="c no">–</td><td class="c no">–</td><td class="c yes">✓</td></tr>
+        <tr class="sep"><td colspan="4">Registries</td></tr>
+        <tr><td>13. Gift registries with AI suggestions</td><td class="c no">–</td><td class="c no">–</td><td class="c yes">✓</td></tr>
+        <tr class="sep"><td colspan="4">Proving it pays off</td></tr>
+        <tr><td>14. Basic analytics</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>15. Full analytics and weekly email</td><td class="c no">–</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>Priority support</td><td class="c no">–</td><td class="c no">–</td><td class="c yes">✓</td></tr>
+        <tr class="sep"><td colspan="4">AI models</td></tr>
+        <tr><td>GPT-4o mini, Claude Haiku 4.5</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>GPT-4.1</td><td class="c no">–</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>Claude Sonnet 5</td><td class="c no">–</td><td class="c no">–</td><td class="c yes">✓</td></tr>
+        <tr class="sep"><td colspan="4">Monthly limits</td></tr>
+        <tr><td>AI generations (gift searches, notes, registry suggestions)</td><td class="c num">600</td><td class="c num">1,750</td><td class="c num">4,500</td></tr>
+        <tr><td>Products in the gift finder</td><td class="c num">250</td><td class="c num">2,000</td><td class="c num">5,000</td></tr>
+        <tr><td>Products re-read by AI each month</td><td class="c num">200</td><td class="c num">500</td><td class="c num">1,200</td></tr>
+        <tr><td>Voice or video messages</td><td class="c num">–</td><td class="c num">200 voice</td><td class="c num">500 voice or video</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <h4>What happens at a limit</h4>
+    <ul>
+      <li><b>AI generations:</b> the gift finder keeps working with matched products and a standard reason ("Fits your $50 budget · cozy and practical"), and notes switch to ready-made templates in the merchant's tone.</li>
+      <li><b>Products:</b> only the collections the merchant picked are suggested.</li>
+      <li><b>Voice and video:</b> the recording option is hidden until next month, and the merchant sees an upgrade prompt.</li>
+    </ul>
+  </div>
+
+  <div class="note">
+    <h4>7-day free trial, like Prudix Commerce</h4>
+    <ul>
+      <li><b>Why 7 days, not 3:</b> setup (catalog read, placing the button, wrap styles) takes a day or two, and smaller stores need several days of traffic before the merchant sees a real gift-finder sale.</li>
+      <li><b>What's included:</b> all features and models of the chosen plan, with a smaller trial allowance (table below), like Prudix Commerce's per-plan trial generations. Full plan limits unlock on the first paid day.</li>
+      <li><b>At a trial limit:</b> the same fallbacks as a paid plan, so the storefront never breaks during the trial.</li>
+      <li><b>One trial per store:</b> uninstalling and reinstalling doesn't give a new trial. This is the same check Prudix Commerce already uses.</li>
+    </ul>
+  </div>
+
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Trial limits (7 days)</th><th class="c">Starter</th><th class="c">Growth</th><th class="c">Pro</th></tr></thead>
+      <tbody>
+        <tr><td>AI generations</td><td class="c num">60</td><td class="c num">100</td><td class="c num">150</td></tr>
+        <tr><td>Products in the gift finder</td><td class="c num">250</td><td class="c num">250</td><td class="c num">250</td></tr>
+        <tr><td>Voice or video messages</td><td class="c num">–</td><td class="c num">5 voice</td><td class="c num">10 voice or video</td></tr>
+        <tr><td>Worst-case cost per trial</td><td class="c num">$0.51</td><td class="c num">$0.60</td><td class="c num">$0.73</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="costs">
+  <h2>Cost per merchant, worst case</h2>
+  <p class="sub">Worst case means the merchant uses 100% of every limit, every month, on whichever allowed model costs us the most per generation. Prices per million tokens (a token is roughly ¾ of a word): GPT-4o mini $0.15 in / $0.60 out, Claude Haiku 4.5 $1 / $5, GPT-4.1 $2 / $8, Claude Sonnet 5 $2 / $10. Usage estimates include a safety margin; real usage is measured in week 2 and these numbers updated.</p>
+
+  <div class="tbl">
+    <table>
+      <thead><tr><th>AI use by model</th><th class="r">Gift search</th><th class="r">Note</th><th class="r">Generations</th><th class="r">Cost per generation (worst)</th></tr></thead>
+      <tbody>
+        <tr><td>GPT-4o mini</td><td class="r">$0.0006</td><td class="r">$0.0002</td><td class="r">1</td><td class="r">$0.0006</td></tr>
+        <tr><td>Claude Haiku 4.5</td><td class="r">$0.0045</td><td class="r">$0.0020</td><td class="r">2</td><td class="r">$0.00225</td></tr>
+        <tr><td>GPT-4.1</td><td class="r">$0.0082</td><td class="r">$0.0032</td><td class="r">4</td><td class="r">$0.00205</td></tr>
+        <tr><td>Claude Sonnet 5</td><td class="r">$0.0090</td><td class="r">$0.0036</td><td class="r">4</td><td class="r">$0.00225</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="sub">A gift search is about 2,500 tokens in and 400 out; a note is about 800 in and 200 out. Because of the weights, no model costs more than <b class="num">$0.00225</b> per generation. The merchant's model choice can't push cost above the plan's worst case.</p>
+
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Other costs</th><th class="r">Cost per use</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Product read by AI</td><td class="r">$0.0015</td><td>Haiku 4.5, done overnight in bulk at half price</td></tr>
+        <tr><td>Voice message</td><td class="r">$0.0005</td><td>Up to about 2 MB stored for about 4 months, plus processing</td></tr>
+        <tr><td>Video message</td><td class="r">$0.0020</td><td>Up to 15 MB stored for about 4 months, plus processing</td></tr>
+        <tr><td>Hosting share</td><td class="r">$1.50–$2.50</td><td>About $70/month fixed (servers, database, queue) spread across roughly 40 merchants</td></tr>
+        <tr><td>Matching and safety checks</td><td class="r">≈ $0</td><td>Product matching costs fractions of a cent; the safety filter is free</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="costgrid">
+    <div class="tbl"><table>
+      <thead><tr><th>Starter · $19</th><th class="r">Monthly</th></tr></thead>
+      <tbody>
+        <tr><td>600 AI generations × $0.00225</td><td class="r">$1.35</td></tr>
+        <tr><td>200 product re-reads</td><td class="r">$0.30</td></tr>
+        <tr><td>Hosting share</td><td class="r">$1.50</td></tr>
+        <tr class="total"><td>Total cost</td><td class="r">$3.15</td></tr>
+        <tr><td>Profit</td><td class="r">$15.85</td></tr>
+        <tr class="margin"><td>Profit margin</td><td class="r">83.4%</td></tr>
+      </tbody>
+    </table></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Growth · $49</th><th class="r">Monthly</th></tr></thead>
+      <tbody>
+        <tr><td>1,750 AI generations × $0.00225</td><td class="r">$3.94</td></tr>
+        <tr><td>500 product re-reads</td><td class="r">$0.75</td></tr>
+        <tr><td>200 voice messages</td><td class="r">$0.10</td></tr>
+        <tr><td>Hosting share</td><td class="r">$2.00</td></tr>
+        <tr class="total"><td>Total cost</td><td class="r">$6.79</td></tr>
+        <tr><td>Profit</td><td class="r">$42.21</td></tr>
+        <tr class="margin"><td>Profit margin</td><td class="r">86.1%</td></tr>
+      </tbody>
+    </table></div>
+    <div class="tbl"><table>
+      <thead><tr><th>Pro · $99</th><th class="r">Monthly</th></tr></thead>
+      <tbody>
+        <tr><td>4,500 AI generations × $0.00225</td><td class="r">$10.13</td></tr>
+        <tr><td>1,200 product re-reads</td><td class="r">$1.80</td></tr>
+        <tr><td>500 messages (worst case: all video)</td><td class="r">$1.00</td></tr>
+        <tr><td>Hosting share</td><td class="r">$2.50</td></tr>
+        <tr class="total"><td>Total cost</td><td class="r">$15.43</td></tr>
+        <tr><td>Profit</td><td class="r">$83.57</td></tr>
+        <tr class="margin"><td>Profit margin</td><td class="r">84.4%</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Other scenarios</th><th class="r">Starter</th><th class="r">Growth</th><th class="r">Pro</th></tr></thead>
+      <tbody>
+        <tr><td>Worst-case month (above)</td><td class="r">83.4%</td><td class="r">86.1%</td><td class="r">84.4%</td></tr>
+        <tr><td>First month only: one-time catalog read at the product limit ($0.38 / $3.00 / $7.50)</td><td class="r">81.4%</td><td class="r">80.0%</td><td class="r">76.8%</td></tr>
+        <tr><td>If real AI calls turn out 50% bigger than estimated</td><td class="r">79.8%</td><td class="r">82.1%</td><td class="r">79.3%</td></tr>
+        <tr><td>After Shopify's 15% revenue share starts (see note)</td><td class="r">68.4%</td><td class="r">71.1%</td><td class="r">69.4%</td></tr>
+        <tr><td>7-day free trial, one time (see trial limits above)</td><td class="r">$0.51</td><td class="r">$0.60</td><td class="r">$0.73</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note warn">
+    <h4>Things that move these numbers</h4>
+    <ul>
+      <li><b>Shopify's revenue share:</b> Shopify takes 0% of your first $1M in app revenue on its reduced revenue-share plan (check your Partner terms), then 15%. The main tables assume 0%.</li>
+      <li><b>Hosting:</b> under about 30 merchants, the fixed ~$70/month is split across fewer stores, so the first months run below these margins. At 100+ merchants hosting drops under $1 per merchant and margins rise to about 88–90%.</li>
+      <li><b>Bigger AI calls than estimated:</b> if week-2 measurements come in higher, we adjust the generation weights or limits (they're settings, as in Prudix Commerce) to get back above 83%.</li>
+      <li><b>Realistic usage</b> is usually 10–30% of limits, and many merchants will pick cheaper models, which puts real margins around 90–95%. The worst case is what's shown above.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="reuse">
+  <h2>What we copy from Prudix Commerce</h2>
+  <p class="sub">Copying this saves most of the Shopify setup work, including everything already fixed during Commerce's App Store review.</p>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Area</th><th>Copy as-is</th><th>Copy and adapt</th><th>New for GiftSense</th></tr></thead>
+      <tbody>
+        <tr><td>Install and login</td><td>Token exchange, token refresh and encryption, session checks</td><td>Permission list</td><td>–</td></tr>
+        <tr><td>Billing</td><td>Subscriptions, trials, upgrades and downgrades, plan-change race fixes</td><td>Plan names and limits</td><td>–</td></tr>
+        <tr><td>Webhooks and privacy</td><td>Signature checks, duplicate protection, uninstall, 30-day data purge</td><td>Privacy deletion per order (new requirement)</td><td>Product and order handlers</td></tr>
+        <tr><td>Database and jobs</td><td>Connection setup that fixed production crashes, background worker, scheduled tasks</td><td>Tables</td><td>Product matching storage (pgvector)</td></tr>
+        <tr><td>AI layer</td><td>AI call wrapper, cost tracking, safety filter, daily cost cap</td><td>Model list, usage limits</td><td>Gift profiles, gift matching, note writer</td></tr>
+        <tr><td>Storefront</td><td>Store-request security check, widget shell</td><td>Widget design and questions</td><td>Gift panel, cart handling, recorder</td></tr>
+        <tr><td>Merchant app</td><td>App shell, plans page, settings, support, onboarding checklist, usage card</td><td>Home page</td><td>Catalog, test area, wrap, dates, registries, analytics</td></tr>
+        <tr><td>Operations</td><td>Internal admin panel, error tracking, logging, deploy setup, weekly email system</td><td>Email templates</td><td>Cloud storage for recordings</td></tr>
+        <tr><td>Testing</td><td>Test setup, test helpers, CI pipeline, "full suite green" reminder</td><td>–</td><td>Sample store catalogs, gift-pick quality tests, storefront script tests</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="timeline">
+  <h2>Timeline</h2>
+  <p class="sub">Test-driven, the same way as Commerce: tests first, full suite green after every task. About 10 weeks in total.</p>
+  <div class="timeline">
+    <div class="wk"><span class="when">Week 1</span><span class="what"><b>Foundation, copied</b><span>Repo setup, install, billing, webhooks, privacy, database, admin panel, CI. Start the gift-matching engine.</span></span></div>
+    <div class="wk gate"><span class="when">Week 2</span><span class="what"><b>Gift-matching quality check (go / no-go)</b><span>Test on 5 sample catalogs and about 50 shopper profiles. Must reach at least 3.5 good picks out of 5, zero over-budget picks and zero made-up products. Real AI costs measured here.</span></span></div>
+    <div class="wk"><span class="when">Week 3</span><span class="what"><b>Gift Finder on the store</b><span>Catalog sync, test area, storefront placements, limits and fallbacks.</span></span></div>
+    <div class="wk"><span class="when">Week 4</span><span class="what"><b>Notes, several gifts per order, printing</b><span>Gift panel, AI notes, order data in Shopify, gift card printing.</span></span></div>
+    <div class="wk"><span class="when">Week 5</span><span class="what"><b>Wrap, arrive-by dates, gift receipt, basic analytics</b><span>Wrap product, shipping holds, tags.</span></span></div>
+    <div class="wk"><span class="when">Week 6</span><span class="what"><b>Voice and video messages</b><span>Recorder, storage, QR codes, recipient page, record-after-checkout page.</span></span></div>
+    <div class="wk"><span class="when">Week 7</span><span class="what"><b>Recipient's choice</b><span>Choice page, automatic order update, deadline handling.</span></span></div>
+    <div class="wk"><span class="when">Week 8</span><span class="what"><b>Gift registries</b><span>Registry pages, purchase tracking, AI suggestions.</span></span></div>
+    <div class="wk"><span class="when">Week 9</span><span class="what"><b>Full analytics, weekly email, polish</b><span>Store speed checks, testing on 5 popular themes, languages.</span></span></div>
+    <div class="wk gate"><span class="when">Week 10</span><span class="what"><b>App Store submission</b><span>Review checklist, listing, demo store, submit.</span></span></div>
+  </div>
+</section>
+
+<section id="risks">
+  <h2>Shopify review check</h2>
+  <p class="sub">Checked against Shopify's current App Store review requirements and customer-data rules (27 Sep 2026). The fixes are already built into the features above.</p>
+  <div class="note">
+    <h4>Customer data: Level 1 only, same as Prudix Commerce</h4>
+    <p class="prose">No feature reads or stores shopper names, emails, phone numbers or addresses. Addresses are only entered in Shopify's own checkout. Registries store only Shopify's customer ID. Level 1 means: collect only what's needed, tell merchants what we process, set retention periods, and encrypt data. Commerce already does all of this.</p>
+  </div>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Permission</th><th>Why we need it</th></tr></thead>
+      <tbody>
+        <tr><td class="num">read_products, write_products</td><td>Read the catalog; create the hidden gift-wrap product</td></tr>
+        <tr><td class="num">read_orders, write_orders</td><td>Add gift details and tags to orders</td></tr>
+        <tr><td class="num">write_order_edits</td><td>Recipient's choice (swap size or color)</td></tr>
+        <tr><td class="num">write_merchant_managed_fulfillment_orders</td><td>Hold orders until the ship-by date</td></tr>
+        <tr><td class="num">read_themes</td><td>Check the widget is switched on (Commerce has this too)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    <h4>Rules we designed around</h4>
+    <ul>
+      <li><b>Extra charges need shopper consent:</b> wrap is never pre-selected, and its price is always shown.</li>
+      <li><b>No app branding on checkout pages:</b> the record-after-checkout block is unbranded.</li>
+      <li><b>No manual code edits for merchants:</b> the gift receipt prints from our print menu instead of a template change.</li>
+      <li><b>Only factual claims:</b> AI reasons may cite only real product facts, and prices in them are checked automatically.</li>
+      <li><b>Shopper data visible in Shopify admin:</b> notes, dates and message links are saved on the order.</li>
+      <li><b>Store speed:</b> the app may lower the store's speed score by at most 10 points (needed for the "Built for Shopify" badge, which also needs 50 paid installs and 5 reviews, so it's a later goal). We measure this before submitting.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="decide">
+  <h2>Decisions</h2>
+  <p class="sub">All decided (27 Sep 2026). Prices can be revisited later without code changes.</p>
+  <ul class="prose" style="margin:0;padding-left:20px;display:grid;gap:6px">
+    <li>Stack: FastAPI + React, copied from Prudix Commerce.</li>
+    <li>15 features in one release; corporate and group gifting left out.</li>
+    <li>Plans $19 / $49 / $99, with model access and AI generations set up like Prudix Commerce.</li>
+    <li>7-day free trial with per-plan limits; one trial per store.</li>
+    <li>Several gifts per order: "straight to them" or "to me".</li>
+    <li>Voice messages on Growth, video on Pro.</li>
+    <li>Recipient's choice only for store-currency orders; no holds for 3PL-shipped items.</li>
+  </ul>
+</section>
+
+<footer>Prudix GiftSense · based on the AI Gifting App spec (25 Sep 2026) and the Prudix Commerce codebase. Detailed technical notes live in docs/TECHNICAL_PLAN.md and will be updated once these decisions are made.</footer>
+</div>
+</body>
+</html>
