@@ -40,7 +40,9 @@ Everything that must be flipped, set, rotated or verified before GiftSense goes 
 
 ## 🚀 Launch day
 - [ ] Install the **prod** app (Partner Dashboard → GiftSense → select store), not a `shopify app dev` session. Confirm `shop_provisioned_via_token_exchange` in logs, a `pending` row, and the plan picker.
-- [ ] Protected customer data: request **Level 1** only (orders). Fill in the data-protection survey (Supabase Pro encrypted backups, separate test/prod DBs).
+- [ ] Protected customer data: request **Level 1** only (orders). Filed for the **dev** app 2026-09-27 — reasons: Store management, App functionality, Analytics; no protected fields (name/email/phone/address). Survey: all Purpose = Yes; Consent = Yes (agreements), Yes (consent decisions), N/A (data sale), N/A (automated decisions); Storage = Yes, Yes. **Refile identically for the prod app.**
+- [ ] Make the survey answers true before submission: update prudix.app/privacy (umbrella policy) with a GiftSense section listing the order data we process and why, the shopper recordings, and the retention periods (30 days after uninstall; recordings 90 days after delivery; sessions 90 days; drafts 30 days); confirm the Terms of Service cover GiftSense.
+- [ ] Every retention period promised above has a purge cron implemented and running (media, sessions, drafts), like Commerce's `purge_old_concierge_questions`.
 - [ ] Demo store: install prod, approve a test plan while `BILLING_TEST_MODE=true`, set up real gift finder content; **storefront password in the reviewer notes**.
 - [ ] 🚨 **SUBMISSION GATE — `BILLING_TEST_MODE=false`** in Railway, then verify one real charge screen shows a real (non-test) charge.
 - [ ] Full billing walk-through on a clean store: install → trial → convert → upgrade → downgrade (deferred) → cancel → reinstall (trial blocked) → resubscribe.

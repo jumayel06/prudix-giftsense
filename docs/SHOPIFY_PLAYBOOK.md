@@ -135,6 +135,7 @@ Source: `core/config.py`, `core/db/session.py`, `.env.example`, `Dockerfile`, `s
 - **Two Shopify apps (dev and prod),** so every `shopify app …` command needs `--config dev` or `--config prod`.
 - **Keep scopes in sync in 3 places:** both tomls and `core/shopify_auth.py:SCOPES`. Any change forces re-authorization.
 - **`[app_proxy]` changes need `shopify app deploy`.** `shopify app dev` doesn't register them.
+- **`shopify.web.toml`: `port` and `webhooks_path` are top-level keys.** The CLI has no `[dev]` table, so Commerce's `[dev] port = 8000` is ignored and the CLI assigns a random `PORT`. Its startup self-check then posts a test `app/uninstalled` to the wrong port and the default `/api/webhooks` path, and fails. GiftSense sets `port = 8001` and `webhooks_path = "/webhooks"` at the top level, and `start_backend.sh` binds `${PORT:-8001}`. (Found 2026-09-27.)
 - **Env is strict:** `APP_ENV` required, `APP_HOST` required, with no fallbacks. Local `.env` holds dev credentials only; Railway holds prod only. Never mix them.
 - **`dashboard/index.html`** uses `%VITE_SHOPIFY_API_KEY%`. Never hardcode a client id.
 - **Supabase:**

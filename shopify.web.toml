@@ -1,8 +1,13 @@
 type = "frontend"
 webhook_subscription_check = true
 
-[dev]
+# Top-level keys (the Shopify CLI schema has no [dev] table; Commerce's
+# `[dev] port` is silently ignored and the CLI picks a random port).
+# `port` must match the Cloudflare tunnel ingress (giftsense-dev.prudix.app →
+# localhost:8001). `webhooks_path` is where the CLI's startup self-check posts
+# a test app/uninstalled webhook; the CLI default is /api/webhooks.
 port = 8001
+webhooks_path = "/webhooks"
 
 [commands]
 dev = "./start_backend.sh"

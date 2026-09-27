@@ -11,7 +11,7 @@
 # shopify.app.prod.toml. Every scope change forces merchants to re-authorize.
 
 client_id = "2ea88886e5ce1368a9ddfdf8d83cc171"
-name = "GiftSense (Dev)"
+name = "Prudix GiftSense (Dev)"
 application_url = "https://giftsense-dev.prudix.app"
 embedded = true
 
