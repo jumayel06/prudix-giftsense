@@ -21,6 +21,8 @@ This doc covers how each feature works end to end, what has to be built, and wha
 
 ## 2. What we reuse from Prudix Commerce
 
+Install, uninstall, billing, trial, plan-change, webhook, cron and GraphQL rules (with the Commerce bug behind each one) are in [SHOPIFY_PLAYBOOK.md](SHOPIFY_PLAYBOOK.md). Follow it exactly.
+
 ### 2.1 Copy nearly as-is
 
 | Source (prudix-ad-copy) | Use in GiftSense | Notes |
@@ -318,7 +320,7 @@ Metrics shown: concierge sessions, **completion rate**, **concierge→order conv
 | Product re-reads / month | 200 | 500 | 1,200 |
 | Voice/video messages / month | – | 200 voice | 500 voice or video |
 
-Prices can be revised later without code changes. The trial is 7 days, once per store (`trial_used`, as in Commerce).
+Prices can be revised later without code changes. Monthly billing only (no annual plans). The trial is 7 days, once per store (`trial_used`, as in Commerce).
 
 ### 8.2 Model weights and worst-case cost
 
@@ -462,7 +464,7 @@ The same harness runs every model in §8.2 (a model that misses the bar isn't of
 1. **Stack:** FastAPI + React/Polaris, copied from Prudix Commerce. Not Remix.
 2. **Name:** GiftSense (repo `prudix-giftsense`); handle, metafield namespace and App Proxy subpath are `giftsense`. Listing title still to pick at submission.
 3. **Scope:** 15 features in one release. Corporate/bulk and group gifting are dropped (small demand, large build, need Level 2 data). Registries have no ship-to-owner address.
-4. **Plans:** $19 / $49 / $99 (revisable later), with Commerce-style model access and generations (§8). 7-day trial with per-plan trial generations; one trial per store.
+4. **Plans:** $19 / $49 / $99, monthly only (revisable later), with Commerce-style model access and generations (§8). 7-day trial with per-plan trial generations; one trial per store.
 5. **Gift groups:** `direct` or `self` delivery mode (§6.2).
 6. **Media:** voice on Growth, video on Pro, stored in Cloudflare R2.
 7. **Review-driven rules:** Level 1 customer data only; wrap never pre-selected; unbranded Thank-you extension; gift receipt via our print action (no template edits); recipient's choice only for shop-currency orders; no fulfillment holds for 3PL items.

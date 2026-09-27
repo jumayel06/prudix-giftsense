@@ -1,0 +1,70 @@
+# Dev config — used with `shopify app dev --config dev`.
+# Mirrors Prudix Commerce's shopify.app.dev.toml.
+# URLs are STABLE via a named Cloudflare Tunnel. GiftSense shares Commerce's
+# tunnel: `cloudflared tunnel run prudix-commerce-dev`, whose
+# ~/.cloudflared/config.yml routes commerce-dev.prudix.app → localhost:8000 and
+# giftsense-dev.prudix.app → localhost:8001. The GiftSense backend runs on
+# port 8001 so both apps can run at once. URLs never change across sessions →
+# toml stays put → `automatically_update_urls_on_dev = false`.
+#
+# Keep [access_scopes] in sync with core/shopify_auth.py:SCOPES and
+# shopify.app.prod.toml. Every scope change forces merchants to re-authorize.
+
+client_id = "2ea88886e5ce1368a9ddfdf8d83cc171"
+name = "GiftSense (Dev)"
+application_url = "https://giftsense-dev.prudix.app"
+embedded = true
+
+[build]
+dev_store_url = "prudix-commerce-dev.myshopify.com"
+automatically_update_urls_on_dev = false
+
+[webhooks]
+api_version = "2026-07"
+
+  # Declarative subscriptions are the SOLE source of truth. Never also register
+  # webhooks at runtime (webhookSubscriptionCreate): Commerce did both and got
+  # every event delivered twice with different webhook IDs.
+  [[webhooks.subscriptions]]
+  uri = "/webhooks"
+  topics = [ "app/uninstalled", "app_subscriptions/update", "products/create", "products/update", "products/delete", "orders/create", "bulk_operations/finish" ]
+
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/data_request"]
+  uri = "/webhooks/gdpr/customers/data_request"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/redact"]
+  uri = "/webhooks/gdpr/customers/redact"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = ["shop/redact"]
+  uri = "/webhooks/gdpr/shop/redact"
+
+[access_scopes]
+# read/write_products: catalog + hidden gift-wrap product
+# read/write_orders: gift metafields + tags on orders
+# write_order_edits: recipient's choice (Pro)
+# write_merchant_managed_fulfillment_orders: arrive-by holds (Growth+)
+# read_themes: detect whether the app embed is switched on
+scopes = "read_products,write_products,read_orders,write_orders,write_order_edits,write_merchant_managed_fulfillment_orders,read_themes"
+optional_scopes = [ ]
+# Managed install / token exchange (NOT legacy OAuth redirect). The backend
+# provisions the shop row via session-token exchange on first authenticated load
+# (core/shopify_deps.py). Must be false to keep the declarative
+# [[webhooks.subscriptions]] above — Shopify rejects them when this is true.
+use_legacy_install_flow = false
+
+[auth]
+# Legacy /auth/callback kept only as a manual (non-embedded) fallback.
+redirect_urls = [
+  "https://giftsense-dev.prudix.app/auth/callback"
+]
+
+[app_proxy]
+# Storefront widget calls /apps/giftsense/* on the shop's domain; Shopify signs
+# and forwards them here. Only takes effect after `shopify app deploy --config dev`
+# (`shopify app dev` does NOT register App Proxy changes).
+url = "https://giftsense-dev.prudix.app/api/storefront"
+subpath = "giftsense"
+prefix = "apps"

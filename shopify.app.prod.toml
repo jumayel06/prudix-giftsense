@@ -1,0 +1,52 @@
+# Prod config — used with `shopify app deploy --config prod`.
+# Mirrors Prudix Commerce's shopify.app.prod.toml.
+# `automatically_update_urls_on_dev = false` prevents an accidental
+# `shopify app dev --config prod` run from overwriting the Railway URL with a
+# tunnel.
+#
+# Keep [access_scopes] in sync with core/shopify_auth.py:SCOPES and
+# shopify.app.dev.toml. Every scope change forces merchants to re-authorize.
+
+client_id = "b538375f0b27e0640a535a12fe64c41f"
+name = "GiftSense"
+application_url = "https://giftsense.prudix.app"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = false
+
+[webhooks]
+api_version = "2026-07"
+
+  # Declarative subscriptions are the SOLE source of truth (see dev toml).
+  [[webhooks.subscriptions]]
+  uri = "/webhooks"
+  topics = [ "app/uninstalled", "app_subscriptions/update", "products/create", "products/update", "products/delete", "orders/create", "bulk_operations/finish" ]
+
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/data_request"]
+  uri = "/webhooks/gdpr/customers/data_request"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/redact"]
+  uri = "/webhooks/gdpr/customers/redact"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = ["shop/redact"]
+  uri = "/webhooks/gdpr/shop/redact"
+
+[access_scopes]
+scopes = "read_products,write_products,read_orders,write_orders,write_order_edits,write_merchant_managed_fulfillment_orders,read_themes"
+optional_scopes = [ ]
+# Managed install / token exchange — see dev toml. Must stay false.
+use_legacy_install_flow = false
+
+[auth]
+redirect_urls = [
+  "https://giftsense.prudix.app/auth/callback"
+]
+
+[app_proxy]
+url = "https://giftsense.prudix.app/api/storefront"
+subpath = "giftsense"
+prefix = "apps"

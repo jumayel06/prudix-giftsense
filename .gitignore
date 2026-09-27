@@ -1,1 +1,41 @@
+# Secrets
+.env
+dashboard/.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Build output
+dist/
+build/
+dashboard/dist/
+
+# JS
+node_modules/
+.next/
+
+# OS
 .DS_Store
+
+# Logs / runtime
+*.log
+*.pid
+
+# Local-only working notes (not for commit)
+LAUNCH_TODO.md
+
+# Claude Code per-developer settings (hooks fire commands tied to local paths)
+.claude/settings.local.json
+
+# Offline eval outputs (real API runs; regenerate with scripts/eval_recs.py)
+evals/results/
