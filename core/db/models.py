@@ -9,10 +9,12 @@ Every table with a `shop_id` column must also be purged in app/purge.py
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, JSON, Numeric, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
+
+from core.db.types import Embedding
 
 
 class Base(DeclarativeBase):
@@ -152,3 +154,74 @@ class SuppressedEmail(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False,
     )
+
+
+# ── Gift catalog (week 3) ─────────────────────────────────────────────────────
+
+class CatalogProductRow(Base):
+    """One Shopify product as the gift finder sees it: synced fields, the AI
+    gift profile, merchant overrides and the profile's embedding.
+
+    `content_hash` covers only fields that change what the product *is*
+    (title, description, type, tags…); when it changes the profile is re-read
+    by AI. Price and stock changes update in place for free.
+    """
+    __tablename__ = "catalog_products"
+    __table_args__ = (
+        UniqueConstraint("shop_id", "product_id", name="uq_catalog_products_shop_product"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    shop_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("shops.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    product_id: Mapped[str] = mapped_column(String, nullable=False)  # numeric Shopify id as text
+    handle: Mapped[str | None] = mapped_column(String, nullable=True)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="", server_default="")
+    product_type: Mapped[str] = mapped_column(String, nullable=False, default="", server_default="")
+    vendor: Mapped[str] = mapped_column(String, nullable=False, default="", server_default="")
+    tags: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    price_min: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
+    price_max: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
+    available: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
+    image_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    url: Mapped[str | None] = mapped_column(String, nullable=True)
+    content_hash: Mapped[str] = mapped_column(String, nullable=False)
+
+    gift_profile: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    profile_version: Mapped[str | None] = mapped_column(String, nullable=True)
+    profile_hash: Mapped[str | None] = mapped_column(String, nullable=True)  # content_hash the profile was built from
+    profile_fallback: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    merchant_overrides: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    excluded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+
+    embedding: Mapped[list | None] = mapped_column(Embedding(512), nullable=True)
+    embedding_model: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    enriched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False,
+    )
+
+
+class CatalogSync(Base):
+    """One catalog sync run (initial after install, nightly reconcile) with
+    progress counters for the dashboard's "Analyzing your catalog…" bar."""
+    __tablename__ = "catalog_syncs"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    shop_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("shops.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    kind: Mapped[str] = mapped_column(String, nullable=False)        # "initial" | "reconcile"
+    status: Mapped[str] = mapped_column(String, nullable=False, default="running")  # running | done | failed
+    bulk_operation_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    total: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    processed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    enriched: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    failed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
