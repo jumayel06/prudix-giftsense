@@ -30,7 +30,7 @@ from app.services.gifting.enrichment import CATALOG_MODEL, PROMPT_VERSION, enric
 from app.services.gifting.pipeline import recommend
 from app.services.gifting.profile import GiftProfile, embedding_text, strip_html
 from app.services.gifting.retrieval import IndexedProduct, Intake, in_budget, query_text, retrieve
-from evals.catalogs import STORES, generate_catalog
+from evals.catalogs import RETRIES, STORES, TRANSIENT_ERRORS, generate_catalog
 from evals.ledger import Ledger
 from evals.metrics import SearchOutcome, score_search, summarize
 
@@ -80,16 +80,29 @@ class EvalRun:
         path = self.data / "catalogs" / f"{store}.json"
         products = _read(path, None)
         if products is None:
-            self.log(f"[{store}] generating {STORES[store]['count']} products…")
-            products = await generate_catalog(store, STORES[store], chat_fn=self.chat_fn, ledger=self.ledger)
+            # Checkpoint after every chunk; only a finished catalog gets the real
+            # filename (a partial one would later look complete).
+            partial = path.with_suffix(".partial.json")
+            existing = _read(partial, [])
+            self.log(f"[{store}] generating {STORES[store]['count']} products"
+                     + (f" (resuming from {len(existing)})…" if existing else "…"))
+            products = await generate_catalog(
+                store, STORES[store], chat_fn=self.chat_fn, ledger=self.ledger, existing=existing,
+                on_progress=lambda ps: _write(partial, ps),
+            )
             _write(path, products)
+            partial.unlink(missing_ok=True)
         return products
 
     # 2. profiles ────────────────────────────────────────────────────────────
     async def profiles(self, store: str, products: list[dict]) -> dict[str, dict]:
         path = self.data / "profiles" / f"{store}.json"
         cache = _read(path, {})
-        todo = [p for p in products if cache.get(p["product_id"], {}).get("_version") != PROMPT_VERSION]
+        # Redo stale-version and fallback profiles (a fallback usually means a
+        # transient API error, which would silently lower eval quality).
+        todo = [p for p in products
+                if cache.get(p["product_id"], {}).get("_version") != PROMPT_VERSION
+                or cache.get(p["product_id"], {}).get("_fallback")]
         if todo:
             self.log(f"[{store}] writing gift profiles for {len(todo)} products…")
 
@@ -179,9 +192,16 @@ class EvalRun:
         async with self.sem:
             self.ledger.check(EST_JUDGE_USD)
             # The judge may think (accuracy over speed); thinking counts toward max_tokens.
-            resp = await self.chat_fn(model=JUDGE_MODEL, system=system, prompt="\n".join(lines),
-                                      max_tokens=8000, temperature=0.0, json_mode=True, thinking=True,
-                                      timeout=180.0)
+            for attempt in range(RETRIES + 1):
+                try:
+                    resp = await self.chat_fn(model=JUDGE_MODEL, system=system, prompt="\n".join(lines),
+                                              max_tokens=8000, temperature=0.0, json_mode=True, thinking=True,
+                                              timeout=180.0)
+                    break
+                except TRANSIENT_ERRORS:
+                    if attempt == RETRIES:
+                        raise
+                    await asyncio.sleep(5 * (attempt + 1))
         self.ledger.charge("labels", JUDGE_MODEL, resp.input_tokens, resp.output_tokens)
         try:
             data = json.loads(resp.text)

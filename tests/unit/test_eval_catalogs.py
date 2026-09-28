@@ -52,3 +52,30 @@ def test_store_specs_cover_the_five_store_types_with_non_gift_items():
     assert set(STORES) == {"candles", "jewelry", "toys", "kitchen", "general"}
     for spec in STORES.values():
         assert spec["categories"] and spec["non_gift_examples"]
+
+
+@pytest.mark.asyncio
+async def test_transient_errors_are_retried():
+    import anthropic
+    import httpx
+    err = anthropic.APIConnectionError(request=httpx.Request("POST", "https://api.anthropic.com"))
+    chat = AsyncMock(side_effect=[err, _chunk(20), _chunk(20, 20)])
+    products = await generate_catalog("candles", STORES["candles"], chat_fn=chat, ledger=Ledger(5),
+                                      count=25, retry_delay=0)
+    assert len(products) == 25
+
+
+@pytest.mark.asyncio
+async def test_resumes_from_checkpoint_and_reports_progress():
+    existing = [{"product_id": f"candles-{i + 1:04d}", "title": f"Old {i}", "product_type": "Candles",
+                 "vendor": "V", "description": "", "tags": [], "price_min": 20.0, "price_max": 20.0,
+                 "available": True} for i in range(15)]
+    saved = []
+    chat = AsyncMock(side_effect=[_chunk(20, 100)])
+    products = await generate_catalog("candles", STORES["candles"], chat_fn=chat, ledger=Ledger(5), count=25,
+                                      existing=existing, on_progress=lambda ps: saved.append(len(ps)))
+    assert len(products) == 25
+    assert products[:15] == existing
+    assert len({p["product_id"] for p in products}) == 25
+    assert saved and saved[-1] == 25
+    assert "Write 10 new products" in chat.await_args.kwargs["prompt"]

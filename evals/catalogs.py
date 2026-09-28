@@ -4,8 +4,12 @@ saved to evals/data/catalogs/<store>.json (reruns reuse the file for free).
 Each store mixes real gifts with a few poor gifts (refills, spare parts,
 shipping protection) so the eval also checks the giftable filter.
 """
+import asyncio
 import json
 from typing import Awaitable, Callable
+
+import anthropic
+import openai
 
 from app.llm import LLMResponse, chat
 from evals.ledger import Ledger
@@ -13,8 +17,14 @@ from evals.ledger import Ledger
 ChatFn = Callable[..., Awaitable[LLMResponse]]
 
 GENERATOR_MODEL = "claude-haiku-4-5"
-CHUNK = 20
-EST_COST_PER_CHUNK = 0.03  # ~20 products × ~250 output tokens on Haiku, with margin
+# Small chunks keep each request short: long generations dropped connections
+# (2026-09-28). ~10 products × ~250 output tokens on Haiku, with margin.
+CHUNK = 10
+EST_COST_PER_CHUNK = 0.016
+RETRIES = 3
+TRANSIENT_ERRORS = (anthropic.APIConnectionError, anthropic.APITimeoutError, anthropic.RateLimitError,
+                    anthropic.InternalServerError, openai.APIConnectionError, openai.APITimeoutError,
+                    openai.RateLimitError, openai.InternalServerError)
 
 STORES = {
     "candles": {
@@ -87,21 +97,33 @@ def _valid(item) -> bool:
 
 
 async def generate_catalog(store: str, spec: dict, chat_fn: ChatFn = chat, ledger: Ledger | None = None,
-                           count: int | None = None) -> list[dict]:
+                           count: int | None = None, existing: list[dict] | None = None,
+                           on_progress: Callable[[list[dict]], None] | None = None,
+                           retry_delay: float = 5.0) -> list[dict]:
+    """Generate (or resume) a catalog. `existing` resumes from a checkpoint;
+    `on_progress` is called after every chunk so callers can checkpoint."""
     target = count or spec["count"]
-    products: list[dict] = []
-    seen: set[str] = set()
+    products: list[dict] = list(existing or [])
+    seen: set[str] = {p["title"].strip().lower() for p in products}
     attempts = 0
     while len(products) < target and attempts < target // CHUNK * 3 + 5:
         attempts += 1
         n = min(CHUNK, target - len(products))
         if ledger:
             ledger.check(EST_COST_PER_CHUNK)
-        resp = await chat_fn(
-            model=GENERATOR_MODEL, system=SYSTEM,
-            prompt=_prompt(store, spec, n, [p["title"] for p in products], include_non_gift=attempts % 4 == 1),
-            max_tokens=8000, temperature=0.9, json_mode=True,
-        )
+        for attempt in range(RETRIES + 1):
+            try:
+                resp = await chat_fn(
+                    model=GENERATOR_MODEL, system=SYSTEM,
+                    prompt=_prompt(store, spec, n, [p["title"] for p in products],
+                                   include_non_gift=attempts % 4 == 1),
+                    max_tokens=4000, temperature=0.9, json_mode=True, timeout=120.0,
+                )
+                break
+            except TRANSIENT_ERRORS:
+                if attempt == RETRIES:
+                    raise
+                await asyncio.sleep(retry_delay * (attempt + 1))
         if ledger:
             ledger.charge("generate_catalogs", GENERATOR_MODEL, resp.input_tokens, resp.output_tokens)
         try:
@@ -126,4 +148,6 @@ async def generate_catalog(store: str, spec: dict, chat_fn: ChatFn = chat, ledge
             })
             if len(products) >= target:
                 break
+        if on_progress:
+            on_progress(products)
     return products
