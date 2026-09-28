@@ -34,9 +34,9 @@ def llm(payload, tokens=(2500, 350)):
 @pytest.mark.asyncio
 async def test_valid_picks_are_returned_in_llm_order_with_reasons():
     chat = llm({"picks": [
-        {"product_id": "b", "reason": "A plush robe for slow, cozy birthday mornings."},
-        {"product_id": "a", "reason": "Lavender scent to help a busy parent unwind."},
-        {"product_id": "c", "reason": "A tea sampler for quiet afternoons."},
+        {"product_id": "b", "fact": "soy wax", "reason": "A plush robe for slow, cozy birthday mornings."},
+        {"product_id": "a", "fact": "soy wax", "reason": "Lavender scent to help a busy parent unwind."},
+        {"product_id": "c", "fact": "soy wax", "reason": "A tea sampler for quiet afternoons."},
     ]})
     result = await rerank(INTAKE, CANDS, model="claude-sonnet-5", chat_fn=chat)
     assert [p.product.product_id for p in result.picks] == ["b", "a", "c"]
@@ -49,9 +49,9 @@ async def test_valid_picks_are_returned_in_llm_order_with_reasons():
 @pytest.mark.asyncio
 async def test_invented_and_duplicate_products_are_dropped_and_topped_up():
     chat = llm({"picks": [
-        {"product_id": "zzz", "reason": "Not in the catalog."},
-        {"product_id": "a", "reason": "Lavender scent to unwind."},
-        {"product_id": "a", "reason": "Duplicate."},
+        {"product_id": "zzz", "fact": "soy wax", "reason": "Not in the catalog."},
+        {"product_id": "a", "fact": "soy wax", "reason": "Lavender scent to unwind."},
+        {"product_id": "a", "fact": "soy wax", "reason": "Duplicate."},
     ]})
     result = await rerank(INTAKE, CANDS, model="claude-haiku-4-5", chat_fn=chat)
     ids = [p.product.product_id for p in result.picks]
@@ -137,12 +137,40 @@ async def test_reason_that_borrows_the_shoppers_note_unsupported_gets_a_template
                     free_text="training for her first marathon")
     run_cand = cand("r", "Running Recovery Socks", facts=("compression fit", "for marathon training"))
     chat = llm({"picks": [
-        {"product_id": "a", "reason": "A calming candle for rest days between marathon training runs."},
-        {"product_id": "r", "reason": "Compression socks built for marathon training recovery."},
-        {"product_id": "b", "reason": "A plush robe for slow mornings."},
+        {"product_id": "a", "fact": "soy wax", "reason": "A calming candle for rest days between marathon training runs."},
+        {"product_id": "r", "fact": "compression fit", "reason": "Compression socks built for marathon training recovery."},
+        {"product_id": "b", "fact": "soy wax", "reason": "A plush robe for slow mornings."},
     ]})
     result = await rerank(intake, [CANDS[0], run_cand, CANDS[1]], model="claude-haiku-4-5", chat_fn=chat)
     by_id = {p.product.product_id: p for p in result.picks}
     assert by_id["a"].source == "template" and "marathon" not in by_id["a"].reason
     assert by_id["r"].source == "ai" and by_id["b"].source == "ai"
     assert [p.product.product_id for p in result.picks] == ["a", "r", "b"]  # order kept
+
+
+@pytest.mark.asyncio
+async def test_reason_must_rest_on_a_fact_from_the_listing():
+    # Eval 2026-09-28: small embellishments ("hand-painted", "made for
+    # graduation") stayed unfaithful at ~83%. The model must name the listing
+    # fact its reason is built on; an unknown or missing fact → template reason.
+    chat = llm({"picks": [
+        {"product_id": "a", "fact": "Soy Wax", "reason": "Clean-burning soy wax for slow birthday evenings."},
+        {"product_id": "b", "fact": "hand-painted", "reason": "A hand-painted robe she'll treasure."},
+        {"product_id": "c", "reason": "A tea sampler for quiet afternoons."},
+    ]})
+    result = await rerank(INTAKE, CANDS, model="claude-haiku-4-5", chat_fn=chat)
+    assert [(p.product.product_id, p.source) for p in result.picks] == [("a", "ai"), ("b", "template"), ("c", "template")]
+
+
+@pytest.mark.parametrize("fact,ok", [
+    ("soy wax", True), ("  SOY   wax ", True), ("wax", False),        # too short to prove anything
+    ("hand-poured soy wax", False), ("Lavender Candle", True),          # title words count
+    ("", False), (None, False), (42, False),
+])
+def test_fact_is_grounded(fact, ok):
+    from app.services.gifting.rerank import fact_is_grounded
+    assert fact_is_grounded(fact, CANDS[0]) is ok
+
+
+def test_prompt_asks_for_the_fact_behind_each_reason():
+    assert '"fact"' in RERANK_SYSTEM_PROMPT

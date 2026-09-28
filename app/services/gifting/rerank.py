@@ -5,8 +5,10 @@ reason each, using only the facts it's given. Output is untrusted:
   - picks must be shortlist product ids (no invented products), deduplicated;
   - reasons must be short, contain no links, and any price they quote must
     match the product's real price;
-  - a reason that repeats a word from the shopper's note which the product's
-    listing never mentions keeps the pick but gets a template reason;
+  - each reason names the listing fact it rests on; if that fact isn't in the
+    product's facts/title/description, or the reason repeats a word from the
+    shopper's note the listing never mentions, the pick stays with a template
+    reason;
   - too few valid picks → topped up from the shortlist with template reasons;
   - LLM error / unparseable output / no generation budget → template picks.
 The storefront never shows an empty or broken result because of the model.
@@ -20,13 +22,14 @@ import structlog
 
 from app.llm import LLMResponse, chat
 from app.services.gifting import vocab
+from app.services.gifting.profile import strip_html
 from app.services.gifting.retrieval import Candidate, Intake
 
 logger = structlog.get_logger()
 
 ChatFn = Callable[..., Awaitable[LLMResponse]]
 
-PROMPT_VERSION = "rerank-v2"
+PROMPT_VERSION = "rerank-v3"
 MIN_PICKS = 3
 MAX_PICKS = 5
 MAX_REASON_CHARS = 160
@@ -36,18 +39,18 @@ RERANK_TIMEOUT_SECS = 8.0
 
 RERANK_SYSTEM_PROMPT = """You help a shopper choose a gift from one store's products.
 
-You get the shopper's brief and a numbered shortlist of products. Choose the 3 to 5 best gifts for this brief, best first, and write one short reason for each (max 20 words) that speaks to the shopper, e.g. "A plush robe for slow birthday mornings — she'll feel pampered."
+You get the shopper's brief and a shortlist of products. Choose the 3 to 5 best gifts for this brief, best first. For each, pick ONE fact from that product's listed facts (or its title) and write a short reason (max 20 words) built on that fact, e.g. fact "100% merino wool" → "Soft merino wool for someone who's always cold on the couch."
 
 Rules:
 - Choose only from the shortlist, using the exact product_id given.
-- Base every reason ONLY on the facts, pitch and details given for that product. Never invent features, materials, sizes, reviews, awards, ease of use or effects ("hilarious", "easy to assemble", "great for recovery").
-- Link a product to the shopper's note or to a trait (e.g. sentimental, classic) only when that product's own details support the link. If they don't, don't claim it: say plainly what the product is and why it's a nice gift.
-- If nothing on the shortlist fits the note, still pick the best gifts, but don't pretend they match it.
+- "fact" must be copied word for word from that product's facts or title.
+- The reason may only claim what the fact, title or pitch says. You may add who it's for or the occasion from the brief. Never add features, materials, styles, sizes, uses, effects or feelings the listing doesn't state ("hand-painted", "made for graduation", "a keepsake", "easy to assemble").
+- Link a product to the shopper's note or to a trait (e.g. sentimental, classic) only when that product's own details support the link; if they don't, don't claim it. If nothing fits the note, still pick the best gifts, but don't pretend they match it.
 - Don't mention a price unless it's the product's listed price.
 - Prefer variety: don't pick several near-identical products.
 - No links, emojis or exclamation marks.
 
-Return JSON only: {"picks": [{"product_id": "...", "reason": "..."}]}"""
+Return JSON only: {"picks": [{"product_id": "...", "fact": "...", "reason": "..."}]}"""
 
 
 @dataclass
@@ -138,6 +141,25 @@ def borrows_unsupported_note(reason: str, c: Candidate, note_terms: set[str]) ->
     return any(t in words and t[:5] not in product_text for t in note_terms)
 
 
+MIN_FACT_CHARS = 5
+
+
+def _norm(text: str) -> str:
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", text.lower()).split())
+
+
+def fact_is_grounded(fact, c: Candidate) -> bool:
+    """The fact the model built its reason on must appear in the product's
+    listing: its extracted facts, title or description (not the AI pitch)."""
+    if not isinstance(fact, str):
+        return False
+    f = _norm(fact)
+    if len(f) < MIN_FACT_CHARS:
+        return False
+    sources = [*c.profile.facts, c.product.title, strip_html(c.product.description)]
+    return any(f in _norm(src) for src in sources if src)
+
+
 def _prompt(intake: Intake, candidates: list[Candidate]) -> str:
     lines = [
         "Shopper brief:",
@@ -214,7 +236,7 @@ async def rerank(
         reason = validate_reason(item.get("reason"), c)
         if reason is None:
             continue
-        if borrows_unsupported_note(reason, c, note_terms):
+        if not fact_is_grounded(item.get("fact"), c) or borrows_unsupported_note(reason, c, note_terms):
             # Good pick, stretched reason: keep the pick, say only what's true.
             picks.append(Pick(c.product, template_reason(intake, c), "template"))
         else:

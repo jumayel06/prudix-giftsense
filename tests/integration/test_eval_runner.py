@@ -36,7 +36,7 @@ class FakeModel:
             return LLMResponse(json.dumps({"acceptable": ids[: len(ids) // 2], "unfaithful": []}), 3000, 200)
         self.calls["rerank"] += 1
         ids = [line.split("product_id: ")[1].split(" |")[0] for line in prompt.splitlines() if "product_id: " in line]
-        return LLMResponse(json.dumps({"picks": [{"product_id": i, "reason": "A calming soy candle."} for i in ids[:4]]}),
+        return LLMResponse(json.dumps({"picks": [{"product_id": i, "fact": "soy wax", "reason": "A calming soy candle."} for i in ids[:4]]}),
                            2500, 300)
 
 

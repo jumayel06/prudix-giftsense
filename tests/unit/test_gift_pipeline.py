@@ -14,19 +14,22 @@ from app.services.gifting.retrieval import IndexedProduct, Intake
 INTAKE = Intake(recipient="friend", occasion="birthday", budget_band="25_50", vibes=["cozy"])
 
 
+FACT = "hand-thrown stoneware"
+
+
 def catalog(n, price=35.0):
     emb = FakeEmbedder()
     items = []
     for i in range(n):
         p = CatalogProduct(product_id=str(i), title=f"Gift {i}", product_type=f"Type{i % 7}", price_min=price, price_max=price)
         prof = GiftProfile(giftable=0.9, recipients=["friend"], occasions=["birthday"], vibes=["cozy"],
-                           gift_pitch=f"Gift {i} for a friend.")
+                           gift_pitch=f"Gift {i} for a friend.", facts=[FACT])
         items.append(IndexedProduct(p, prof, emb.embed_sync(embedding_text(p, prof))))
     return items
 
 
 def chat_picking(ids):
-    payload = {"picks": [{"product_id": i, "reason": f"A lovely gift {i}."} for i in ids]}
+    payload = {"picks": [{"product_id": i, "fact": FACT, "reason": f"A lovely gift {i}."} for i in ids]}
     return AsyncMock(return_value=LLMResponse(text=json.dumps(payload), input_tokens=1800, output_tokens=200))
 
 
