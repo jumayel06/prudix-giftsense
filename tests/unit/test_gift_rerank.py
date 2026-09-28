@@ -127,3 +127,22 @@ def test_prompt_forbids_stretching_a_product_to_fit_the_note_or_vibes():
     # shopper's note ("marathon") or a vibe ("sentimental") the listing didn't support.
     p = RERANK_SYSTEM_PROMPT.lower()
     assert "shopper's note" in p and "don't claim" in p
+
+
+@pytest.mark.asyncio
+async def test_reason_that_borrows_the_shoppers_note_unsupported_gets_a_template():
+    # Eval 2026-09-28 (gn06): models tied unrelated products to "marathon"
+    # despite the prompt. The pick stays; the stretched reason is replaced.
+    intake = Intake(recipient="partner", occasion="birthday", budget_band="25_50", vibes=["cozy"],
+                    free_text="training for her first marathon")
+    run_cand = cand("r", "Running Recovery Socks", facts=("compression fit", "for marathon training"))
+    chat = llm({"picks": [
+        {"product_id": "a", "reason": "A calming candle for rest days between marathon training runs."},
+        {"product_id": "r", "reason": "Compression socks built for marathon training recovery."},
+        {"product_id": "b", "reason": "A plush robe for slow mornings."},
+    ]})
+    result = await rerank(intake, [CANDS[0], run_cand, CANDS[1]], model="claude-haiku-4-5", chat_fn=chat)
+    by_id = {p.product.product_id: p for p in result.picks}
+    assert by_id["a"].source == "template" and "marathon" not in by_id["a"].reason
+    assert by_id["r"].source == "ai" and by_id["b"].source == "ai"
+    assert [p.product.product_id for p in result.picks] == ["a", "r", "b"]  # order kept

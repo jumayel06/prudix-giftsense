@@ -5,6 +5,8 @@ reason each, using only the facts it's given. Output is untrusted:
   - picks must be shortlist product ids (no invented products), deduplicated;
   - reasons must be short, contain no links, and any price they quote must
     match the product's real price;
+  - a reason that repeats a word from the shopper's note which the product's
+    listing never mentions keeps the pick but gets a template reason;
   - too few valid picks → topped up from the shortlist with template reasons;
   - LLM error / unparseable output / no generation budget → template picks.
 The storefront never shows an empty or broken result because of the model.
@@ -106,6 +108,36 @@ def validate_reason(reason, c: Candidate) -> str | None:
     return text
 
 
+_WORD_RE = re.compile(r"[a-z]{4,}")
+# Words too generic to signal that a reason leaned on the shopper's note.
+_NOTE_STOPWORDS = {
+    "that", "this", "with", "from", "they", "them", "their", "have", "loves", "love", "likes", "into",
+    "about", "really", "very", "just", "also", "gift", "gifts", "some", "something", "wants", "would",
+    "first", "every", "always", "recently", "lately", "been", "being", "what", "when", "where", "which",
+}
+
+
+def _note_terms(free_text: str) -> set[str]:
+    return {w for w in _WORD_RE.findall((free_text or "").lower()) if w not in _NOTE_STOPWORDS}
+
+
+def _product_words(c: Candidate) -> str:
+    p, prof = c.product, c.profile
+    return " ".join([p.title, p.description, p.product_type, " ".join(p.tags), prof.gift_pitch,
+                     " ".join(prof.facts), " ".join(prof.interests)]).lower()
+
+
+def borrows_unsupported_note(reason: str, c: Candidate, note_terms: set[str]) -> bool:
+    """True when the reason repeats a word from the shopper's note (e.g.
+    "marathon") that this product's own listing never mentions — the model is
+    stretching the product to fit the brief. Prefix match covers plurals."""
+    if not note_terms:
+        return False
+    words = set(_WORD_RE.findall(reason.lower()))
+    product_text = _product_words(c)
+    return any(t in words and t[:5] not in product_text for t in note_terms)
+
+
 def _prompt(intake: Intake, candidates: list[Candidate]) -> str:
     lines = [
         "Shopper brief:",
@@ -162,6 +194,7 @@ async def rerank(
         return RerankResult(picks=_templates(intake, candidates, set(), MAX_PICKS), used_fallback=True)
 
     by_id = {c.product.product_id: c for c in candidates}
+    note_terms = _note_terms(intake.free_text)
     picks: list[Pick] = []
     try:
         raw = json.loads(resp.text).get("picks") or []
@@ -181,7 +214,11 @@ async def rerank(
         reason = validate_reason(item.get("reason"), c)
         if reason is None:
             continue
-        picks.append(Pick(c.product, reason, "ai"))
+        if borrows_unsupported_note(reason, c, note_terms):
+            # Good pick, stretched reason: keep the pick, say only what's true.
+            picks.append(Pick(c.product, template_reason(intake, c), "template"))
+        else:
+            picks.append(Pick(c.product, reason, "ai"))
         if len(picks) == MAX_PICKS:
             break
 
