@@ -19,7 +19,7 @@ Source: `core/shopify_deps.py`, `core/shopify_auth.py`.
 - **Concurrent first loads:** `shop_domain` is UNIQUE. On `IntegrityError`, roll back and re-read the existing row.
 - **After provisioning,** a best-effort GraphQL `shop { ianaTimezone email }` stores `store_timezone` and `shop_owner_email`. Digest emails need a real owner email: `owner@<domain>` bounces.
 - **The frontend routes `pending` to the plan picker.** A fresh install must never land on Home.
-- **The `?shop=` fallback in `get_current_shop` works outside production only.** ⚠️ **GiftSense departs from Commerce here:** Commerce accepts `?shop=` unauthenticated in every environment, which would let anyone act as any installed store in production. Real embedded requests always carry a session token. Pinned by `tests/integration/test_shop_param_fallback.py`.
+- **The `?shop=` fallback in `get_current_shop` works outside production only.** Allowlist `APP_ENV` in {development, test} so it fails closed. (Was open in production in Commerce until `6a0a6a7`, 2026-09-27.) Real embedded requests always carry a session token. Pinned by `tests/integration/test_shop_param_fallback.py`.
 - **Legacy `/auth` + `/auth/callback`** stay as a manual, non-embedded fallback only. It includes nonce/state, HMAC and a 5-minute timestamp check. `/auth` short-circuits for active shops *after* probing the token: a 401 means a missed uninstall, so it runs the uninstall handler and continues into OAuth.
 - **Session-token verification:** HS256, audience = API key, `leeway=10`, `verify_iat=False`. Expired tokens log at **info** level: the frontend `shopifyFetch` retries once with a fresh token, so these shouldn't land in Sentry.
 - **Never register webhooks at runtime.** Commerce did both runtime and toml registration and got every event twice with different webhook IDs, which bypassed idempotency.
@@ -54,7 +54,7 @@ Source: `app/routes/billing.py`, `app/config.py`, `core/config.py`.
 ### `/billing/callback` (unauthenticated and replayable, so trust nothing in the URL)
 
 1. Re-query the subscription by GID (`node(id)`: status, name, line-item interval).
-2. **A null node on HTTP 200:** retry for about 3 seconds (Shopify writes new charges asynchronously). If it is still null, **do not activate**; the `app_subscriptions/update` webhook activates genuine charges. ⚠️ **GiftSense departs from Commerce here:** Commerce activates optimistically on a null node with the tier from the `plan=` param, but a made-up `charge_id` also returns null, so anyone could get Pro free. On a non-200 response, don't activate.
+2. **A null node on HTTP 200:** retry for about 3 seconds (Shopify writes new charges asynchronously). If it is still null, **do not activate**; the `app_subscriptions/update` webhook activates genuine charges. **Also refuse `PENDING`** (created but never approved; the id is visible in the confirmation URL). Only `ACTIVE` activates; the webhook applies the trial for webhook-first activations. (Fixed in both apps 2026-09-27; Commerce `6a0a6a7`.) On a non-200 response, don't activate.
 3. **Derive tier and interval from the subscription name**, never from the `plan`/`interval`/`deferred` query params.
 4. **Replay guard:** if this is the same `charge_id` the shop is already active or trialing on, do nothing. Otherwise a merchant could reopen the URL to reset their monthly quota.
 5. **Recompute deferral server-side.** For a deferred change, record `scheduled_plan_tier` and `scheduled_change_at = cycle_start + 30 or 365 days`, and log a `change_scheduled` BillingEvent. Don't touch the tier, status or cycle start. First refresh the row: on dev stores the "next cycle" can already have been applied by the webhook.
@@ -115,11 +115,10 @@ Rules: each shop runs in its own `try/except`, so one bad shop never aborts a sw
 Source: `app/routes/webhooks.py`.
 
 - **HMAC is required on every endpoint,** including the 3 compliance endpoints: `x_shopify_hmac_sha256: str = Header(...)`. Commerce had it optional on the compliance endpoints until `ad253d0`; that was a review finding.
-- **Idempotency:** `processed_webhooks` is keyed on `X-Shopify-Webhook-Id`.
+- **Idempotency:** `processed_webhooks` is keyed on `X-Shopify-Webhook-Id`, falling back to `sha256(topic|shop|body)` when the header is missing.
 - **Toml topics must match handler branches 1:1.** Adding a topic can require a scope, e.g. `inventory_levels/update` needs `read_inventory`.
 - **GiftSense differences:**
-  - `customers/redact` must actually delete the listed `orders_to_redact` (gift orders, media, drafts, choice requests). Commerce's handler is a no-op.
-  - `customers/data_request` returns what we hold for those orders.
+  - `customers/redact` deletes, and `customers/data_request` emails to the store owner, every row keyed by customer or order ID (`app/services/gdpr.py`, same design as Commerce `6a0a6a7`). Register each new GiftSense table in `CUSTOMER_TABLES`.
 
 ## 9. GraphQL only
 

@@ -171,3 +171,5 @@ def patch_settings(monkeypatch):
     monkeypatch.setattr(core_config.settings, "openai_api_key", "sk-test")
     monkeypatch.setattr(core_config.settings, "anthropic_api_key", "sk-ant-test")
     monkeypatch.setattr(core_config.settings, "app_env", "test")
+    # /billing/callback retries an unconfirmed subscription lookup; no real sleeps in tests.
+    monkeypatch.setattr("app.routes.billing._SUBSCRIPTION_LOOKUP_DELAY_SECS", 0)

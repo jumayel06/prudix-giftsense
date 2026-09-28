@@ -36,6 +36,11 @@ logger = structlog.get_logger()
 
 _bearer = HTTPBearer(auto_error=False)
 
+# Environments where the unauthenticated ?shop= dev fallback is honoured.
+# Allowlist, so it fails closed: production, a future staging, or a typo all
+# require a session token.
+_SHOP_PARAM_FALLBACK_ENVS = ("development", "test")
+
 
 _SHOP_META_QUERY = """
 query ShopMeta {
@@ -166,11 +171,11 @@ async def get_current_shop(
 
     # --- 2. ?shop= fallback (local dev ONLY) ---
     # SECURITY: this resolves a shop from an unauthenticated query param, so it
-    # must never work in production — anyone could act as any installed store.
-    # Real embedded requests always carry a session token (path 1). Commerce
-    # has this fallback ungated; see tests/integration/test_shop_param_fallback.py.
+    # is honoured only in development/test — anyone could otherwise act as any
+    # installed store. Real embedded requests always carry a session token.
+    # See tests/integration/test_shop_param_fallback.py.
     if not shop_domain:
-        if shop and not settings.is_production:
+        if shop and settings.app_env in _SHOP_PARAM_FALLBACK_ENVS:
             shop_domain = shop
         else:
             raise HTTPException(

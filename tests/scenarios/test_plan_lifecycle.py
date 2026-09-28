@@ -113,7 +113,7 @@ class TestFullInstallFlow:
         db_session.add(shop)
         await db_session.commit()
 
-        with patch("app.routes.billing.httpx.AsyncClient", return_value=_billing_client_mock("pending")):
+        with patch("app.routes.billing.httpx.AsyncClient", return_value=_billing_client_mock("active")):
             for client in _make_client(db_session):
                 client.get(
                     f"/billing/callback?shop={TEST_SHOP_DOMAIN}&charge_id=1&plan=growth",
@@ -136,7 +136,7 @@ class TestFullInstallFlow:
         db_session.add(shop)
         await db_session.commit()
 
-        with patch("app.routes.billing.httpx.AsyncClient", return_value=_billing_client_mock("pending")):
+        with patch("app.routes.billing.httpx.AsyncClient", return_value=_billing_client_mock("active")):
             for client in _make_client(db_session):
                 client.get(
                     f"/billing/callback?shop={TEST_SHOP_DOMAIN}&charge_id=1&plan=growth",
@@ -157,12 +157,12 @@ class TestFullInstallFlow:
         app_subscriptions/update webhook with status=active and name containing
         'Growth' must set shop.plan_tier = 'growth' even if it was 'none'.
         """
-        shop = make_shop(plan_tier="none", plan_status="pending")
+        shop = make_shop(plan_tier="none", plan_status="pending", trial_used=True)
         shop.billing_cycle_start = None
         db_session.add(shop)
         await db_session.commit()
 
-        body = _subscription_webhook("active", "Prudix Growth Plan")
+        body = _subscription_webhook("active", "GiftSense Growth Monthly Plan")
         headers = _webhook_headers(body, "app_subscriptions/update")
 
         for client in _make_client(db_session):
@@ -962,3 +962,80 @@ class TestGracePeriodGeneration:
         with _pytest.raises(Exception) as exc:
             await require_feature("gift_finder", shop.shop_domain, mock_db)
         assert exc.value.status_code == 403
+
+
+class TestCallbackRequiresApprovedCharge:
+    """SECURITY (ported from Commerce's 2026-09-27 fix): a PENDING subscription
+    was created but never approved, and its id is visible in the confirmation
+    URL. Only ACTIVE may activate; PENDING is left to the webhook, which fires
+    only for real approvals."""
+
+    @pytest.mark.asyncio
+    async def test_pending_subscription_does_not_activate(self, db_session):
+        shop = make_shop(plan_tier="none", plan_status="pending")
+        shop.access_token_encrypted = encrypt_token("tok")
+        db_session.add(shop)
+        await db_session.commit()
+
+        pending = MagicMock(status_code=200, json=lambda: {"data": {"node": {
+            "id": "gid://shopify/AppSubscription/5", "status": "PENDING",
+            "name": "GiftSense Pro Monthly Plan",
+        }}})
+        mock = AsyncMock()
+        mock.__aenter__ = AsyncMock(return_value=mock)
+        mock.__aexit__ = AsyncMock(return_value=False)
+        mock.post = AsyncMock(return_value=pending)
+
+        with patch("app.routes.billing.httpx.AsyncClient", return_value=mock), \
+             patch("app.routes.billing.asyncio.sleep", AsyncMock()):
+            for client in _make_client(db_session):
+                resp = client.get(
+                    f"/billing/callback?shop={TEST_SHOP_DOMAIN}&charge_id=5&plan=pro",
+                    follow_redirects=False,
+                )
+
+        assert resp.status_code in (301, 302, 307, 308)
+        await db_session.refresh(shop)
+        assert shop.plan_status == "pending"
+        assert shop.plan_tier == "none"
+        assert shop.trial_used is False
+
+
+class TestWebhookFirstActivationAppliesTrial:
+    """When the callback defers to the webhook, the webhook's first activation
+    must start the trial itself (same rule the charge was created with)."""
+
+    @pytest.mark.asyncio
+    async def test_pending_shop_never_trialled_gets_trial(self, db_session):
+        from app.routes.webhooks import _handle_subscription_update
+        shop = make_shop(plan_tier="none", plan_status="pending")
+        db_session.add(shop)
+        await db_session.commit()
+
+        await _handle_subscription_update(TEST_SHOP_DOMAIN, {"app_subscription": {
+            "admin_graphql_api_id": "gid://shopify/AppSubscription/7",
+            "name": "GiftSense Growth Monthly Plan", "status": "ACTIVE",
+        }}, db_session)
+
+        await db_session.refresh(shop)
+        assert shop.plan_status == "trial_active"
+        assert shop.plan_tier == "growth"
+        assert shop.trial_used is True
+        assert shop.trial_ends_at is not None
+        assert shop.shopify_charge_id == "7"
+
+    @pytest.mark.asyncio
+    async def test_pending_shop_already_trialled_goes_active(self, db_session):
+        from app.routes.webhooks import _handle_subscription_update
+        shop = make_shop(plan_tier="none", plan_status="pending", trial_used=True)
+        db_session.add(shop)
+        await db_session.commit()
+
+        await _handle_subscription_update(TEST_SHOP_DOMAIN, {"app_subscription": {
+            "admin_graphql_api_id": "gid://shopify/AppSubscription/8",
+            "name": "GiftSense Growth Monthly Plan", "status": "ACTIVE",
+        }}, db_session)
+
+        await db_session.refresh(shop)
+        assert shop.plan_status == "active"
+        assert shop.plan_tier == "growth"

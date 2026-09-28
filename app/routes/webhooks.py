@@ -71,9 +71,12 @@ async def handle_webhook(
     logger.info("webhook_arrived", topic=x_shopify_topic, shop=x_shopify_shop_domain)
     _require_hmac(body, x_shopify_hmac_sha256)
 
-    # Use the Shopify-provided ID if available; fall back to a deterministic UUID
-    # so idempotency still works for webhooks that don't include the header.
-    webhook_id = x_shopify_webhook_id or str(uuid.uuid4())
+    # Use the Shopify-provided ID if available; fall back to a deterministic hash
+    # of topic + shop + body so a redelivered header-less webhook still dedupes
+    # (Commerce's random uuid4 fallback never deduped; fixed there 2026-09-27).
+    webhook_id = x_shopify_webhook_id or "sha256:" + hashlib.sha256(
+        x_shopify_topic.encode() + b"|" + x_shopify_shop_domain.encode() + b"|" + body
+    ).hexdigest()
 
     if await _mark_processed(webhook_id, x_shopify_topic, db):
         return {"ok": True, "duplicate": True}
@@ -100,35 +103,76 @@ async def handle_webhook(
 
 # ── GDPR mandatory endpoints ──────────────────────────────────────────────────
 
+async def _gdpr_shop(payload: dict, db: AsyncSession) -> Optional[Shop]:
+    shop_domain = payload.get("shop_domain", "")
+    if not shop_domain:
+        return None
+    result = await db.execute(select(Shop).where(Shop.shop_domain == shop_domain))
+    return result.scalar_one_or_none()
+
+
 @router.post("/webhooks/gdpr/customers/data_request")
 async def gdpr_data_request(
     request: Request,
+    db: AsyncSession = Depends(get_db),
     x_shopify_hmac_sha256: str = Header(...),
 ):
-    """Respond with what customer data we hold.
+    """Collect everything held for the customer (rows keyed by customer / order
+    ID — see app/services/gdpr.py) and email it to the store owner, who answers
+    the shopper. Shopify doesn't read the response body. Ported from Commerce."""
+    from app.services import postmark_client
+    from app.services.gdpr import collect_customer_data, render_data_request_email
 
-    TODO (week 4, gift orders): return the gift data we hold for the payload's
-    `orders_requested`. Until gift orders ship we store nothing per customer.
-    """
     body = await request.body()
     _require_hmac(body, x_shopify_hmac_sha256)
-    return {"ok": True, "data_held": "none"}
+    payload = json.loads(body) if body else {}
+    shop = await _gdpr_shop(payload, db)
+    if not shop:
+        return {"ok": True}
+
+    data = await collect_customer_data(shop.id, payload, db)
+    logger.info(
+        "gdpr_customer_data_request",
+        shop=shop.shop_domain,
+        data_request_id=(payload.get("data_request") or {}).get("id"),
+        tables={k: len(v) for k, v in data.items()},
+    )
+    if not shop.shop_owner_email:
+        # Surfaces in Sentry — must be answered manually within 30 days.
+        logger.error("gdpr_customer_data_request_no_owner_email", shop=shop.shop_domain)
+        return {"ok": True}
+    subject, html_body, text_body = render_data_request_email(shop.shop_domain, payload, data)
+    try:
+        await postmark_client.send_email(
+            to_email=shop.shop_owner_email, subject=subject,
+            html_body=html_body, text_body=text_body, tag="gdpr-data-request",
+        )
+    except Exception as e:
+        # 500 → Shopify retries the webhook, so the request isn't silently lost.
+        logger.error("gdpr_customer_data_request_email_failed", shop=shop.shop_domain, error=str(e))
+        raise HTTPException(status_code=500, detail="Could not deliver data request")
+    return {"ok": True}
 
 
 @router.post("/webhooks/gdpr/customers/redact")
 async def gdpr_customers_redact(
     request: Request,
+    db: AsyncSession = Depends(get_db),
     x_shopify_hmac_sha256: str = Header(...),
 ):
-    """Redact customer data.
+    """Delete every row tied to the customer + orders_to_redact (customer and
+    order IDs count as personal data — see app/services/gdpr.py). Errors
+    propagate as 500 so Shopify retries rather than silently skipping."""
+    from app.services import gdpr
 
-    TODO (week 4, gift orders): delete gift orders, media, note drafts and
-    choice requests for the payload's `orders_to_redact` (Commerce's handler is
-    a no-op; GiftSense's must not be). Until gift orders ship we store nothing
-    per customer.
-    """
     body = await request.body()
     _require_hmac(body, x_shopify_hmac_sha256)
+    payload = json.loads(body) if body else {}
+    shop = await _gdpr_shop(payload, db)
+    if not shop:
+        return {"ok": True}
+    counts = await gdpr.redact_customer(shop.id, payload, db)
+    logger.info("gdpr_customer_redact_complete", shop=shop.shop_domain, deleted=counts)
     return {"ok": True}
 
 
@@ -379,14 +423,27 @@ async def _handle_subscription_update(shop_domain: str, payload: dict, db: Async
                 event_type = "trial_converted"
                 force_active_write = True
         elif shop.plan_status in ("pending", "none", None, ""):
-            # Webhook fired before the billing callback (rare race). Activate without
-            # trial — the billing callback is authoritative for trial_active and will
-            # override this to trial_active (and set trial_used=True) if it runs after.
-            shop.plan_status = "active"
-            shop.grace_period_ends_at = None
-            shop.billing_cycle_start = now
-            event_type = "activated"
-            force_active_write = True
+            # First activation arriving before (or instead of) the billing
+            # callback: the callback refuses to activate until Shopify reports
+            # the charge ACTIVE, so this path applies the trial itself, using the
+            # same rule the charge was created with (trial only if never
+            # trialled). If the callback runs afterwards, its replay guard sees
+            # the same charge_id already live and does nothing.
+            plan_cfg = PLANS.get(derived_tier, {})
+            if not shop.trial_used and plan_cfg.get("trial_days", 0) > 0:
+                shop.plan_status = "trial_active"
+                shop.trial_used = True
+                shop.trial_started_at = now
+                shop.trial_ends_at = now + timedelta(days=plan_cfg["trial_days"])
+                shop.grace_period_ends_at = None
+                shop.billing_cycle_start = now
+                event_type = "trial_started"
+            else:
+                shop.plan_status = "active"
+                shop.grace_period_ends_at = None
+                shop.billing_cycle_start = now
+                event_type = "activated"
+                force_active_write = True
         else:
             # Already active. Shopify sometimes fires multiple webhooks for the same
             # subscription event with different IDs (bypassing idempotency). Distinguish

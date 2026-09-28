@@ -407,7 +407,7 @@ class TestSubscriptionUpdate:
     @pytest.mark.asyncio
     async def test_first_activation_sets_billing_cycle_start(self, db_session):
         """Fresh install with no prior billing_cycle_start — first activation must set it."""
-        shop = make_shop(plan_status="pending", billing_cycle_start=None)
+        shop = make_shop(plan_status="pending", billing_cycle_start=None, trial_used=True)
         shop.billing_cycle_start = None
         db_session.add(shop)
         await db_session.commit()
@@ -1005,3 +1005,26 @@ class TestSubscriptionUpdateStaleDetection:
         )
         shop = result.scalar_one()
         assert shop.plan_status == "active"  # stale tier detection ignored the cancellation
+
+
+class TestWebhookIdFallbackDeterministic:
+    """Ported from Commerce's 2026-09-27 fix: header-less webhooks dedupe on
+    sha256(topic|shop|body), not a random uuid4 (which never deduped)."""
+
+    @pytest.mark.asyncio
+    async def test_redelivered_headerless_webhook_is_duplicate(self, db_session):
+        shop = make_shop()
+        db_session.add(shop)
+        await db_session.commit()
+
+        body = json.dumps({"app_subscription": {"admin_graphql_api_id": "gid://shopify/AppSubscription/1",
+                                                "status": "frozen"}}).encode()
+        headers = _headers(body, "app_subscriptions/update")
+        headers.pop("X-Shopify-Webhook-Id", None)
+        headers.pop("x-shopify-webhook-id", None)
+
+        for client in _make_client(db_session):
+            first = client.post("/webhooks", content=body, headers=headers).json()
+            second = client.post("/webhooks", content=body, headers=headers).json()
+        assert first.get("duplicate") is not True
+        assert second.get("duplicate") is True

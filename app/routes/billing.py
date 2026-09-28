@@ -221,13 +221,14 @@ async def billing_callback(
     access_token = await get_valid_access_token(shop_record, db)
     gid = f"gid://shopify/AppSubscription/{charge_id}"
 
-    # SECURITY: only a subscription Shopify actually returns may activate a
-    # plan. Right after approval the node can briefly be null (Shopify writes
-    # the charge asynchronously), so retry for a few seconds. Commerce instead
-    # activated optimistically on a null node, taking the tier from the plan=
-    # param — but a made-up charge_id ALSO returns null, so anyone could get
-    # Pro for free. A genuine charge that is still null after the retries is
-    # activated by the app_subscriptions/update webhook instead.
+    # SECURITY: this URL is unauthenticated, so `charge_id` is attacker-
+    # controlled. Only a subscription Shopify reports as ACTIVE on this shop
+    # activates a plan (Shopify reports ACTIVE during a trial too). A null node
+    # (made-up charge_id, or Shopify's async write not yet visible) and PENDING
+    # (created but NOT approved; its id is visible in the confirmation URL) are
+    # retried briefly, then left to the app_subscriptions/update webhook, which
+    # fires only for real approvals and applies the trial itself. Same fix as
+    # Prudix Commerce commit 6a0a6a7.
     status = ""
     sub: dict = {}
     for attempt in range(_SUBSCRIPTION_LOOKUP_ATTEMPTS):
@@ -246,15 +247,16 @@ async def billing_callback(
             logger.error("billing_status_fetch_failed", status=resp.status_code)
             break
         sub = (resp.json().get("data") or {}).get("node") or {}
-        if sub:
-            status = (sub.get("status") or "").lower()
-            logger.info("billing_callback_status", shop=shop, charge_id=charge_id, status=status)
+        status = (sub.get("status") or "").lower()
+        if status and status != "pending":
             break
         if attempt < _SUBSCRIPTION_LOOKUP_ATTEMPTS - 1:
             await asyncio.sleep(_SUBSCRIPTION_LOOKUP_DELAY_SECS)
 
-    if not sub:
-        logger.warning("billing_callback_subscription_not_found", shop=shop, charge_id=charge_id)
+    logger.info("billing_callback_status", shop=shop, charge_id=charge_id, status=status or "not_found")
+    if status in ("", "pending"):
+        logger.warning("billing_callback_not_activated_awaiting_webhook",
+                       shop=shop, charge_id=charge_id, status=status or "not_found")
         return RedirectResponse(f"https://{shop}/admin/apps/{settings.shopify_api_key}")
 
     # SECURITY: `plan` and `deferred` are query params on an UNAUTHENTICATED
@@ -280,7 +282,7 @@ async def billing_callback(
     # this charge is the one we already recorded and the shop is already live on
     # it, treat the hit as a replay and do nothing.
     if (
-        status in ("active", "pending")
+        status == "active"
         and shop_record.shopify_charge_id == str(charge_id)
         and shop_record.plan_status in ("active", "trial_active")
     ):
@@ -302,7 +304,7 @@ async def billing_callback(
     # touch plan_tier / plan_status / billing_cycle_start here, or the merchant
     # would drop to the lower plan (and reset their generation quota) early.
     # Just record the schedule so the UI can show a "plan changes on X" banner.
-    if defer_change and status in ("active", "pending"):
+    if defer_change and status == "active":
         # Race guard: on accelerated (development) stores the "next billing
         # cycle" is minutes away, so Shopify's activation webhook can apply this
         # change before this callback commits. Re-read the shop; if the change
@@ -334,9 +336,8 @@ async def billing_callback(
         )
         return RedirectResponse(f"https://{shop}/admin/apps/{settings.shopify_api_key}")
 
-    # "active" = charge approved (with or without trial).
-    # "pending" = trial period active (subscription accepted but not yet billing).
-    if status in ("active", "pending"):
+    # "active" = charge approved (Shopify reports ACTIVE during a trial too).
+    if status == "active":
         previous_tier = shop_record.plan_tier
         shop_record.shopify_charge_id = str(charge_id)
         shop_record.billing_cycle_start = now

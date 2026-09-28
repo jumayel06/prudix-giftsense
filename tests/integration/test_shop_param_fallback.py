@@ -46,3 +46,18 @@ async def test_shop_param_allowed_outside_production(db_session):
     for client in _client(db_session):
         resp = client.get(f"/api/settings?shop={TEST_SHOP_DOMAIN}")
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("env", ["staging", "prod", ""])
+async def test_shop_param_fails_closed_for_unknown_envs(db_session, monkeypatch, env):
+    """Allowlist (development/test only), not a production denylist: a typo or
+    a future staging environment must also require a session token."""
+    from core import config as core_config
+    monkeypatch.setattr(core_config.settings, "app_env", env)
+    db_session.add(make_shop(plan_status="active", plan_tier="growth"))
+    await db_session.commit()
+
+    for client in _client(db_session):
+        resp = client.get(f"/api/settings?shop={TEST_SHOP_DOMAIN}")
+    assert resp.status_code == 401
