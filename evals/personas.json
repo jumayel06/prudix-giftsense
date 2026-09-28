@@ -1,0 +1,63 @@
+{
+  "_about": "Test shoppers for the offline gift-finder evaluation. 10 per store type. Values must come from app/services/gifting/vocab.py. Hand-written; changing them changes scores, so add rather than edit.",
+  "candles": [
+    {"id": "cn01", "recipient": "parent", "occasion": "birthday", "budget_band": "25_50", "vibes": ["cozy", "relaxing"]},
+    {"id": "cn02", "recipient": "partner", "occasion": "anniversary", "budget_band": "50_100", "vibes": ["luxurious", "sentimental"]},
+    {"id": "cn03", "recipient": "coworker", "occasion": "thank_you", "budget_band": "under_25", "vibes": ["practical"]},
+    {"id": "cn04", "recipient": "host", "occasion": "housewarming", "budget_band": "25_50", "vibes": ["classic"]},
+    {"id": "cn05", "recipient": "friend", "occasion": "get_well", "budget_band": "under_25", "vibes": ["relaxing"]},
+    {"id": "cn06", "recipient": "friend", "occasion": "holiday", "budget_band": "25_50", "vibes": ["cozy", "trendy"]},
+    {"id": "cn07", "recipient": "grandparent", "occasion": "just_because", "budget_band": "25_50", "vibes": ["sentimental"]},
+    {"id": "cn08", "recipient": "sibling", "occasion": "birthday", "budget_band": "under_25", "vibes": ["funny"], "free_text": "she loves true crime podcasts"},
+    {"id": "cn09", "recipient": "teacher", "occasion": "thank_you", "budget_band": "under_25", "vibes": ["classic", "practical"]},
+    {"id": "cn10", "recipient": "partner", "occasion": "wedding", "budget_band": "100_200", "vibes": ["luxurious"]}
+  ],
+  "jewelry": [
+    {"id": "jw01", "recipient": "partner", "occasion": "anniversary", "budget_band": "100_200", "vibes": ["classic", "sentimental"]},
+    {"id": "jw02", "recipient": "parent", "occasion": "birthday", "budget_band": "50_100", "vibes": ["classic"]},
+    {"id": "jw03", "recipient": "friend", "occasion": "graduation", "budget_band": "25_50", "vibes": ["trendy"]},
+    {"id": "jw04", "recipient": "teen", "occasion": "birthday", "budget_band": "under_25", "vibes": ["trendy", "funny"], "age_band": "teen"},
+    {"id": "jw05", "recipient": "partner", "occasion": "wedding", "budget_band": "200_plus", "vibes": ["luxurious"]},
+    {"id": "jw06", "recipient": "grandparent", "occasion": "holiday", "budget_band": "50_100", "vibes": ["sentimental"]},
+    {"id": "jw07", "recipient": "sibling", "occasion": "birthday", "budget_band": "25_50", "vibes": ["eco_friendly"]},
+    {"id": "jw08", "recipient": "friend", "occasion": "sympathy", "budget_band": "25_50", "vibes": ["sentimental"], "free_text": "she recently lost her dog"},
+    {"id": "jw09", "recipient": "boss", "occasion": "retirement", "budget_band": "100_200", "vibes": ["classic"]},
+    {"id": "jw10", "recipient": "partner", "occasion": "just_because", "budget_band": "50_100", "vibes": ["adventurous"], "free_text": "he surfs every weekend"}
+  ],
+  "toys": [
+    {"id": "ty01", "recipient": "kid", "occasion": "birthday", "budget_band": "25_50", "vibes": ["creative"], "age_band": "kid"},
+    {"id": "ty02", "recipient": "new_baby", "occasion": "new_baby", "budget_band": "25_50", "vibes": ["cozy"], "age_band": "baby"},
+    {"id": "ty03", "recipient": "teen", "occasion": "holiday", "budget_band": "50_100", "vibes": ["techy"], "age_band": "teen"},
+    {"id": "ty04", "recipient": "kid", "occasion": "holiday", "budget_band": "under_25", "vibes": ["funny"], "age_band": "kid"},
+    {"id": "ty05", "recipient": "kid", "occasion": "birthday", "budget_band": "50_100", "vibes": ["adventurous", "sporty"], "age_band": "kid"},
+    {"id": "ty06", "recipient": "kid", "occasion": "get_well", "budget_band": "under_25", "vibes": ["relaxing", "creative"], "age_band": "kid"},
+    {"id": "ty07", "recipient": "teen", "occasion": "graduation", "budget_band": "25_50", "vibes": ["creative"], "age_band": "teen"},
+    {"id": "ty08", "recipient": "kid", "occasion": "just_because", "budget_band": "under_25", "vibes": ["eco_friendly"], "age_band": "kid"},
+    {"id": "ty09", "recipient": "new_baby", "occasion": "new_baby", "budget_band": "50_100", "vibes": ["classic"], "age_band": "baby"},
+    {"id": "ty10", "recipient": "kid", "occasion": "birthday", "budget_band": "25_50", "vibes": ["techy"], "age_band": "kid", "free_text": "obsessed with dinosaurs"}
+  ],
+  "kitchen": [
+    {"id": "kt01", "recipient": "host", "occasion": "housewarming", "budget_band": "25_50", "vibes": ["foodie"]},
+    {"id": "kt02", "recipient": "parent", "occasion": "birthday", "budget_band": "50_100", "vibes": ["foodie", "practical"]},
+    {"id": "kt03", "recipient": "coworker", "occasion": "thank_you", "budget_band": "under_25", "vibes": ["foodie"]},
+    {"id": "kt04", "recipient": "partner", "occasion": "anniversary", "budget_band": "100_200", "vibes": ["luxurious", "foodie"]},
+    {"id": "kt05", "recipient": "friend", "occasion": "wedding", "budget_band": "100_200", "vibes": ["classic", "practical"]},
+    {"id": "kt06", "recipient": "sibling", "occasion": "holiday", "budget_band": "25_50", "vibes": ["cozy"], "free_text": "drinks way too much coffee"},
+    {"id": "kt07", "recipient": "boss", "occasion": "holiday", "budget_band": "50_100", "vibes": ["classic"]},
+    {"id": "kt08", "recipient": "friend", "occasion": "birthday", "budget_band": "under_25", "vibes": ["funny"]},
+    {"id": "kt09", "recipient": "grandparent", "occasion": "just_because", "budget_band": "25_50", "vibes": ["cozy", "sentimental"]},
+    {"id": "kt10", "recipient": "friend", "occasion": "graduation", "budget_band": "25_50", "vibes": ["practical"], "free_text": "moving into their first apartment"}
+  ],
+  "general": [
+    {"id": "gn01", "recipient": "parent", "occasion": "birthday", "budget_band": "25_50", "vibes": ["cozy"]},
+    {"id": "gn02", "recipient": "partner", "occasion": "anniversary", "budget_band": "100_200", "vibes": ["sentimental", "luxurious"]},
+    {"id": "gn03", "recipient": "coworker", "occasion": "holiday", "budget_band": "under_25", "vibes": ["funny"]},
+    {"id": "gn04", "recipient": "kid", "occasion": "birthday", "budget_band": "25_50", "vibes": ["creative"], "age_band": "kid"},
+    {"id": "gn05", "recipient": "friend", "occasion": "get_well", "budget_band": "25_50", "vibes": ["relaxing"]},
+    {"id": "gn06", "recipient": "partner", "occasion": "birthday", "budget_band": "50_100", "vibes": ["adventurous", "sporty"], "free_text": "training for her first marathon"},
+    {"id": "gn07", "recipient": "host", "occasion": "housewarming", "budget_band": "50_100", "vibes": ["classic", "foodie"]},
+    {"id": "gn08", "recipient": "teen", "occasion": "graduation", "budget_band": "50_100", "vibes": ["techy", "trendy"], "age_band": "teen"},
+    {"id": "gn09", "recipient": "grandparent", "occasion": "holiday", "budget_band": "25_50", "vibes": ["sentimental", "cozy"]},
+    {"id": "gn10", "recipient": "boss", "occasion": "retirement", "budget_band": "100_200", "vibes": ["relaxing"], "free_text": "plans to garden full time"}
+  ]
+}
