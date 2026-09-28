@@ -11,7 +11,7 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.routes import auth, billing, webhooks
+from app.routes import auth, billing, catalog, webhooks
 from app.routes import settings as settings_routes
 from app.routes import stats
 from app.admin.auth import require_admin
@@ -180,6 +180,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(billing.router)
+app.include_router(catalog.router)
 app.include_router(settings_routes.router)
 app.include_router(stats.router)
 app.include_router(webhooks.router)
