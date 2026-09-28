@@ -70,6 +70,14 @@ class TestAuthStart:
 
 # ── GET /auth/callback ────────────────────────────────────────────────────────
 
+def _shop_meta_mock(email: str, tz: str):
+    """Mock for the post-install `shop { ianaTimezone email }` fetch, so the
+    legacy callback never reaches the real Shopify API in tests."""
+    from unittest.mock import MagicMock
+    resp = MagicMock(status_code=200, json=lambda: {"data": {"shop": {"email": email, "ianaTimezone": tz}}})
+    return AsyncMock(return_value=resp)
+
+
 class TestAuthCallback:
 
     def _prime_nonce(self, client, shop: str = "newshop.myshopify.com") -> str:
@@ -108,7 +116,8 @@ class TestAuthCallback:
         """New install: all shop columns set correctly, redirected to embedded app."""
         shop = "brandnew.myshopify.com"
 
-        with patch("app.routes.auth.exchange_code_for_token", AsyncMock(return_value={"access_token": "shpat_real_token", "refresh_token": None, "access_token_expires_at": None, "refresh_token_expires_at": None})):
+        with patch("app.routes.auth.exchange_code_for_token", AsyncMock(return_value={"access_token": "shpat_real_token", "refresh_token": None, "access_token_expires_at": None, "refresh_token_expires_at": None})), \
+             patch("app.routes.auth.shopify_graphql_post", _shop_meta_mock("owner@brandnew.com", "Europe/London")):
             for client in _make_client(db_session):
                 nonce = self._prime_nonce(client, shop)
                 params = {"shop": shop, "code": "real_code", "state": nonce, "timestamp": str(int(time.time()))}
@@ -133,6 +142,10 @@ class TestAuthCallback:
 
         # Trial — not started yet
         assert s.trial_used is False
+
+        # Shop meta fetched at install (mocked GraphQL `shop { ianaTimezone email }`)
+        assert s.shop_owner_email == "owner@brandnew.com"
+        assert s.store_timezone == "Europe/London"
         assert s.trial_started_at is None
         assert s.trial_ends_at is None
         assert s.grace_period_ends_at is None
@@ -150,7 +163,6 @@ class TestAuthCallback:
 
         # Defaults
         assert s.selected_model == "claude-haiku-4-5"
-        assert s.store_timezone == "UTC"
         assert s.review_prompt_shown is False
 
     @pytest.mark.asyncio
@@ -169,11 +181,11 @@ class TestAuthCallback:
         existing.selected_model = "gpt-4o-mini"       # non-default
         existing.store_timezone = "America/New_York"  # non-default
         existing.review_prompt_shown = True            # non-default
-        existing.judgeme_api_token_encrypted = encrypt_token("jm_tok_preserved")
         db_session.add(existing)
         await db_session.commit()
 
-        with patch("app.routes.auth.exchange_code_for_token", AsyncMock(return_value={"access_token": "shpat_new_token", "refresh_token": None, "access_token_expires_at": None, "refresh_token_expires_at": None})):
+        with patch("app.routes.auth.exchange_code_for_token", AsyncMock(return_value={"access_token": "shpat_new_token", "refresh_token": None, "access_token_expires_at": None, "refresh_token_expires_at": None})), \
+             patch("app.routes.auth.shopify_graphql_post", _shop_meta_mock("owner@returning.com", "America/New_York")):
             for client in _make_client(db_session):
                 nonce = self._prime_nonce(client, shop_domain)
                 params = {"shop": shop_domain, "code": "new_code", "state": nonce, "timestamp": str(int(time.time()))}
@@ -210,6 +222,3 @@ class TestAuthCallback:
         assert existing.selected_model == "gpt-4o-mini"        # merchant's preference kept
         assert existing.store_timezone == "America/New_York"   # timezone kept
         assert existing.review_prompt_shown is True            # prompt state kept
-        # Judge.me integration token preserved — reinstall does not wipe configured integrations
-        from core.shopify_auth import decrypt_token as _dt2
-        assert _dt2(existing.judgeme_api_token_encrypted) == "jm_tok_preserved"

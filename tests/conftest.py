@@ -160,6 +160,28 @@ def make_webhook_headers(body: bytes, secret: str = TEST_API_SECRET, webhook_id:
     }
 
 
+# ── No real network in tests ──────────────────────────────────────────────────
+
+_LOCAL_HOSTS = {"127.0.0.1", "::1", "localhost", b"127.0.0.1", b"::1", b"localhost"}
+
+
+@pytest.fixture(autouse=True)
+def block_network(monkeypatch):
+    """Fail loudly on any outbound connection. Tests must mock Shopify, LLM and
+    other HTTP calls; an unmocked call used to reach the real internet silently
+    (and hang on a flaky connection). Loopback stays allowed."""
+    import socket
+
+    real_getaddrinfo = socket.getaddrinfo
+
+    def guarded_getaddrinfo(host, *args, **kwargs):
+        if host not in _LOCAL_HOSTS:
+            raise RuntimeError(f"Network access in tests is blocked (tried to resolve {host!r}); mock the call.")
+        return real_getaddrinfo(host, *args, **kwargs)
+
+    monkeypatch.setattr(socket, "getaddrinfo", guarded_getaddrinfo)
+
+
 # ── Settings override ─────────────────────────────────────────────────────────
 
 @pytest.fixture(autouse=True)
