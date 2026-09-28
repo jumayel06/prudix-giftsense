@@ -556,6 +556,13 @@ async def _handle_subscription_update(shop_domain: str, payload: dict, db: Async
     await db.commit()
     logger.info("subscription_updated", shop=shop_domain, status=status)
 
+    # Catalog: a paid plan lifts the trial product cap; a webhook-first
+    # activation starts the first sync (kick_catalog_syncs is the fallback).
+    if event_type == "trial_converted":
+        await enqueue("catalog_start_sync", str(shop.id), "trial_converted")
+    elif event_type in ("trial_started", "activated"):
+        await enqueue("catalog_start_sync", str(shop.id), "initial")
+
 
 # ── Catalog (docs/TECHNICAL_PLAN.md §4.1) ────────────────────────────────────
 # Webhooks only enqueue: the worker fetches the product over GraphQL, so one

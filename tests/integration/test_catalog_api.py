@@ -51,7 +51,7 @@ async def test_status_reports_counts_limit_and_latest_sync(db_session):
 
     data = call(db_session, "GET", "/api/catalog/status").json()
     assert data["products"] == 3 and data["analyzed"] == 2 and data["pending"] == 1 and data["excluded"] == 1
-    assert data["limit"] == 250 and data["is_trial"] is True
+    assert data["limit"] == 100 and data["is_trial"] is True
     assert data["sync"]["status"] == "importing" and data["sync"]["total"] == 3 and data["sync"]["enriched"] == 1
 
 

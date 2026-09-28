@@ -273,7 +273,7 @@ class TestReconcileTrialConversions:
         return (await db_session.execute(select(Shop).where(Shop.id == shop.id))).scalar_one()
 
     @pytest.mark.asyncio
-    async def test_active_subscription_converts_trial(self, db_session):
+    async def test_active_subscription_converts_trial(self, db_session, job_pool):
         from core.db.models import BillingEvent
         shop, trial_end = await self._trial_shop(db_session, ended_hours_ago=3)
         sub = {"id": "gid://shopify/AppSubscription/111", "name": "GiftSense Growth Monthly Plan", "status": "ACTIVE"}
@@ -288,15 +288,17 @@ class TestReconcileTrialConversions:
         assert cycle == trial_end  # paid cycle anchored at the real conversion time
         events = (await db_session.execute(select(BillingEvent).where(BillingEvent.shop_id == shop.id))).scalars().all()
         assert any(e.event_type == "trial_converted_reconciled" for e in events)
+        assert job_pool.jobs == [("catalog_start_sync", str(shop.id), "trial_converted")]
 
     @pytest.mark.asyncio
-    async def test_no_active_subscription_expires_trial_with_grace(self, db_session):
+    async def test_no_active_subscription_expires_trial_with_grace(self, db_session, job_pool):
         shop, _ = await self._trial_shop(db_session, ended_hours_ago=3)
 
         await self._run(db_session, self._mock_httpx_subs([]))
 
         s = await self._reload(db_session, shop)
         assert s.plan_status == "expired"
+        assert job_pool.jobs == []  # nothing more is analyzed for an unpaid shop
         grace = s.grace_period_ends_at.replace(tzinfo=timezone.utc) if s.grace_period_ends_at.tzinfo is None else s.grace_period_ends_at
         assert grace > datetime.now(timezone.utc) + timedelta(days=6)
 

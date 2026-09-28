@@ -18,6 +18,7 @@ from arq.connections import RedisSettings
 from sqlalchemy import delete, select
 
 from app.config import GRACE_PERIOD_DAYS, derive_tier_from_subscription_name
+from app.jobs import enqueue
 from app.purge import purge_shop_data
 from app.workers.catalog import (
     catalog_finish_bulk, catalog_start_sync, catalog_sync_product, kick_catalog_syncs, reconcile_catalogs,
@@ -290,6 +291,9 @@ async def reconcile_trial_conversions(ctx: dict) -> None:
                 ))
                 await db.commit()
                 logger.info("trial_reconciled", shop=shop.shop_domain, outcome=event_type)
+                if event_type == "trial_converted_reconciled":
+                    # The plan's full product limit applies now.
+                    await enqueue("catalog_start_sync", str(shop.id), "trial_converted")
             except Exception as e:  # noqa: BLE001 — per-shop defensive
                 await db.rollback()
                 logger.warning(

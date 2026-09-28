@@ -123,8 +123,9 @@ PLANS = {
 }
 
 # Products analyzed during the free trial, on every plan (limits the one-time
-# catalog read a trial install can cost us).
-TRIAL_MAX_PRODUCTS = 250
+# catalog read a trial install can cost us: ~$0.30 at ~$0.003/product). On
+# conversion a re-sync adds the rest up to the plan's max_products.
+TRIAL_MAX_PRODUCTS = 100
 
 
 def subscription_name(plan_tier: str) -> str:

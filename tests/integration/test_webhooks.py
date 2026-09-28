@@ -203,7 +203,7 @@ class TestAppUninstalled:
 class TestSubscriptionUpdate:
 
     @pytest.mark.asyncio
-    async def test_trial_converts_to_active_resets_billing_cycle(self, db_session):
+    async def test_trial_converts_to_active_resets_billing_cycle(self, db_session, job_pool):
         """Trial conversion must reset billing_cycle_start so trial usage
         doesn't count against the first paid month."""
         old_cycle = datetime.now(timezone.utc) - timedelta(days=7)
@@ -257,6 +257,8 @@ class TestSubscriptionUpdate:
         assert event.plan_tier == shop.plan_tier
         assert event.shopify_charge_id is not None
         assert event.created_at is not None
+        # The full plan limit applies now: re-sync to add products beyond the trial cap
+        assert job_pool.jobs == [("catalog_start_sync", str(shop.id), "trial_converted")]
 
     @pytest.mark.asyncio
     async def test_renewal_resets_billing_cycle(self, db_session):

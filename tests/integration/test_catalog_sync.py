@@ -87,7 +87,7 @@ def test_content_hash_ignores_price_and_stock_but_not_text():
 
 def test_product_limit_by_plan_and_trial():
     assert cs.product_limit(make_shop(plan_tier="growth", plan_status="active")) == 2000
-    assert cs.product_limit(make_shop(plan_tier="pro", plan_status="trial_active")) == 250
+    assert cs.product_limit(make_shop(plan_tier="pro", plan_status="trial_active")) == 100
     assert cs.product_limit(make_shop(plan_tier="starter", plan_status="active")) == 250
     assert cs.product_limit(make_shop(plan_tier="growth", plan_status="cancelled")) == 0
 
