@@ -1,0 +1,432 @@
+[
+  {
+    "product_id": "candles-0001",
+    "title": "Cedarwood Cabin Hand-Poured Candle",
+    "product_type": "Candle",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A 8 oz hand-poured soy candle with notes of cedarwood, pine, and leather. Crafted with natural fragrance oils and a cotton wick, this candle fills a medium room in 2\u20133 hours. Perfect for creating a cozy, woodsy atmosphere. Burn time: approximately 40 hours.</p>",
+    "tags": [
+      "soy",
+      "cedarwood",
+      "woodsy",
+      "hand-poured",
+      "cotton wick"
+    ],
+    "price_min": 18.0,
+    "price_max": 18.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0002",
+    "title": "Lavender Honey Wax Melts",
+    "product_type": "Wax Melts",
+    "vendor": "Independent Candle Co",
+    "description": "<p>Six hand-poured wax melt cubes blending lavender with warm honey and vanilla. Made from soy wax with natural fragrances, each melt lasts 8\u201310 hours. Use in any wax warmer for flameless fragrance. Ideal for bedrooms, offices, or layering scents throughout your home.</p>",
+    "tags": [
+      "wax melts",
+      "lavender",
+      "honey",
+      "soy",
+      "flameless"
+    ],
+    "price_min": 10.0,
+    "price_max": 10.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0003",
+    "title": "Eucalyptus Mint Reed Diffuser",
+    "product_type": "Reed Diffuser",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A 6 oz reed diffuser infusing eucalyptus and peppermint into any room. Includes 12 natural rattan reeds and non-toxic fragrance oil. Lasts 6\u20138 weeks with subtle, continuous scent release. No heat or flame required. Perfect for entryways, bathrooms, or office spaces seeking refreshing, natural fragrance.</p>",
+    "tags": [
+      "reed diffuser",
+      "eucalyptus",
+      "mint",
+      "rattan",
+      "natural"
+    ],
+    "price_min": 28.0,
+    "price_max": 28.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0004",
+    "title": "Luxury Spa Gift Set",
+    "product_type": "Gift Set",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A curated set featuring a 6 oz jasmine-sandalwood candle, lavender wax melts, and a eucalyptus reed diffuser. Packaged in a branded gift box with tissue paper. All items are hand-poured with natural fragrances. Perfect for spa lovers, housewarming gifts, or self-care enthusiasts seeking multi-sensory home fragrance.</p>",
+    "tags": [
+      "gift set",
+      "spa",
+      "candle",
+      "wax melts",
+      "reed diffuser",
+      "gift"
+    ],
+    "price_min": 65.0,
+    "price_max": 65.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0005",
+    "title": "Amber Glass Candle Jars (Set of 4)",
+    "product_type": "Candle Accessories",
+    "vendor": "Independent Candle Co",
+    "description": "<p>Four 8 oz amber glass containers with lids, ideal for storing or pouring custom candles. Heat-resistant glass with secure metal lids keeps wicks and wax protected. Dimensions: 2.5 inches diameter, 3.25 inches tall. Perfect for candle makers, refillable candle lovers, or DIY home fragrance projects.</p>",
+    "tags": [
+      "containers",
+      "glass",
+      "amber",
+      "candle making",
+      "reusable"
+    ],
+    "price_min": 22.0,
+    "price_max": 22.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0006",
+    "title": "Rose Garden Hand-Poured Candle",
+    "product_type": "Candle",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A 10 oz luxury soy candle blending rose, peony, and musk. Hand-poured with a wooden wick that crackles gently as it burns. Made with premium fragrance oils for a sophisticated floral scent. Burn time: 50 hours. Perfect for living rooms, bedrooms, or as a special occasion gift.</p>",
+    "tags": [
+      "soy",
+      "rose",
+      "floral",
+      "wooden wick",
+      "luxury",
+      "gift"
+    ],
+    "price_min": 32.0,
+    "price_max": 32.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0007",
+    "title": "Replacement Cotton Wick Trimmer Blade",
+    "product_type": "Candle Accessories",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A single replacement blade for our stainless steel wick trimmer. Fits standard wick trimmer handles. Blade length: 0.75 inches. Maintains precise cutting for optimal candle burn. Not a gift item; intended as replacement part for existing wick trimmer owners only.</p>",
+    "tags": [
+      "replacement part",
+      "wick trimmer",
+      "blade",
+      "accessory"
+    ],
+    "price_min": 6.0,
+    "price_max": 6.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0008",
+    "title": "Vanilla Sandalwood Wax Melts",
+    "product_type": "Wax Melts",
+    "vendor": "Independent Candle Co",
+    "description": "<p>Eight hand-poured soy wax melt cubes infused with warm vanilla, sandalwood, and amber. Each melt provides 8\u201310 hours of continuous fragrance when used in a warmer. Creamy, comforting scent ideal for fall and winter months. Perfect for offices, living rooms, or gift baskets.</p>",
+    "tags": [
+      "wax melts",
+      "vanilla",
+      "sandalwood",
+      "soy",
+      "warm"
+    ],
+    "price_min": 12.0,
+    "price_max": 12.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0009",
+    "title": "Citrus Sunrise Candle 10 oz",
+    "product_type": "Candle",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A bright 10 oz hand-poured soy candle with notes of blood orange, lemon, and bergamot. Energizing morning scent made with natural fragrance oils and a cotton wick. Burn time: 45 hours. Ideal for kitchens, bathrooms, or brightening any space. Uplifting fragrance for all seasons.</p>",
+    "tags": [
+      "soy",
+      "citrus",
+      "orange",
+      "hand-poured",
+      "energizing"
+    ],
+    "price_min": 24.0,
+    "price_max": 24.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0010",
+    "title": "Luxury Candle Warmer",
+    "product_type": "Candle Accessories",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A ceramic electric candle warmer with a dimmer switch and safety auto-shutoff after 8 hours. Heats candles evenly to release fragrance without burning. Accommodates jars up to 3.5 inches in diameter. Cord length: 5 feet. UL certified. Perfect for safer, flameless candle enjoyment.</p>",
+    "tags": [
+      "warmer",
+      "electric",
+      "ceramic",
+      "safe",
+      "dimmer"
+    ],
+    "price_min": 28.0,
+    "price_max": 28.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0011",
+    "title": "Ocean Breeze Reed Diffuser Refill Oil",
+    "product_type": "Wax Melts",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A 4 oz refill bottle of ocean breeze fragrance oil for existing reed diffusers. Simply top off your current diffuser vessel or use with fresh reeds. Contains natural fragrance compounds. Lasts 4\u20136 weeks depending on room size and air circulation. Replacement product, not recommended as a gift.</p>",
+    "tags": [
+      "refill",
+      "diffuser oil",
+      "ocean breeze",
+      "replacement"
+    ],
+    "price_min": 8.0,
+    "price_max": 8.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0012",
+    "title": "Patchouli Smoke Reed Diffuser",
+    "product_type": "Reed Diffuser",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A 5 oz reed diffuser with earthy patchouli and smoky incense notes. Includes 10 natural rattan reeds and premium fragrance oil. Lasts 5\u20137 weeks with gentle, continuous scent. Ideal for bedrooms, meditation spaces, or bohemian home d\u00e9cor. No open flame required.</p>",
+    "tags": [
+      "reed diffuser",
+      "patchouli",
+      "earthy",
+      "smoke",
+      "rattan"
+    ],
+    "price_min": 26.0,
+    "price_max": 26.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0013",
+    "title": "Ultimate Candle Lover's Gift Set",
+    "product_type": "Gift Set",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A premium set featuring three 6 oz hand-poured candles (lavender, rose, citrus), wax melts, a wooden wick trimmer, and a ceramic warmer. Presented in luxury gift packaging with custom ribbon. Ideal for serious candle enthusiasts, housewarming gifts, or special celebrations. Everything needed to elevate the candle experience.</p>",
+    "tags": [
+      "gift set",
+      "candles",
+      "warmer",
+      "trimmer",
+      "luxury",
+      "gift"
+    ],
+    "price_min": 110.0,
+    "price_max": 110.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0014",
+    "title": "Frankincense Myrrh Candle 12 oz",
+    "product_type": "Candle",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A premium 12 oz hand-poured soy candle with resinous frankincense and myrrh. Rich, meditative scent perfect for spiritual practices or creating sacred space. Made with natural fragrance oils and a cotton wick. Burn time: 60 hours. Sophisticated gift for mindfulness lovers or home altar spaces.</p>",
+    "tags": [
+      "soy",
+      "frankincense",
+      "myrrh",
+      "spiritual",
+      "gift",
+      "resin"
+    ],
+    "price_min": 40.0,
+    "price_max": 40.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0015",
+    "title": "Honey Oat Wax Melts",
+    "product_type": "Wax Melts",
+    "vendor": "Independent Candle Co",
+    "description": "<p>Six hand-poured wax melts combining honey, oatmeal, and cream. Cozy, comforting scent with subtle bakery notes. Made from soy wax with natural fragrance oils. Each melt lasts 8\u201310 hours in a standard warmer. Perfect for autumn, gift baskets, or layering with other scents throughout your home.</p>",
+    "tags": [
+      "wax melts",
+      "honey",
+      "oat",
+      "soy",
+      "cozy"
+    ],
+    "price_min": 11.0,
+    "price_max": 11.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0016",
+    "title": "Matte Black Wooden Wick Trimmer",
+    "product_type": "Candle Accessories",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A stainless steel wick trimmer with a sleek matte black handle and built-in catch tray. Precisely cuts wicks to 0.25 inches for optimal burn. Ergonomic design fits comfortably in hand. Essential tool for extending candle life and ensuring even burning. Perfect for any candle lover's toolkit.</p>",
+    "tags": [
+      "wick trimmer",
+      "stainless steel",
+      "black",
+      "tool",
+      "gift"
+    ],
+    "price_min": 16.0,
+    "price_max": 16.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0017",
+    "title": "Shipping Protection Bubble Wrap Roll",
+    "product_type": "Candle Accessories",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A 12-inch wide roll of protective bubble wrap for safely shipping candles and fragile items. Provides cushioning and impact protection during transit. 50 feet per roll. Not a consumer gift; intended for store use or customers shipping their own candle orders to protect jars from breakage.</p>",
+    "tags": [
+      "shipping",
+      "protection",
+      "bubble wrap",
+      "supplies"
+    ],
+    "price_min": 9.0,
+    "price_max": 9.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0018",
+    "title": "Tobacco Leather Reed Diffuser",
+    "product_type": "Reed Diffuser",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A sophisticated 6 oz reed diffuser with tobacco leaf, leather, and amber notes. Premium fragrance oil with 12 natural rattan reeds. Lasts 7\u20139 weeks. Ideal for offices, studies, or men's spaces seeking a bold, masculine fragrance without open flame. Rich, complex scent profile.</p>",
+    "tags": [
+      "reed diffuser",
+      "tobacco",
+      "leather",
+      "masculine",
+      "rattan"
+    ],
+    "price_min": 34.0,
+    "price_max": 34.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0019",
+    "title": "Seasonal Favorites Candle Trio",
+    "product_type": "Gift Set",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A curated set of three 6 oz hand-poured candles: autumn spice, winter pine, and spring lilac. Each features a cotton wick and natural fragrances. Packaged in a decorative gift box with shredded paper. Perfect housewarming gift, corporate gift, or for those seeking variety. Celebrates seasonal transitions throughout the year.</p>",
+    "tags": [
+      "gift set",
+      "candles",
+      "seasonal",
+      "variety",
+      "gift"
+    ],
+    "price_min": 52.0,
+    "price_max": 52.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0020",
+    "title": "Green Tea Bamboo Candle 8 oz",
+    "product_type": "Candle",
+    "vendor": "Independent Candle Co",
+    "description": "<p>A fresh 8 oz hand-poured soy candle infused with green tea, bamboo, and light citrus. Clean, zen-inspired fragrance perfect for meditation or spa-like ambiance. Made with premium fragrance oils and a cotton wick. Burn time: 35 hours. Ideal for bathrooms, bedrooms, or yoga spaces seeking calming, natural scent.</p>",
+    "tags": [
+      "soy",
+      "green tea",
+      "bamboo",
+      "zen",
+      "fresh"
+    ],
+    "price_min": 20.0,
+    "price_max": 20.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0021",
+    "title": "Vetiver Moss Hand-Poured Candle 10 oz",
+    "product_type": "Candles",
+    "vendor": "Independent Hand-Poured Candle Shop",
+    "description": "<p>A grounding blend of earthy vetiver and fresh moss, hand-poured into a premium soy wax candle. This 10 oz candle features a natural cotton wick and burns cleanly for approximately 45 hours. Perfect for creating a sophisticated, botanical atmosphere in any room. The subtle green notes evoke a forest after rain, ideal for meditation spaces or modern home d\u00e9cor.</p>",
+    "tags": [
+      "vetiver",
+      "moss",
+      "earthy",
+      "soy wax",
+      "hand-poured",
+      "botanical"
+    ],
+    "price_min": 18.0,
+    "price_max": 18.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0022",
+    "title": "Spiced Apple Cinnamon Wax Melts",
+    "product_type": "Wax Melts",
+    "vendor": "Independent Hand-Poured Candle Shop",
+    "description": "<p>Hand-poured soy wax melts infused with warm spiced apple and cinnamon notes. Each pack contains six premium melt cubes designed for use in any standard wax warmer. These melts release fragrance gradually for 8-10 hours per cube, filling your space with cozy autumn warmth. Highly pigmented and long-lasting, perfect for seasonal home fragrance without flame or smoke.</p>",
+    "tags": [
+      "apple",
+      "cinnamon",
+      "soy wax",
+      "wax melts",
+      "seasonal",
+      "spiced"
+    ],
+    "price_min": 10.0,
+    "price_max": 10.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0023",
+    "title": "Sandalwood Oud Premium Reed Diffuser 6 oz",
+    "product_type": "Reed Diffusers",
+    "vendor": "Independent Hand-Poured Candle Shop",
+    "description": "<p>An exotic reed diffuser featuring warm sandalwood and sophisticated oud fragrance oil in a 6 oz glass vessel. Includes eight natural rattan reeds that passively disperse scent throughout rooms up to 300 sq ft. The rich, woody aroma lasts 4-6 weeks and requires no electricity or heat. Elegant decor piece that adds luxury to entryways, bedrooms, or living spaces.</p>",
+    "tags": [
+      "sandalwood",
+      "oud",
+      "reed diffuser",
+      "luxury",
+      "woody",
+      "rattan"
+    ],
+    "price_min": 38.0,
+    "price_max": 38.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0024",
+    "title": "Cozy Evening Collection Gift Set",
+    "product_type": "Gift Sets",
+    "vendor": "Independent Hand-Poured Candle Shop",
+    "description": "<p>A curated three-piece gift set featuring hand-poured candles in Fireside Amber (12 oz), Cardamom Clove (8 oz), and Sweet Tobacco (6 oz). Each candle uses premium soy wax with natural cotton wicks for a clean, long-lasting burn. Includes a complimentary wooden wick trimmer. Beautifully packaged in eco-friendly kraft gift box, perfect for housewarming, holidays, or corporate gifting.</p>",
+    "tags": [
+      "gift set",
+      "candle trio",
+      "soy wax",
+      "hand-poured",
+      "gift",
+      "holiday"
+    ],
+    "price_min": 65.0,
+    "price_max": 65.0,
+    "available": true
+  },
+  {
+    "product_id": "candles-0025",
+    "title": "Stainless Steel Candle Wick Dipper",
+    "product_type": "Candle Accessories",
+    "vendor": "Independent Hand-Poured Candle Shop",
+    "description": "<p>A premium stainless steel wick dipper designed to safely extinguish candle flames and center wicks without smoke or soot. The long handle keeps hands at safe distance from hot wax, while the curved hook gently repositions wicks for optimal burning. Essential tool for candle lovers who want to extend candle life and maintain even burn quality. Polished finish and heat-resistant construction.</p>",
+    "tags": [
+      "wick dipper",
+      "candle tool",
+      "stainless steel",
+      "accessories",
+      "candle care"
+    ],
+    "price_min": 16.0,
+    "price_max": 16.0,
+    "available": true
+  }
+]

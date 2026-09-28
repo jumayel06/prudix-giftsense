@@ -29,6 +29,8 @@ MIN_PICKS = 3
 MAX_PICKS = 5
 MAX_REASON_CHARS = 160
 PRICE_TOLERANCE = 0.51  # rounding, e.g. "$38" for 37.99
+# A shopper is waiting: past this, fall back to template picks (plan §4.5).
+RERANK_TIMEOUT_SECS = 8.0
 
 RERANK_SYSTEM_PROMPT = """You help a shopper choose a gift from one store's products.
 
@@ -151,7 +153,7 @@ async def rerank(
     try:
         resp = await chat_fn(
             model=model, system=RERANK_SYSTEM_PROMPT, prompt=_prompt(intake, candidates),
-            max_tokens=700, temperature=0.4, json_mode=True,
+            max_tokens=700, temperature=0.4, json_mode=True, timeout=RERANK_TIMEOUT_SECS,
         )
     except Exception as e:  # noqa: BLE001 — never break the storefront
         logger.warning("gift_rerank_llm_failed", model=model, error=str(e))

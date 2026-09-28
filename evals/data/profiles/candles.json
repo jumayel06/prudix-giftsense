@@ -1,0 +1,914 @@
+{
+  "candles-0005": {
+    "giftable": 0.4,
+    "recipients": [
+      "friend",
+      "coworker"
+    ],
+    "occasions": [
+      "just_because"
+    ],
+    "vibes": [
+      "practical",
+      "creative"
+    ],
+    "interests": [
+      "candle making",
+      "diy",
+      "home fragrance"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for the candle-making enthusiast or DIY home fragrance lover who wants quality containers.",
+    "facts": [
+      "Set of four 8 oz amber glass containers",
+      "Includes secure metal lids",
+      "Heat-resistant glass",
+      "Dimensions: 2.5 inches diameter, 3.25 inches tall",
+      "Designed for storing or pouring custom candles"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0004": {
+    "giftable": 0.95,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "housewarming",
+      "just_because"
+    ],
+    "vibes": [
+      "luxurious",
+      "relaxing",
+      "cozy"
+    ],
+    "interests": [
+      "spa",
+      "self-care",
+      "home fragrance",
+      "wellness"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone who loves spa experiences and creating a calming home atmosphere.",
+    "facts": [
+      "6 oz jasmine-sandalwood candle",
+      "Lavender wax melts included",
+      "Eucalyptus reed diffuser included",
+      "Hand-poured with natural fragrances",
+      "Packaged in branded gift box with tissue paper"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0006": {
+    "giftable": 0.95,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "cozy",
+      "luxurious",
+      "relaxing",
+      "sentimental"
+    ],
+    "interests": [
+      "home decor",
+      "fragrance",
+      "self-care",
+      "luxury"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A sophisticated floral candle for anyone who loves luxurious home scents and cozy ambiance.",
+    "facts": [
+      "10 oz hand-poured soy candle",
+      "Wooden wick with gentle crackling",
+      "Rose, peony, and musk fragrance blend",
+      "Premium fragrance oils",
+      "50-hour burn time"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0002": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "coworker",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "housewarming",
+      "just_because"
+    ],
+    "vibes": [
+      "cozy",
+      "relaxing",
+      "practical"
+    ],
+    "interests": [
+      "home fragrance",
+      "aromatherapy",
+      "wellness",
+      "lavender"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone who loves creating a calm, inviting home atmosphere with natural scents.",
+    "facts": [
+      "Six hand-poured wax melt cubes",
+      "Made from soy wax",
+      "Blends lavender, honey, and vanilla",
+      "Natural fragrances",
+      "Each melt lasts 8\u201310 hours",
+      "Flameless fragrance for any wax warmer"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0001": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "coworker",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "housewarming",
+      "just_because"
+    ],
+    "vibes": [
+      "cozy",
+      "classic",
+      "luxurious",
+      "relaxing"
+    ],
+    "interests": [
+      "home decor",
+      "woodsy scents",
+      "candles",
+      "relaxation"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone who loves warm, woodsy scents and cozy home ambiance.",
+    "facts": [
+      "8 oz hand-poured soy candle",
+      "Natural fragrance oils with cedarwood, pine, and leather notes",
+      "Cotton wick",
+      "Fills medium room in 2\u20133 hours",
+      "Approximately 40 hours burn time"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0003": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "coworker",
+      "host",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "housewarming",
+      "just_because"
+    ],
+    "vibes": [
+      "cozy",
+      "practical",
+      "relaxing",
+      "eco_friendly"
+    ],
+    "interests": [
+      "home decor",
+      "wellness",
+      "aromatherapy",
+      "natural products"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone who loves fresh, natural scents and wants to elevate their home ambiance effortlessly.",
+    "facts": [
+      "6 oz reed diffuser with eucalyptus and peppermint fragrance",
+      "Includes 12 natural rattan reeds",
+      "Non-toxic fragrance oil",
+      "Lasts 6\u20138 weeks",
+      "No heat or flame required",
+      "Suitable for entryways, bathrooms, or office spaces"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0007": {
+    "giftable": 0.1,
+    "recipients": [],
+    "occasions": [],
+    "vibes": [],
+    "interests": [],
+    "age_band": "any",
+    "gift_pitch": "Not suitable as a gift; replacement part for existing wick trimmer owners only.",
+    "facts": [
+      "Single replacement blade for stainless steel wick trimmer",
+      "Fits standard wick trimmer handles",
+      "Blade length: 0.75 inches",
+      "Maintains precise cutting for optimal candle burn",
+      "Replacement part intended for existing wick trimmer owners"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0011": {
+    "giftable": 0.15,
+    "recipients": [],
+    "occasions": [],
+    "vibes": [],
+    "interests": [],
+    "age_band": "any",
+    "gift_pitch": "Not recommended as a gift; this is a refill product for existing diffusers.",
+    "facts": [
+      "4 oz refill bottle",
+      "Ocean breeze fragrance",
+      "Contains natural fragrance compounds",
+      "Lasts 4\u20136 weeks depending on room size and air circulation",
+      "For existing reed diffusers or use with fresh reeds"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0009": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "coworker",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "housewarming",
+      "just_because"
+    ],
+    "vibes": [
+      "cozy",
+      "eco_friendly",
+      "classic"
+    ],
+    "interests": [
+      "home decor",
+      "aromatherapy",
+      "citrus scents",
+      "wellness"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone who loves uplifting scents and wants to brighten their home with a natural, energizing candle.",
+    "facts": [
+      "10 oz hand-poured soy candle",
+      "Notes of blood orange, lemon, and bergamot",
+      "Made with natural fragrance oils",
+      "Cotton wick",
+      "45-hour burn time",
+      "Ideal for kitchens, bathrooms, or any space"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0010": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "housewarming",
+      "just_because"
+    ],
+    "vibes": [
+      "cozy",
+      "practical",
+      "luxurious",
+      "relaxing"
+    ],
+    "interests": [
+      "candles",
+      "home decor",
+      "aromatherapy",
+      "ambiance"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for candle lovers who want safer, flameless fragrance enjoyment with elegant ambiance.",
+    "facts": [
+      "Ceramic electric candle warmer with dimmer switch",
+      "Safety auto-shutoff after 8 hours",
+      "Accommodates jars up to 3.5 inches in diameter",
+      "5-foot cord length",
+      "UL certified",
+      "Heats candles evenly without burning"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0012": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "housewarming",
+      "just_because"
+    ],
+    "vibes": [
+      "cozy",
+      "relaxing"
+    ],
+    "interests": [
+      "home decor",
+      "aromatherapy",
+      "meditation",
+      "earthy scents"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone who loves ambient fragrance and bohemian home aesthetics without the commitment of candles.",
+    "facts": [
+      "5 oz reed diffuser",
+      "Includes 10 natural rattan reeds",
+      "Patchouli and smoky incense fragrance notes",
+      "Lasts 5\u20137 weeks",
+      "No open flame required",
+      "Premium fragrance oil"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0008": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "coworker",
+      "host",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "housewarming",
+      "just_because"
+    ],
+    "vibes": [
+      "cozy",
+      "relaxing",
+      "luxurious"
+    ],
+    "interests": [
+      "home fragrance",
+      "aromatherapy",
+      "self-care"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A warm, comforting scent gift for anyone who loves cozy home ambiance.",
+    "facts": [
+      "Eight hand-poured soy wax melt cubes",
+      "Infused with vanilla, sandalwood, and amber",
+      "Each melt provides 8\u201310 hours of continuous fragrance",
+      "Used in a warmer",
+      "Ideal for fall and winter months"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0013": {
+    "giftable": 0.95,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "host",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "housewarming",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "luxurious",
+      "cozy",
+      "relaxing",
+      "practical"
+    ],
+    "interests": [
+      "candles",
+      "home decor",
+      "aromatherapy",
+      "self-care"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for candle lovers who appreciate quality scents and premium home ambiance products.",
+    "facts": [
+      "Three 6 oz hand-poured candles in lavender, rose, and citrus scents",
+      "Includes wax melts",
+      "Wooden wick trimmer included",
+      "Ceramic warmer included",
+      "Presented in luxury gift packaging with custom ribbon",
+      "Everything needed to elevate the candle experience"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0014": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "luxurious",
+      "relaxing",
+      "sentimental"
+    ],
+    "interests": [
+      "meditation",
+      "spirituality",
+      "wellness",
+      "aromatherapy",
+      "home decor"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone seeking mindfulness and calm through premium, meditative scents.",
+    "facts": [
+      "12 oz hand-poured soy candle",
+      "Frankincense and myrrh scent",
+      "Natural fragrance oils",
+      "Cotton wick",
+      "60-hour burn time"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0015": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "host",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "housewarming",
+      "just_because"
+    ],
+    "vibes": [
+      "cozy",
+      "relaxing",
+      "practical",
+      "classic"
+    ],
+    "interests": [
+      "home fragrance",
+      "candles",
+      "self-care",
+      "autumn"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone who loves cozy home scents and warm, comforting aromas year-round.",
+    "facts": [
+      "Six hand-poured wax melts",
+      "Made from soy wax",
+      "Natural fragrance oils",
+      "Honey, oatmeal, and cream scent with bakery notes",
+      "Each melt lasts 8\u201310 hours in a standard warmer"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0017": {
+    "giftable": 0.05,
+    "recipients": [],
+    "occasions": [],
+    "vibes": [],
+    "interests": [],
+    "age_band": "any",
+    "gift_pitch": "Not suitable as a gift; this is a shipping supply for store or business use.",
+    "facts": [
+      "12-inch wide roll",
+      "50 feet per roll",
+      "Protective bubble wrap for shipping",
+      "Cushioning and impact protection",
+      "Intended for store use or shipping candles and fragile items"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0016": {
+    "giftable": 0.75,
+    "recipients": [
+      "friend",
+      "parent",
+      "coworker",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "thank_you",
+      "housewarming",
+      "just_because"
+    ],
+    "vibes": [
+      "practical",
+      "cozy",
+      "classic"
+    ],
+    "interests": [
+      "candles",
+      "home decor",
+      "self-care"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for candle enthusiasts who want to maintain their candles and extend their burn life.",
+    "facts": [
+      "Stainless steel construction",
+      "Matte black handle",
+      "Built-in catch tray",
+      "Cuts wicks to 0.25 inches",
+      "Ergonomic design",
+      "Extends candle life and ensures even burning"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0018": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "coworker",
+      "boss"
+    ],
+    "occasions": [
+      "birthday",
+      "thank_you",
+      "just_because",
+      "housewarming"
+    ],
+    "vibes": [
+      "luxurious",
+      "classic",
+      "practical"
+    ],
+    "interests": [
+      "fragrance",
+      "home decor",
+      "tobacco",
+      "leather"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone who loves sophisticated scents and wants a flame-free fragrance for their workspace or home.",
+    "facts": [
+      "6 oz reed diffuser",
+      "Tobacco leaf, leather, and amber notes",
+      "12 natural rattan reeds included",
+      "Lasts 7\u20139 weeks",
+      "Premium fragrance oil",
+      "No open flame required"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0019": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "coworker",
+      "host",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "housewarming",
+      "just_because"
+    ],
+    "vibes": [
+      "cozy",
+      "practical",
+      "luxurious",
+      "classic"
+    ],
+    "interests": [
+      "home decor",
+      "aromatherapy",
+      "seasonal living"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone who loves seasonal scents and cozy home ambiance year-round.",
+    "facts": [
+      "Three 6 oz hand-poured candles",
+      "Scents: autumn spice, winter pine, spring lilac",
+      "Cotton wicks",
+      "Natural fragrances",
+      "Comes in decorative gift box with shredded paper"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0020": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "thank_you",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "cozy",
+      "relaxing",
+      "eco_friendly",
+      "luxurious"
+    ],
+    "interests": [
+      "wellness",
+      "meditation",
+      "spa",
+      "home decor",
+      "tea"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone seeking calm and natural scent for meditation, yoga, or everyday relaxation.",
+    "facts": [
+      "8 oz hand-poured soy candle",
+      "Infused with green tea, bamboo, and light citrus",
+      "Cotton wick",
+      "35 hour burn time",
+      "Premium fragrance oils",
+      "Ideal for bathrooms, bedrooms, or yoga spaces"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0021": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "housewarming",
+      "just_because"
+    ],
+    "vibes": [
+      "cozy",
+      "relaxing",
+      "eco_friendly",
+      "luxurious"
+    ],
+    "interests": [
+      "home decor",
+      "wellness",
+      "meditation",
+      "nature",
+      "aromatherapy"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone who loves natural scents and creating a calming, sophisticated home atmosphere.",
+    "facts": [
+      "10 oz hand-poured soy wax candle",
+      "Natural cotton wick",
+      "Burns for approximately 45 hours",
+      "Vetiver and moss scent with green notes",
+      "Evokes forest after rain",
+      "Premium soy wax construction"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0022": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "coworker",
+      "host",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "housewarming",
+      "just_because"
+    ],
+    "vibes": [
+      "cozy",
+      "relaxing"
+    ],
+    "interests": [
+      "home fragrance",
+      "autumn",
+      "aromatherapy"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone who loves cozy seasonal scents and wants flameless home fragrance.",
+    "facts": [
+      "Hand-poured soy wax melts",
+      "Six premium melt cubes per pack",
+      "Spiced apple and cinnamon fragrance",
+      "8-10 hours burn time per cube",
+      "Works in any standard wax warmer",
+      "Flameless and smoke-free"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0023": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "host",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "housewarming",
+      "just_because"
+    ],
+    "vibes": [
+      "luxurious",
+      "cozy",
+      "classic"
+    ],
+    "interests": [
+      "home decor",
+      "fragrance",
+      "wellness",
+      "interior design"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone who loves sophisticated home scents and elegant decor that requires zero maintenance.",
+    "facts": [
+      "6 oz glass vessel with eight natural rattan reeds",
+      "Sandalwood and oud fragrance oil blend",
+      "Scent lasts 4-6 weeks",
+      "Covers rooms up to 300 sq ft",
+      "Requires no electricity or heat",
+      "Hand-poured by independent candle shop"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0025": {
+    "giftable": 0.75,
+    "recipients": [
+      "friend",
+      "parent",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "housewarming",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "practical",
+      "cozy",
+      "classic"
+    ],
+    "interests": [
+      "candles",
+      "home care",
+      "self-care"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for candle enthusiasts who want to maintain their candles beautifully and safely.",
+    "facts": [
+      "Stainless steel construction",
+      "Long handle keeps hands at safe distance from hot wax",
+      "Curved hook for repositioning wicks",
+      "Polished finish",
+      "Heat-resistant",
+      "Designed to extinguish flames without smoke or soot"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  },
+  "candles-0024": {
+    "giftable": 0.95,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "coworker",
+      "host",
+      "anyone"
+    ],
+    "occasions": [
+      "holiday",
+      "housewarming",
+      "thank_you",
+      "birthday",
+      "just_because"
+    ],
+    "vibes": [
+      "cozy",
+      "luxurious",
+      "eco_friendly",
+      "classic"
+    ],
+    "interests": [
+      "candles",
+      "home decor",
+      "relaxation",
+      "aromatherapy"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "Perfect for anyone who loves ambient scents and cozy home moments year-round.",
+    "facts": [
+      "Three hand-poured soy wax candles: Fireside Amber (12 oz), Cardamom Clove (8 oz), Sweet Tobacco (6 oz)",
+      "Premium soy wax with natural cotton wicks for clean, long-lasting burn",
+      "Includes complimentary wooden wick trimmer",
+      "Packaged in eco-friendly kraft gift box",
+      "Ready for gifting"
+    ],
+    "_version": "enrich-v1",
+    "_fallback": false
+  }
+}

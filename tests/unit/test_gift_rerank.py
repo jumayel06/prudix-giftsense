@@ -112,3 +112,11 @@ def test_template_reason_mentions_budget_and_matching_vibes():
 
 def test_prompt_tells_model_to_use_only_given_facts():
     assert "only" in RERANK_SYSTEM_PROMPT.lower() and "facts" in RERANK_SYSTEM_PROMPT.lower()
+
+
+@pytest.mark.asyncio
+async def test_rerank_uses_a_short_timeout_for_shoppers():
+    chat = llm({"picks": []})
+    await rerank(INTAKE, CANDS, model="claude-haiku-4-5", chat_fn=chat)
+    from app.services.gifting.rerank import RERANK_TIMEOUT_SECS
+    assert chat.await_args.kwargs["timeout"] == RERANK_TIMEOUT_SECS <= 10

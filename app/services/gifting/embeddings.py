@@ -64,5 +64,6 @@ class OpenAIEmbedder:
         from app.llm import _openai_client
         if not texts:
             return []
-        resp = await _openai_client.embeddings.create(model=self.model, input=texts, dimensions=self.dims)
+        resp = await _openai_client.embeddings.create(model=self.model, input=texts, dimensions=self.dims,
+                                                       timeout=30.0)
         return [list(d.embedding) for d in sorted(resp.data, key=lambda d: d.index)]

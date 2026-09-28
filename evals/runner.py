@@ -173,17 +173,22 @@ class EvalRun:
             "suitable for the recipient, occasion and age. Be strict about poor gifts (refills, spare parts, "
             "fees) and loose matches. Then check each reason: it is unfaithful if it states something not "
             "supported by that product's listing.\n"
-            'Return JSON only: {"acceptable": [product_id, ...], "unfaithful": [{"model": ..., "product_id": ...}]}'
+            'Return JSON only: {"acceptable": [product_id, ...], "unfaithful": [{"model": ..., "product_id": ..., '
+            '"why": "the unsupported claim, in a few words"}]}'
         )
         async with self.sem:
             self.ledger.check(EST_JUDGE_USD)
+            # The judge may think (accuracy over speed); thinking counts toward max_tokens.
             resp = await self.chat_fn(model=JUDGE_MODEL, system=system, prompt="\n".join(lines),
-                                      max_tokens=2000, temperature=0.0, json_mode=True)
+                                      max_tokens=8000, temperature=0.0, json_mode=True, thinking=True,
+                                      timeout=180.0)
         self.ledger.charge("labels", JUDGE_MODEL, resp.input_tokens, resp.output_tokens)
         try:
             data = json.loads(resp.text)
         except ValueError:
-            self.log(f"[{store}] judge returned unparseable output for {persona['id']}; skipping")
+            self.log(f"[{store}] judge returned unparseable output for {persona['id']}; saved to results/judge_failures/")
+            _write(self.results / "judge_failures" / f"{store}-{persona['id']}.json",
+                   {"text": resp.text, "output_tokens": resp.output_tokens})
             return []
         acceptable = {str(x) for x in data.get("acceptable") or []}
         for it in pool:
@@ -194,6 +199,7 @@ class EvalRun:
     async def run(self, personas: dict[str, list[dict]]) -> dict:
         outcomes: list[SearchOutcome] = []
         review_rows: list[dict] = []
+        details: list[dict] = []  # every pick + reason + judge verdict, for inspecting failures
         overrides = _read(self.data / "label_overrides.json", {})
         for store in self.stores:
             products = await self.catalog(store)
@@ -213,11 +219,20 @@ class EvalRun:
                     pool_ids |= {c.product.product_id for c in retrieve(intake, items, qvec, limit=POOL_TOP_K)}
                     pool = [by_id[i] for i in sorted(pool_ids) if i in by_id]
                     unfaithful = await self.judge(store, persona, pool, runs, labels)
-                    bad = {(u.get("model"), str(u.get("product_id"))) for u in unfaithful}
+                    bad = {(u.get("model"), str(u.get("product_id"))): u.get("why", "") for u in unfaithful}
                     persona_labels = {**labels.get(persona["id"], {}),
                                       **overrides.get(store, {}).get(persona["id"], {})}
                     acceptable = {pid for pid, ok in persona_labels.items() if ok}
                     for r in runs:
+                        details.append({
+                            "store": store, "persona": persona, "model": r["model"], "mode": r["mode"],
+                            "latency_ms": r["latency_ms"],
+                            "picks": [{**p, "title": by_id[p["product_id"]].product.title if p["product_id"] in by_id else None,
+                                       "acceptable": p["product_id"] in acceptable,
+                                       "unfaithful": (r["model"], p["product_id"]) in bad,
+                                       "why": bad.get((r["model"], p["product_id"]))}
+                                      for p in r["picks"]],
+                        })
                         picked = [p["product_id"] for p in r["picks"]]
                         ai = [p for p in r["picks"] if p["source"] == "ai"]
                         outcomes.append(SearchOutcome(
@@ -246,6 +261,7 @@ class EvalRun:
                             "by_step": {k: round(v, 4) for k, v in self.ledger.by_step().items()}}}
         _write(self.results / "report.json", report)
         _write(self.results / "outcomes.json", [asdict(o) | {"acceptable": sorted(o.acceptable)} for o in outcomes])
+        _write(self.results / "searches.json", details)
         (self.results / "report.md").write_text(render_markdown(report))
         (self.results / "review.html").write_text(render_review(review_rows))
         return report

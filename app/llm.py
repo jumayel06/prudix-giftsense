@@ -3,6 +3,7 @@
 Route code imports `chat` from here; tests patch `app.<module>.chat` and return
 an `LLMResponse`. Never patch `openai` / `anthropic` directly.
 """
+import json
 from dataclasses import dataclass
 
 import anthropic as _anthropic
@@ -25,6 +26,17 @@ MODEL_COSTS = {
 # with a 400. Sonnet 5 is one of them; Haiku 4.5 still accepts temperature.
 _NO_SAMPLING_PARAMS = {"claude-sonnet-5"}
 
+# Claude models that think adaptively when `thinking` is omitted. Hidden
+# thinking is billed as output and adds seconds of latency (measured in the
+# 2026-09-28 eval: Sonnet 5 rerank 7.3s p95), so our short structured calls
+# (gift picks, notes, profiles) disable it unless a caller opts in.
+_ADAPTIVE_BY_DEFAULT = {"claude-sonnet-5"}
+
+# Per-request timeout (seconds). The SDK defaults (10 minutes, retried) let one
+# stalled request freeze a caller; seen in the 2026-09-28 eval. Shopper-facing
+# callers pass much shorter values (gift search: rerank.RERANK_TIMEOUT_SECS).
+DEFAULT_TIMEOUT_SECS = 60.0
+
 
 @dataclass
 class LLMResponse:
@@ -45,13 +57,18 @@ async def chat(
     max_tokens: int = 2000,
     temperature: float = 0.8,
     json_mode: bool = False,
+    thinking: bool = False,
+    timeout: float = DEFAULT_TIMEOUT_SECS,
 ) -> LLMResponse:
+    """`thinking=True` lets models that support it think adaptively (slower,
+    costlier, sometimes better); default off for our short structured tasks."""
     if model.startswith("claude-"):
-        return await _claude_chat(model, system, prompt, max_tokens, temperature, json_mode)
-    return await _openai_chat(model, system, prompt, max_tokens, temperature, json_mode)
+        return await _claude_chat(model, system, prompt, max_tokens, temperature, json_mode, thinking, timeout)
+    return await _openai_chat(model, system, prompt, max_tokens, temperature, json_mode, timeout)
 
 
-async def _openai_chat(model, system, prompt, max_tokens, temperature, json_mode) -> LLMResponse:
+async def _openai_chat(model, system, prompt, max_tokens, temperature, json_mode,
+                       timeout=DEFAULT_TIMEOUT_SECS) -> LLMResponse:
     kwargs = {}
     if json_mode:
         kwargs["response_format"] = {"type": "json_object"}
@@ -64,14 +81,37 @@ async def _openai_chat(model, system, prompt, max_tokens, temperature, json_mode
         ],
         temperature=temperature,
         max_tokens=max_tokens,
+        timeout=timeout,
         **kwargs,
     )
     usage = response.usage
+    text = response.choices[0].message.content or ""
     return LLMResponse(
-        text=response.choices[0].message.content or "",
+        text=extract_json(text) if json_mode else text,
         input_tokens=usage.prompt_tokens if usage else 0,
         output_tokens=usage.completion_tokens if usage else 0,
     )
+
+
+def extract_json(text: str) -> str:
+    """Best effort: return the JSON object inside a model reply (bare, fenced,
+    or wrapped in prose). Returns the input unchanged when none is found, so
+    callers' own json.loads still reports the failure."""
+    stripped = _strip_markdown_fences(text or "")
+    try:
+        json.loads(stripped)
+        return stripped
+    except ValueError:
+        pass
+    start, end = stripped.find("{"), stripped.rfind("}")
+    if start != -1 and end > start:
+        candidate = stripped[start:end + 1]
+        try:
+            json.loads(candidate)
+            return candidate
+        except ValueError:
+            pass
+    return text
 
 
 def _strip_markdown_fences(text: str) -> str:
@@ -83,7 +123,8 @@ def _strip_markdown_fences(text: str) -> str:
     return text.strip()
 
 
-async def _claude_chat(model, system, prompt, max_tokens, temperature, json_mode) -> LLMResponse:
+async def _claude_chat(model, system, prompt, max_tokens, temperature, json_mode, thinking=False,
+                       timeout=DEFAULT_TIMEOUT_SECS) -> LLMResponse:
     full_system = system
     if json_mode:
         full_system = system + "\n\nRespond with valid JSON only. Do not include markdown, code fences, or any text outside the JSON object."
@@ -91,12 +132,15 @@ async def _claude_chat(model, system, prompt, max_tokens, temperature, json_mode
     kwargs = {}
     if model not in _NO_SAMPLING_PARAMS:
         kwargs["temperature"] = temperature
+    if model in _ADAPTIVE_BY_DEFAULT and not thinking:
+        kwargs["thinking"] = {"type": "disabled"}
 
     response = await _anthropic_client.messages.create(
         model=model,
         system=full_system,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=max_tokens,
+        timeout=timeout,
         **kwargs,
     )
     usage = response.usage
@@ -106,7 +150,7 @@ async def _claude_chat(model, system, prompt, max_tokens, temperature, json_mode
         if getattr(block, "type", "text") == "text"
     )
     if json_mode:
-        text = _strip_markdown_fences(text)
+        text = extract_json(text)
     return LLMResponse(
         text=text,
         input_tokens=usage.input_tokens if usage else 0,

@@ -45,12 +45,21 @@ def main() -> int:
     print(f"Searches: {sum(len(personas[s]) for s in stores) * len(models)}  ·  cap ${args.cap:.2f}\n")
 
     ledger = Ledger(cap_usd=args.cap)
-    run = EvalRun(stores, models, ledger, OpenAIEmbedder())
+    run = EvalRun(stores, models, ledger, OpenAIEmbedder(), log=lambda *a: print(*a, flush=True))
     try:
         report = asyncio.run(run.run({s: personas[s] for s in stores}))
     except BudgetExceeded as e:
         print(f"\n{e}\nSpent by step: {ledger.by_step()}")
         return 1
+    finally:
+        # Cumulative spend across runs (each run's --cap only covers that run).
+        log_path = RESULTS / "spend_log.json"
+        entries = json.loads(log_path.read_text()) if log_path.exists() else []
+        entries.append({"stores": stores, "models": models, "spent_usd": round(ledger.spent, 4),
+                        "by_step": {k: round(v, 4) for k, v in ledger.by_step().items()}})
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text(json.dumps(entries, indent=2))
+        print(f"This run: ${ledger.spent:.2f} · all logged runs: ${sum(e['spent_usd'] for e in entries):.2f}", flush=True)
     print((RESULTS / "report.md").read_text())
     print(f"Spot-check page: {RESULTS / 'review.html'}")
     return 0
