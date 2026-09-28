@@ -79,3 +79,45 @@ async def test_default_timeout_is_bounded():
     with patch.object(llm._anthropic_client.messages, "create", create):
         await llm.chat("claude-haiku-4-5", "sys", "hi")
     assert 0 < create.await_args.kwargs["timeout"] <= 120
+
+
+def _openai_mock(text="hi"):
+    choice = SimpleNamespace(message=SimpleNamespace(content=text))
+    return AsyncMock(return_value=SimpleNamespace(choices=[choice], usage=SimpleNamespace(prompt_tokens=10, completion_tokens=5)))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model", ["gpt-6-luna", "gpt-6-sol"])
+async def test_gpt6_runs_without_reasoning_by_default(model):
+    # GPT-6 models reason by default (medium): slower and billed as output.
+    # Our short structured calls turn it off; temperature is only allowed then.
+    oa = _openai_mock('{"a": 1}')
+    with patch.object(llm._openai_client.chat.completions, "create", oa):
+        resp = await llm.chat(model, "sys", "hi", max_tokens=700, temperature=0.4, json_mode=True)
+    kw = oa.await_args.kwargs
+    assert kw["reasoning_effort"] == "none" and kw["temperature"] == 0.4
+    assert kw["max_completion_tokens"] == 700 and "max_tokens" not in kw
+    assert kw["response_format"] == {"type": "json_object"} and resp.text == '{"a": 1}'
+
+
+@pytest.mark.asyncio
+async def test_gpt6_thinking_opt_in_drops_temperature():
+    oa = _openai_mock()
+    with patch.object(llm._openai_client.chat.completions, "create", oa):
+        await llm.chat("gpt-6-sol", "sys", "hi", temperature=0.4, thinking=True)
+    kw = oa.await_args.kwargs
+    assert kw["reasoning_effort"] == "medium" and "temperature" not in kw
+
+
+@pytest.mark.asyncio
+async def test_older_openai_models_unchanged():
+    oa = _openai_mock()
+    with patch.object(llm._openai_client.chat.completions, "create", oa):
+        await llm.chat("gpt-4o-mini", "sys", "hi", max_tokens=50, temperature=0.4)
+    kw = oa.await_args.kwargs
+    assert kw["max_tokens"] == 50 and kw["temperature"] == 0.4 and "reasoning_effort" not in kw
+
+
+def test_gpt6_prices():
+    assert llm.calc_cost("gpt-6-luna", 1_000_000, 1_000_000) == pytest.approx(0.60)
+    assert llm.calc_cost("gpt-6-sol", 1_000_000, 1_000_000) == pytest.approx(12.0)

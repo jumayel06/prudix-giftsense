@@ -20,7 +20,16 @@ MODEL_COSTS = {
     "claude-haiku-4-5": {"input": 0.000001,   "output": 0.000005},
     "gpt-4.1":          {"input": 0.000002,   "output": 0.000008},
     "claude-sonnet-5":  {"input": 0.000002,   "output": 0.000010},
+    # GPT-6 (2026): evaluated as replacements for gpt-4o-mini / gpt-4.1.
+    "gpt-6-luna":       {"input": 0.0000001,  "output": 0.0000005},
+    "gpt-6-sol":        {"input": 0.000002,   "output": 0.000010},
 }
+
+# OpenAI reasoning models: they reason by default (billed as output, slower),
+# take `max_completion_tokens` instead of `max_tokens`, and accept temperature
+# only with reasoning_effort "none". We run them with "none" unless a caller
+# opts into thinking.
+_OPENAI_REASONING_PREFIXES = ("gpt-6",)
 
 # Claude models that reject sampling parameters (temperature/top_p/top_k)
 # with a 400. Sonnet 5 is one of them; Haiku 4.5 still accepts temperature.
@@ -64,14 +73,22 @@ async def chat(
     costlier, sometimes better); default off for our short structured tasks."""
     if model.startswith("claude-"):
         return await _claude_chat(model, system, prompt, max_tokens, temperature, json_mode, thinking, timeout)
-    return await _openai_chat(model, system, prompt, max_tokens, temperature, json_mode, timeout)
+    return await _openai_chat(model, system, prompt, max_tokens, temperature, json_mode, timeout, thinking)
 
 
 async def _openai_chat(model, system, prompt, max_tokens, temperature, json_mode,
-                       timeout=DEFAULT_TIMEOUT_SECS) -> LLMResponse:
+                       timeout=DEFAULT_TIMEOUT_SECS, thinking=False) -> LLMResponse:
     kwargs = {}
     if json_mode:
         kwargs["response_format"] = {"type": "json_object"}
+    if model.startswith(_OPENAI_REASONING_PREFIXES):
+        kwargs["max_completion_tokens"] = max_tokens
+        kwargs["reasoning_effort"] = "medium" if thinking else "none"
+        if not thinking:
+            kwargs["temperature"] = temperature
+    else:
+        kwargs["max_tokens"] = max_tokens
+        kwargs["temperature"] = temperature
 
     response = await _openai_client.chat.completions.create(
         model=model,
@@ -79,8 +96,6 @@ async def _openai_chat(model, system, prompt, max_tokens, temperature, json_mode
             {"role": "system", "content": system},
             {"role": "user",   "content": prompt},
         ],
-        temperature=temperature,
-        max_tokens=max_tokens,
         timeout=timeout,
         **kwargs,
     )

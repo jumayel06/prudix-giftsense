@@ -4,7 +4,8 @@
     .venv/bin/python scripts/eval_recs.py --stores candles,general --models haiku,sonnet --cap 6
 
 Stores: candles, jewelry, toys, kitchen, general.
-Models: mini (gpt-4o-mini), haiku (claude-haiku-4-5), gpt41 (gpt-4.1), sonnet (claude-sonnet-5).
+Models: mini (gpt-4o-mini), haiku (claude-haiku-4-5), gpt41 (gpt-4.1), sonnet (claude-sonnet-5),
+        luna (gpt-6-luna), sol (gpt-6-sol).
 Outputs evals/results/report.md, report.json, review.html. Catalogs, profiles
 and judge labels are cached under evals/data/, so reruns only pay for searches.
 """
@@ -21,7 +22,8 @@ from evals.catalogs import STORES  # noqa: E402
 from evals.ledger import BudgetExceeded, Ledger  # noqa: E402
 from evals.runner import DATA, RESULTS, EvalRun  # noqa: E402
 
-MODELS = {"mini": "gpt-4o-mini", "haiku": "claude-haiku-4-5", "gpt41": "gpt-4.1", "sonnet": "claude-sonnet-5"}
+MODELS = {"mini": "gpt-4o-mini", "haiku": "claude-haiku-4-5", "gpt41": "gpt-4.1", "sonnet": "claude-sonnet-5",
+          "luna": "gpt-6-luna", "sol": "gpt-6-sol"}
 
 
 def main() -> int:
