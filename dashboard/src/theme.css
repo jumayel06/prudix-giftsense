@@ -1,0 +1,1735 @@
+/* ─── Prudix brand tokens: Slate + Gold ───────────────────── */
+:root {
+  --prudix: #eab308;
+  --prudix-dark: #ca8a04;
+  --prudix-darker: #a16207;
+  --prudix-light: #fefce8;
+  --prudix-slate: #334155;
+  --prudix-slate-dark: #1e293b;
+  --prudix-gradient: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+
+  /* Override Polaris interactive/brand colours → gold */
+  --p-color-bg-fill-brand: #eab308;
+  --p-color-bg-fill-brand-hover: #ca8a04;
+  --p-color-bg-fill-brand-active: #a16207;
+  --p-color-bg-fill-brand-selected: #a16207;
+  --p-color-text-link: #ca8a04;
+  --p-color-text-link-hover: #a16207;
+  --p-color-border-interactive-focus: #eab308;
+  --p-color-border-brand: #eab308;
+  --p-color-bg-app: #f8fafc;
+}
+
+/* ─── Prevent horizontal scroll on mobile ─────────────────── */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* ─── Page top spacing ────────────────────────────────────── */
+.Polaris-Page {
+  padding-top: 0 !important;
+}
+
+.Polaris-Page__Content {
+  padding-top: 10px !important;
+}
+
+/* ─── Card shadow ─────────────────────────────────────────── */
+.Polaris-ShadowBevel {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 4px 16px rgba(51, 65, 85, 0.07) !important;
+}
+
+/* ─── Horizontal top nav — base styles ───────────────────── */
+.prudix-topnav {
+  background: transparent;
+  margin-bottom: 16px;
+}
+
+.prudix-topnav-inner {
+  max-width: var(--pc-page-max-width, 1280px);
+  margin: 0 auto;
+  padding: 0 var(--p-space-400, 16px);
+  display: flex;
+  align-items: center;
+  position: relative;
+  height: 52px;
+}
+
+.prudix-topnav-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.prudix-logomark {
+  flex-shrink: 0;
+}
+
+.prudix-logotype {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+}
+
+.prudix-logotype-name {
+  font-family: 'Poppins', sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(110deg, #0f172a 0%, #334155 55%, #eab308 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.prudix-logotype-ai {
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--prudix-dark);
+}
+
+.prudix-topnav-items {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.prudix-topnav-item {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0 12px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  font-family: inherit;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  height: 52px;
+  pointer-events: auto;
+}
+
+.prudix-topnav-item:hover { color: #1e293b; }
+
+/* ─── Mobile hamburger — hidden on desktop ────────────────── */
+.prudix-nav-hamburger {
+  display: none;
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  color: #334155;
+  font-size: 18px;
+  line-height: 1;
+  margin-left: auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Mobile dropdown menu ────────────────────────────────── */
+.prudix-mobile-menu {
+  display: none;
+  flex-direction: column;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 16px 12px;
+}
+
+.prudix-mobile-menu.open { display: flex; }
+
+.prudix-mobile-menu-item {
+  background: none;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  text-align: center;
+  font-family: inherit;
+  transition: background 0.12s, color 0.12s;
+}
+
+.prudix-mobile-menu-item:hover { background: #f8fafc; color: #1e293b; }
+
+.prudix-mobile-menu-item.active {
+  background: #fefce8;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+/* ─── All mobile overrides in one block (must be last) ───── */
+@media (max-width: 768px) {
+  /* Nav — hide items, show hamburger, prevent overflow */
+  .prudix-topnav-items    { display: none; }
+  .prudix-topnav-inner    { padding: 0 16px; }
+  .prudix-nav-hamburger   { display: flex; align-items: center; justify-content: center; }
+  .prudix-topnav          { overflow: hidden; }
+  .prudix-mobile-menu     { padding: 8px 12px 12px; }
+
+  /* Page layout — stack everything, full width */
+  .prudix-stats-row       { flex-direction: column; }
+  .prudix-features-grid   { grid-template-columns: 1fr !important; }
+
+  /* Polaris page padding on mobile */
+  .Polaris-Page           { padding-left: 12px !important; padding-right: 12px !important; }
+
+  /* Hero */
+  .prudix-hero            { padding: 20px 18px; }
+  .prudix-hero-actions    { flex-direction: column; }
+  .prudix-hero-actions button { width: 100%; text-align: center; }
+
+  /* Stat cards */
+  .prudix-stat-card       { padding: 16px 18px; }
+  .prudix-stat-value      { font-size: 28px; }
+
+  /* Footer */
+  .prudix-footer-links    { flex-wrap: wrap; justify-content: center; }
+  .prudix-footer-inner    { padding: 16px; }
+}
+
+.prudix-topnav-item.active {
+  color: #1e293b;
+  font-weight: 600;
+  border-bottom-color: var(--prudix);
+}
+
+/* ─── Footer ──────────────────────────────────────────────── */
+.prudix-footer {
+  border-top: 1px solid #e2e8f0;
+  margin-top: 40px;
+}
+
+.prudix-footer-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 32px;
+  gap: 8px;
+  text-align: center;
+}
+
+.prudix-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.prudix-footer-logo {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--prudix-slate-dark);
+}
+
+.prudix-footer-copy {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.prudix-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.prudix-footer-link {
+  font-size: 12px;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.prudix-footer-link:hover {
+  color: var(--prudix-dark);
+}
+
+.prudix-footer-sep {
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+/* ─── Hero gradient card (dark slate) ────────────────────── */
+.prudix-hero {
+  background: var(--prudix-gradient);
+  border-radius: 12px;
+  padding: 28px 32px;
+  color: white;
+  box-shadow: 0 8px 32px rgba(30, 41, 59, 0.28);
+}
+.prudix-hero-title {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+}
+.prudix-hero-sub {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.72);
+}
+.prudix-hero-badge {
+  background: rgba(234, 179, 8, 0.2);
+  color: #fde68a;
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Per-action color accents on the FAQ row.
+   Polaris Button doesn't accept arbitrary tone colors, so we color the icon
+   via descendant selectors on a wrapping div. The label text stays neutral
+   so buttons still feel cohesive — only the icon carries the semantic hint. */
+.prudix-action-edit svg { color: #6366f1; }      /* indigo — informational */
+.prudix-action-regenerate svg { color: #f59e0b; }/* amber  — costs a generation */
+.prudix-hero-actions {
+  margin-top: 24px;
+  display: flex;
+  gap: 10px;
+}
+.prudix-btn-primary {
+  background: var(--prudix);
+  color: #1e293b;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.45);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.prudix-btn-primary:hover {
+  background: var(--prudix-dark);
+  box-shadow: 0 4px 18px rgba(234, 179, 8, 0.6);
+}
+.prudix-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.prudix-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ─── Stat cards: gold top border ────────────────────────── */
+.prudix-stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px 24px;
+  border-top: 3px solid var(--prudix);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(51, 65, 85, 0.06);
+  flex: 1;
+}
+.prudix-stat-label {
+  font-size: 11px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+.prudix-stat-value {
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--prudix-slate-dark);
+  margin: 0 0 4px;
+  line-height: 1;
+}
+.prudix-stat-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* ─── Features grid — 3 col desktop, 1 col mobile ────────── */
+.prudix-features-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* ─── Quick-start step cards ─────────────────────────────── */
+.prudix-step {
+  background: var(--prudix-light);
+  border-radius: 10px;
+  padding: 20px;
+  flex: 1;
+  border-left: 4px solid var(--prudix);
+}
+.prudix-step-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--prudix-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 6px;
+}
+.prudix-step-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--prudix-slate-dark);
+  margin: 0 0 6px;
+}
+.prudix-step-desc {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────
+   Polaris sidebar — final layout
+   Logo on transparent, sections form the white card,
+   left-side gap, tighter right-side gap to main content.
+   ───────────────────────────────────────────────────────────────── */
+
+/* Override Polaris's own nav width variables so its internal sizing
+   uses our wide value instead of switching between narrow/wide.
+   `position: relative` makes Frame the containing block for the
+   absolute-positioned nav slot below. */
+.Polaris-Frame {
+  --p-width-navigation: 268px;
+  --pc-frame-navigation-width: 268px;
+  position: relative;
+}
+
+.Polaris-Frame__Navigation {
+  background: transparent !important;
+  padding: 12px 0 12px 40px;  /* 40px gap on left of screen */
+  width: 268px !important;
+  min-width: 268px !important;
+  max-width: 268px !important;
+}
+
+/* Polaris defaults the nav slot to position: fixed + height: 100%, which
+   makes it cover the viewport-left strip and overlap the footer when the
+   page is short. `position: relative` puts the nav back into the flex
+   flow of Frame__Main so it and the content column share the same height
+   via `align-items: stretch` — footer aligns with sidebar's natural
+   bottom. Kill Main's padding-left too: it was added by Polaris to
+   reserve space for the absolute/fixed nav, but now the in-flow nav
+   already occupies that width, and doubling the reservation left a
+   visible gap between sidebar and content. Mobile keeps the default
+   fixed behavior (overlay drawer). */
+@media (min-width: 769px) {
+  .Polaris-Frame__Navigation {
+    position: relative !important;
+    height: auto !important;
+    /* Opt out of Frame__Main's `align-items: stretch`. Otherwise the
+       nav column gets clamped to the viewport-tall Main, and the
+       wrapper (which is `overflow: hidden`) clips items that would
+       otherwise render below the viewport. With flex-start, the nav
+       renders at its full natural content height; Main then stretches
+       to that height via Frame's own flex chain, keeping the sticky
+       footer aligned with the sidebar's bottom. */
+    align-self: flex-start !important;
+  }
+  .Polaris-Frame--hasNav .Polaris-Frame__Main {
+    padding-left: 0 !important;
+  }
+}
+.Polaris-Frame__Navigation:hover,
+.Polaris-Frame__Navigation:focus-within {
+  width: 268px !important;
+  min-width: 268px !important;
+  max-width: 268px !important;
+}
+
+.Polaris-Frame__Navigation,
+.Polaris-Frame__Navigation:hover,
+.Polaris-Frame__Navigation:focus-within {
+  background: transparent !important;
+}
+.Polaris-Frame__Navigation .Polaris-Navigation,
+.Polaris-Frame__Navigation .Polaris-Navigation:hover,
+.Polaris-Frame__Navigation .Polaris-Navigation:focus-within {
+  background: transparent !important;
+  width: 228px;
+  min-width: 228px;
+  max-width: 228px;
+  border: none;
+  box-shadow: none;
+  /* Cap sidebar height to viewport so it doesn't extend past the
+     bottom of the main content column. If the 17 nav items don't fit,
+     internal scroll takes over (rare — the compact nav below fits in
+     most viewports). Previously we let the sidebar grow naturally, but
+     that left it visually longer than the (now sticky-footer) content
+     column. */
+  flex: 0 0 auto;
+  height: auto;
+  max-height: 100dvh;
+  overflow-y: auto;
+}
+
+/* Compact nav — 17 items across 4 sections fit in a single viewport
+   without scrolling. Trims Polaris defaults: item vertical padding
+   (12px → 6px), section header vertical padding (12px → 4px), section
+   heading text size (14px → 11px + uppercase). */
+.Polaris-Frame__Navigation .Polaris-Navigation__Item,
+.Polaris-Frame__Navigation .Polaris-Navigation__ListItem .Polaris-Navigation__Item {
+  padding-block-start: 1px !important;
+  padding-block-end: 1px !important;
+  min-height: 0 !important;
+}
+.Polaris-Frame__Navigation .Polaris-Navigation__ItemInnerWrapper {
+  min-height: 0 !important;
+  padding-block: 1px !important;
+}
+.Polaris-Frame__Navigation .Polaris-Navigation__SectionHeading,
+.Polaris-Frame__Navigation .Polaris-Navigation__SectionHeading *,
+.Polaris-Frame__Navigation .Polaris-Navigation__RollupToggle,
+.Polaris-Frame__Navigation li.Polaris-Navigation__ListItem > .Polaris-Navigation__SectionHeading * {
+  padding-block-start: 14px !important;
+  padding-block-end: 4px !important;
+  min-height: 0 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.09em !important;
+  text-transform: uppercase !important;
+  color: #0f172a !important;   /* slate-900 — brand navy */
+}
+.Polaris-Frame__Navigation .Polaris-Navigation__Section {
+  padding-block: 0 !important;
+  margin-block: 0 !important;
+}
+.Polaris-Frame__Navigation .Polaris-Navigation__Section:first-of-type {
+  padding-top: 2px !important;
+}
+.Polaris-Frame__Navigation .Polaris-Navigation__Section:last-of-type {
+  margin-top: 14px !important;
+  padding-bottom: 14px !important;
+  border-top: 1px solid #e2e8f0 !important;
+  padding-top: 10px !important;
+}
+.Polaris-Frame__Navigation .Polaris-Navigation__ListItem {
+  margin-block: 0 !important;
+  padding-block: 0 !important;
+}
+/* Polaris uses CSS custom props for item block padding on newer
+   versions — override those too so the rules stick regardless of
+   Polaris version. */
+.Polaris-Frame__Navigation .Polaris-Navigation {
+  --pc-navigation-item-padding-block: 1px;
+  --p-space-200: 2px;
+}
+
+/* Wrapper card: grows to fit its content. Combined with the desktop
+   `position: absolute` on Polaris-Frame__Navigation above, the whole
+   sidebar scrolls with the page instead of scrolling internally —
+   so every menu item is always reachable via the page scroll. */
+.prudix-sidebar-wrapper {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+}
+
+/* Kill all transforms, transitions and animations in the nav.
+   Polaris was driving a width-related animation somewhere we couldn't
+   pinpoint; this blocks it at the source. */
+.Polaris-Frame__Navigation *,
+.Polaris-Frame__Navigation *:hover,
+.Polaris-Frame__Navigation *:focus,
+.Polaris-Frame__Navigation *:focus-within,
+.Polaris-Frame__Navigation *:active {
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Lock item widths AND section/list widths to prevent Polaris from
+   changing horizontal spacing on hover/focus. Every nav sub-element
+   takes 100% of its parent in all interaction states. */
+.Polaris-Navigation__Item,
+.Polaris-Navigation__Item:hover,
+.Polaris-Navigation__Item:focus,
+.Polaris-Navigation__Item:focus-within,
+.Polaris-Navigation__Item:focus-visible,
+.Polaris-Navigation__ItemInnerWrapper,
+.Polaris-Navigation__ItemInnerWrapper:hover,
+.Polaris-Navigation__ItemInnerWrapper:focus,
+.Polaris-Navigation__ListItem,
+.Polaris-Navigation__ListItem:hover,
+.Polaris-Navigation__ListItem:focus,
+.Polaris-Navigation__ListItem:focus-within,
+.Polaris-Navigation__Section,
+.Polaris-Navigation__Section:hover,
+.Polaris-Navigation__Section:focus-within,
+.Polaris-Navigation__PrimaryNavigation,
+.Polaris-Navigation__PrimaryNavigation:hover,
+.Polaris-Navigation__PrimaryNavigation:focus-within {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+.Polaris-Frame__Navigation .Polaris-Navigation__PrimaryNavigation {
+  flex-grow: 0 !important;
+  display: flex;
+  flex-direction: column;
+}
+/* Desktop only — kill the internal sidebar scroll so the whole page
+   scrolls instead. Mobile keeps the default because the sidebar is the
+   overlay drawer, which still needs internal scroll to reach all items
+   when the nav is taller than the viewport.
+   We DON'T opt Frame__Navigation out of `align-items: stretch` — we
+   want it to match the content column's height so the sidebar visually
+   aligns with the sticky-footer content column. Killing overflow on
+   the inner scroll containers (Polaris-Navigation + PrimaryNavigation)
+   is enough to prevent internal scroll while still letting the nav
+   stretch. */
+@media (min-width: 769px) {
+  .Polaris-Frame__Navigation .Polaris-Navigation__PrimaryNavigation {
+    overflow: visible !important;
+  }
+  .Polaris-Frame__Navigation .Polaris-Navigation {
+    overflow: visible !important;
+    /* Kill Polaris' default `height: 100%; min-height: 100%` and the
+       `max-height: 100dvh` set in the base rule above. Without removing
+       max-height, the inner nav is capped at viewport height on smaller
+       screens (MacBook Pro ~900px). Its children still render via
+       `overflow: visible`, but the wrapper's `overflow: hidden` (needed
+       for border-radius) clips that overflow — hiding the last menu
+       items. Removing max-height lets the nav grow to its full content
+       height; the wrapper then measures that height correctly and no
+       items are clipped. */
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+}
+
+/* Sidebar wrapper is the visual card — gold top accent, rounded corners,
+   shadow — so the brand logo sits inside it alongside the nav sections.
+   Brand still sits OUTSIDE Polaris's <Navigation> to keep Polaris's
+   hover-gray off the logo area. */
+.prudix-sidebar-wrapper {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-top: 3px solid #eab308;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(51, 65, 85, 0.06);
+  overflow: hidden;
+  align-self: flex-start;
+  /* Force the wrapper to at least fit-content height so it can't be
+     shrunk to a smaller box by any ancestor stretching or Polaris
+     internal `height:100%` chain — which would otherwise trigger the
+     `overflow: hidden` above to silently cut off the last menu items
+     when the sidebar's natural is taller than the viewport (typical
+     on MacBook Pro-sized screens). */
+  min-height: fit-content;
+}
+
+/* Logo — left-aligned inside the wrapper card, with a hairline divider
+   below it separating it from the nav sections. */
+.prudix-sidebar-brand,
+.prudix-sidebar-brand:hover,
+.prudix-sidebar-brand:focus,
+.prudix-sidebar-brand:active,
+.prudix-sidebar-brand:focus-visible {
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  cursor: pointer;
+  padding: 14px 16px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  border-bottom: 1px solid #f1f5f9; /* slate-100 hairline */
+}
+
+/* Belt-and-braces: also reset hover on Polaris's internal wrapper */
+.Polaris-Navigation__PrimaryNavigation,
+.Polaris-Navigation__PrimaryNavigation:hover,
+.Polaris-Navigation__PrimaryNavigation:focus,
+.Polaris-Navigation__PrimaryNavigation:focus-within {
+  background: transparent !important;
+}
+
+/* Sections sit inside the wrapper card — wrapper carries the border,
+   radius, and shadow; sections just need white bg + edge padding. */
+.Polaris-Frame__Navigation .Polaris-Navigation__Section {
+  background: white;
+  margin: 0 !important;
+}
+.Polaris-Frame__Navigation .Polaris-Navigation__Section:first-of-type {
+  padding-top: 6px;
+}
+.Polaris-Frame__Navigation .Polaris-Navigation__Section:last-of-type {
+  padding-bottom: 12px;
+}
+
+/* Selected nav item — darker greyish instead of Polaris default */
+.Polaris-Frame__Navigation .Polaris-Navigation__Item[aria-current="page"],
+.Polaris-Frame__Navigation .Polaris-Navigation__ListItem--selected .Polaris-Navigation__Item,
+.Polaris-Frame__Navigation .Polaris-Navigation__Item--selected {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+.Polaris-Frame__Navigation .Polaris-Navigation__Item[aria-current="page"] .Polaris-Icon svg,
+.Polaris-Frame__Navigation .Polaris-Navigation__ListItem--selected .Polaris-Icon svg {
+  fill: #0f172a !important;
+}
+
+/* Main content area must offset by the same amount as our widened nav slot;
+   otherwise the sidebar overlaps the content. The slot is 268px wide
+   (40px left padding + 228px card), so Main starts at 268px. The plan picker
+   avoids this gutter a different way — App.jsx passes NO navigation prop when
+   pending, and `body.prudix-no-nav` (below) zeroes this padding. */
+.Polaris-Frame__Main {
+  padding-inline-start: 268px !important;
+}
+
+/* When AppShell hides the sidebar (e.g. plan-picker pre-trial), drop the
+   268px reservation so the page isn't sitting in an empty left gutter,
+   and make Polaris-Page's left/right padding symmetric (default is 20/40
+   because of the nav layout). */
+body.prudix-no-nav .Polaris-Frame__Main {
+  padding-inline-start: 0 !important;
+}
+body.prudix-no-nav .Polaris-Frame__Main .Polaris-Page {
+  /* Install plan picker: edge-to-edge, no nav gutter, no centered cap.
+     Symmetric 40px gutters so the header starts at the true left edge and the
+     3-card row spans the full width. Mobile padding tightens to 16px and the
+     grid collapses to 1 column below (see media queries). */
+  padding-inline-start: 40px !important;
+  padding-inline-end: 40px !important;
+  /* Breathing room below the last card — Polaris-Page has no bottom
+     padding by default, and with the footer suppressed during install
+     the cards would otherwise sit flush against the viewport edge. */
+  padding-block-end: 64px !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
+}
+
+/* Stack the 3 pricing cards one-after-another (full width) below the width
+   where all three fit in a row (~940px = 3 × 300px basis + gaps). This skips
+   the awkward 2-per-row-then-1 wrap entirely — it's cleanly 3-up or 1-up.
+   align-items:stretch makes each card fill the column width; the inline
+   flex:'1 1 300px' basis only governs the row layout on wider screens. */
+@media (max-width: 940px) {
+  .prudix-plan-cards {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  /* Cards carry an inline `flex: 1 1 300px`. In the row layout that 300px is a
+     WIDTH basis; in this stacked column it becomes a HEIGHT basis and the
+     shrink factor squeezes each card down, clipping the feature list. Reset to
+     natural content height so every card shows all its features. */
+  .prudix-plan-cards > * {
+    flex: 0 0 auto !important;
+  }
+}
+
+/* Mobile: minimal side padding so the single-column cards use the full width. */
+@media (max-width: 768px) {
+  body.prudix-no-nav .Polaris-Frame__Main .Polaris-Page {
+    padding-inline-start: 16px !important;
+    padding-inline-end: 16px !important;
+  }
+}
+.Polaris-Frame__Main .Polaris-Page {
+  max-width: none !important;
+  padding-inline-start: 20px !important;  /* matches Polaris --p-space-500 */
+  padding-inline-end: 40px !important;    /* 40px gap on right of screen — matches left */
+}
+
+/* Mobile hamburger trigger */
+.prudix-mobile-nav-trigger {
+  display: none;
+  position: absolute; /* scrolls with the page */
+  top: 12px;
+  left: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #1e293b;
+  cursor: pointer;
+  z-index: 510;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.prudix-mobile-nav-trigger:hover { background: #f8fafc; }
+.prudix-mobile-nav-trigger[data-nav-open="true"] { display: none !important; }
+
+/* Custom close button — top-right corner of the sidebar on mobile.
+   The brand div below gets extra top-padding on mobile so the logo
+   sits below the X instead of overlapping it. */
+.prudix-sidebar-close {
+  display: none;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #475569;
+  cursor: pointer;
+  z-index: 20;
+}
+.prudix-sidebar-close:hover { background: #f1f5f9; color: #0f172a; }
+.prudix-sidebar-close:focus,
+.prudix-sidebar-close:focus-visible,
+.prudix-sidebar-close:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Suppress sticky blue focus outline on nav items (left over after click).
+   Keyboard-only :focus-visible still produces a ring for accessibility. */
+.Polaris-Navigation__Item:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Generation-history filter bar — inline row on desktop; each control keeps
+   a sensible min-width so the Selects don't crush. Mobile override below in
+   the 768px block stacks them full-width. */
+.gen-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.gen-filters > * {
+  min-width: 150px;
+}
+.gen-filters > .Polaris-Button {
+  min-width: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Mobile nav — clean rewrite
+   ───────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  /* Show the hamburger trigger (it's hidden by default on desktop) */
+  .prudix-mobile-nav-trigger { display: flex; }
+
+  /* Show our custom X close button + hide Polaris's built-in dismiss */
+  .prudix-sidebar-close { display: flex; }
+  .Polaris-Frame__NavigationDismiss { display: none !important; }
+
+  /* Sidebar slot — fixed 280px wide, left-aligned, no padding/gap.
+     Desktop's 40px slot padding and 268px width are overridden.
+     `overflow: hidden` prevents the outer Polaris container from
+     scrolling — only the inner .Polaris-Navigation scrolls.
+     Explicit `height: 100dvh` so `height: 100%` on sidebar-wrapper
+     resolves to viewport height regardless of Polaris internals. */
+  .Polaris-Frame__Navigation,
+  .Polaris-Frame__Navigation:hover,
+  .Polaris-Frame__Navigation:focus-within {
+    padding: 0 !important;
+    width: 280px !important;
+    min-width: 280px !important;
+    max-width: 280px !important;
+    overflow: hidden !important;
+    height: 100dvh !important;
+  }
+
+  /* Wrapper around brand + Navigation: flex column so brand stays
+     pinned and Navigation below scrolls when its content overflows.
+     Strip the desktop card styling (border, radius, shadow) — mobile
+     is edge-to-edge full-height. */
+  .prudix-sidebar-wrapper {
+    height: 100dvh;
+    /* CRITICAL: the base rule sets `min-height: fit-content`, which on
+       mobile forces the wrapper to its full content height (~900px,
+       taller than the phone viewport) and overrides `height: 100dvh` —
+       leaving the fixed drawer unbounded with no scroll region. Reset it
+       to 0 so the wrapper is exactly viewport-tall and its nav-scroll
+       child becomes the bounded, scrollable area. Same for align-self
+       (base sets flex-start) so it fills the fixed nav slot. */
+    min-height: 0 !important;
+    max-height: 100dvh !important;
+    align-self: stretch !important;
+    width: 100%;
+    background: white !important;
+    border-top: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Brand: fixed height, doesn't shrink */
+  .prudix-sidebar-brand {
+    background: white !important;
+    padding: 56px 16px 16px !important;
+    flex: 0 0 auto;
+  }
+
+  /* prudix-nav-scroll: our own scroll container wrapping <Navigation>.
+     Bypasses all Polaris internal layout — we own the scroll layer.
+     Generous bottom padding so the last items (Settings/Support) clear
+     Shopify's floating mobile toolbar + the iOS home-indicator inset. */
+  .prudix-nav-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+
+  /* Navigation + PrimaryNavigation: let them be natural height inside
+     the scroll container — no artificial height constraints needed. */
+  .Polaris-Frame__Navigation .Polaris-Navigation,
+  .Polaris-Frame__Navigation .Polaris-Navigation:hover,
+  .Polaris-Frame__Navigation .Polaris-Navigation:focus-within {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    background: white !important;
+    border-radius: 0 !important;
+    border-top: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    padding-bottom: 16px;
+  }
+
+  .Polaris-Frame__Navigation .Polaris-Navigation__PrimaryNavigation {
+    overflow: visible !important;
+    flex-grow: 1 !important;
+  }
+
+  /* Sections: edge-to-edge white, no rounding/borders, no shadows */
+  .Polaris-Frame__Navigation .Polaris-Navigation__Section,
+  .Polaris-Frame__Navigation .Polaris-Navigation__Section:first-of-type,
+  .Polaris-Frame__Navigation .Polaris-Navigation__Section:last-of-type {
+    background: white !important;
+    border-radius: 0 !important;
+    border-top: none !important;
+    box-shadow: none !important;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  /* Main content: no left offset (sidebar is overlay, not pushing),
+     small top padding so the page title doesn't sit under the hamburger */
+  .Polaris-Frame__Main { padding-inline-start: 0 !important; }
+  .Polaris-Frame__Main .Polaris-Page {
+    padding-inline-start: 16px !important;
+    padding-inline-end: 16px !important;
+    padding-block-start: 56px !important;
+  }
+
+  /* Concierge Products tab rows — desktop packs thumbnail + title +
+     stats + "Test as shopper" button + arrow on one line, which crushes
+     the title (→ "T...") and wraps the stats to 4 lines on a phone.
+     On mobile, let the action group drop to its own full-width line
+     below the content (aligned under the title, past the thumbnail). */
+  .concierge-product-row {
+    flex-wrap: wrap;
+  }
+  .concierge-product-actions {
+    flex-basis: 100%;
+    padding-left: 56px; /* thumbnail (44) + row gap (12) — aligns button under title */
+    margin-top: 4px;
+    align-self: stretch !important;
+  }
+  .concierge-product-actions button {
+    flex: 1 1 auto; /* stretch the tap target across the freed width */
+  }
+  /* Arrow is redundant on mobile — tapping the row already navigates. */
+  .concierge-product-arrow {
+    display: none;
+  }
+
+  /* Gaps tab rows — desktop keeps question + [asks badge][Add answer]
+     [Dismiss] on one line; on mobile stack the actions below the
+     question and let the two buttons share the width. */
+  .concierge-gap-actions {
+    flex-basis: 100%;
+    margin-top: 10px;
+    justify-content: flex-start;
+  }
+  .concierge-gap-actions .Polaris-Button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  /* Inventory + Retention KPI cards — multi-column grids can't shrink
+     below the big value's min-content, so the columns overflow / stay
+     narrow on a phone. Stack to one full-width column. */
+  .inv-kpi-grid,
+  .retention-kpi-grid,
+  .leaks-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Inventory rec rows — the 5-cell layout crams thumbnail + title +
+     dollars + severity + confidence onto one line and the text
+     overlaps. Wrap the dollars+badges meta group onto its own line
+     below the title (aligned past the 40px thumbnail + 16px gap), and
+     left-pack everything so it reads:  $63.0k at retail [medium] [low].
+     Without the explicit left-packing the dollars + badge-stack get
+     spread to opposite ends, leaving an awkward mid-row gap. */
+  .inv-rec-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .inv-rec-meta {
+    flex-basis: 100%;
+    padding-left: 56px;
+    margin-top: 8px;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap;
+  }
+  /* Dollar figure: left-aligned, sized to content, never grows. */
+  .inv-rec-meta > div:first-child {
+    text-align: left !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+  }
+  /* Badge stack: sit immediately after the dollars (not pushed right),
+     lay the two badges out horizontally, left-aligned. */
+  .inv-rec-meta .Polaris-BlockStack {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  /* Retention tables (main customers list + drawer "Recent orders") —
+     the 7-column list can't fit a phone (LTV / Last order / Action get
+     cut off, the Risk badge wraps). Collapse each row into a stacked
+     card: hide the header, stack cells, and prefix each value with its
+     column name via the data-label attribute. Same class reused for the
+     3-column orders table so long category names never overflow. */
+  .retention-table thead {
+    display: none;
+  }
+  .retention-table,
+  .retention-table tbody,
+  .retention-table tr,
+  .retention-table td {
+    display: block;
+    width: 100%;
+  }
+  .retention-table tr {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px;
+    padding: 6px 12px;
+    margin-bottom: 12px;
+  }
+  .retention-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 8px 0 !important;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: right;
+  }
+  .retention-table td:last-child {
+    border-bottom: none;
+  }
+
+  /* Generation-history filters: stack each control full-width so the
+     Selects + date inputs are tappable and don't overflow the card. */
+  .gen-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .gen-filters > * {
+    min-width: 0;
+    width: 100%;
+  }
+  .retention-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #64748b;
+    font-size: 13px;
+    text-align: left;
+    flex: 0 0 auto;
+  }
+
+  /* Content Kits event rows — thumbnail + description + Generate +
+     Dismiss can't share one line on a phone; the description collapses
+     to one word per line. Drop the actions onto their own line below
+     the description (aligned past the 48px thumbnail + 16px gap). */
+  .kit-event-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .kit-event-actions {
+    flex-basis: 100%;
+    padding-left: 64px;
+    margin-top: 8px;
+  }
+  /* Left-align the buttons under the description instead of hugging the
+     right edge (Polaris InlineStack align="end" pushes them right). */
+  .kit-event-actions .Polaris-InlineStack {
+    justify-content: flex-start !important;
+  }
+
+  /* Catalog Audit result rows — the fix buttons (Rewrite description /
+     Generate FAQ / Generate alt text) have an inline `flex: 0 0 auto`
+     so they stay a fixed-width column that overflows on a phone (3rd
+     button cut off, and the wide 3-button card knocks the thumbnail onto
+     its own line, misaligning cards). `flex: 1 1 100% !important` beats
+     the inline style so the actions always take their own full-width
+     line below the badges (aligned past the 40px thumbnail + 16px gap);
+     the buttons then wrap + stretch to fill. */
+  .audit-result-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .audit-result-actions {
+    flex: 1 1 100% !important;
+    flex-wrap: wrap;
+    padding-left: 56px;
+    margin-top: 8px;
+  }
+  .audit-result-actions .Polaris-Button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  /* FAQ product rows — published rows carry 3 wide actions (preview eye +
+     Edit FAQ + Regenerate) that overflow and overlap the status badges
+     on a phone. Drop the actions onto their own line below the badges
+     (aligned past the 40px thumbnail + 14px gap), left-packed + wrapping. */
+  .faq-product-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .faq-product-actions {
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    padding-left: 54px;
+    margin-top: 8px;
+    justify-content: flex-start;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Sales Leak — Returns row header (content left, actions right)
+   Content shrinks (badges wrap within it) so the action buttons stay
+   on the same line on desktop regardless of how many header badges a
+   row has. Wraps to a stacked layout only on mobile.
+   ───────────────────────────────────────────────────────────────── */
+.leak-row-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.leak-row-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.leak-row-actions {
+  flex: 0 0 auto;
+}
+/* Fixed-width slot for the primary action button so its width doesn't
+   vary with the label (Review in kit / Re-fix with AI / Fix with AI) —
+   keeps the Details/Dismiss buttons vertically aligned across rows. */
+.leak-primary-slot {
+  display: inline-flex;
+  width: 168px;
+  flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  .leak-row-header {
+    flex-wrap: wrap;
+  }
+  .leak-row-actions {
+    flex-basis: 100%;
+  }
+  .leak-primary-slot {
+    width: auto;
+    flex: 1 1 auto;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   HelpDot — circular "?" info affordance (tooltip activator)
+   Used inline next to labels and beside action buttons. Bigger tap
+   target + hover/focus states than the old flat grey icon.
+   ───────────────────────────────────────────────────────────────── */
+.prudix-helpdot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: #eef2f6;
+  color: #64748b;
+  cursor: help;
+  flex-shrink: 0;
+  vertical-align: middle;
+  outline: none;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  font-family: inherit;
+  user-select: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.prudix-helpdot:hover {
+  background: #d9e1ea;
+  color: #334155;
+}
+.prudix-helpdot:focus-visible {
+  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.55);
+  color: #334155;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Concierge question + gap rows — base (all-screen) layout
+   ───────────────────────────────────────────────────────────────── */
+
+/* Tappable shopper-question rows (Overview + Questions tab) open a
+   detail modal with the full AI response. Hover cue on desktop. */
+.concierge-question-row {
+  transition: background 0.15s ease;
+}
+.concierge-question-row:hover {
+  background: #f8fafc;
+}
+
+/* Gap rows: flex row on desktop (question grows, actions sit right),
+   wraps to stacked layout on mobile via the media-query overrides. */
+.concierge-gap-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.concierge-gap-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Content Kits event rows (the "N events waiting" trigger banner) —
+   actions stay right on desktop, don't shrink. Mobile overrides drop
+   them below the description so the text isn't crushed to one word. */
+.kit-event-actions {
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Inventory & Cash Flow — recommendation rows (base / desktop)
+   Row is flex: thumbnail + main (grows) + meta (dollars + badges).
+   Mobile overrides (below) drop the meta group to its own line.
+   ───────────────────────────────────────────────────────────────── */
+.inv-rec-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   App footer — matches prudix.app website footer aesthetic
+   Dark slate surface, 4-column grid (brand + Product + Company + Legal),
+   width auto-aligned to nav + content area via Polaris-Frame__Main padding
+   ───────────────────────────────────────────────────────────────── */
+
+/* Sticky-footer pattern. Two layers of anchoring so the footer sits at
+   the visible bottom regardless of content length:
+   1. `.Polaris-Frame__Content` becomes a flex column so its children
+      (only child: our app-body) can stretch vertically.
+   2. `.prudix-app-body` uses BOTH `flex: 1` (fills any parent that
+      stretches it) AND `min-height: 100dvh` (falls back to viewport
+      height in case the parent isn't stretching for any reason —
+      e.g. Polaris internals or App Bridge iframe sizing quirks).
+   Then route-container grows within app-body, pinning the footer to
+   the bottom. `100dvh` (dynamic viewport height) is more reliable than
+   `100vh` in embedded iframes than `vh`. */
+.Polaris-Frame__Content {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+.prudix-app-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* No `min-height: 100dvh` here — that was clamping app-body to
+     viewport height, preventing it from stretching to match a taller
+     sidebar via Frame's flex chain. Frame__Content's min-height above
+     is enough of a floor; flex:1 lets us grow past it when siblings
+     (the sidebar column) are naturally taller. */
+}
+.prudix-route-container {
+  flex: 1;
+  min-height: 0;
+}
+
+.prudix-app-footer {
+  /* 16px gap above + below matches the inter-card gap on the home page. */
+  margin-top: 16px;
+  margin-bottom: 16px;
+  /* Match Polaris-Page's padding so the footer aligns with the main
+     content cards above (20px left, 40px right). */
+  margin-inline-start: 20px;
+  margin-inline-end: 40px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0f172a; /* slate-900 */
+  color: #94a3b8;       /* slate-400 */
+}
+
+.prudix-app-footer-inner {
+  padding: 20px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.prudix-app-footer-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px 10px;
+  font-size: 13px;
+}
+.prudix-app-footer-email { color: #fde68a; }
+.prudix-app-footer-sep { color: #475569; }
+.prudix-app-footer-copyright { color: #64748b; }
+
+.prudix-app-footer a {
+  color: #cbd5e1;       /* slate-300 */
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.prudix-app-footer a:hover { color: #eab308; }
+
+.prudix-app-footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: white;
+}
+.prudix-app-footer-brand-text {
+  background: linear-gradient(110deg, #cbd5e1 0%, #94a3b8 55%, #eab308 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.prudix-app-footer-tm {
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 2px;
+  /* sup gets its own baseline shift — gradient inherits from parent */
+}
+
+@media (max-width: 768px) {
+  /* Polaris-Page uses 16px symmetric padding on mobile — match it. */
+  .prudix-app-footer {
+    margin-inline-start: 16px;
+    margin-inline-end: 16px;
+  }
+  .prudix-app-footer-inner {
+    padding: 14px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .prudix-app-footer-right {
+    justify-content: flex-start;
+    font-size: 12px;
+    gap: 2px 8px;
+  }
+  /* Smaller logo so the whole footer takes less vertical real estate on
+     mobile — the brand read stays crisp at 17px while shaving ~8px off
+     the footer height. */
+  .prudix-app-footer-brand { font-size: 17px; }
+  .prudix-app-footer-tm { font-size: 9px; }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Inline generation-limit callout (FAQ, Descriptions, Ad Copy pages)
+   More prominent than a Polaris Banner — designed to be impossible
+   to miss directly in the content flow.
+   ───────────────────────────────────────────────────────────────── */
+.prudix-limit-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 20px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-left: 5px solid #ef4444;
+  border-radius: 10px;
+}
+.prudix-limit-callout-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.prudix-limit-callout-body {
+  flex: 1;
+  min-width: 0;
+}
+.prudix-limit-callout-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9f1239;
+}
+.prudix-limit-callout-text {
+  margin: 0;
+  font-size: 13px;
+  color: #be123c;
+  line-height: 1.5;
+}
+.prudix-limit-callout-cta {
+  flex-shrink: 0;
+  align-self: center;
+  padding: 7px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #ef4444;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.prudix-limit-callout-cta:hover { background: #dc2626; }
+
+@media (max-width: 600px) {
+  .prudix-limit-callout { flex-direction: column; gap: 10px; }
+  .prudix-limit-callout-cta { width: 100%; text-align: center; }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Trial usage banner
+   ───────────────────────────────────────────────────────────────── */
+.prudix-trial-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 40px 0 20px;
+  padding: 11px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  /* default (warning) — kept for potential future use */
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-left: 4px solid #f59e0b;
+  color: #78350f;
+}
+.prudix-trial-banner--critical {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  border-left-color: #ef4444;
+  color: #9f1239;
+}
+.prudix-trial-banner-icon { flex-shrink: 0; font-size: 15px; line-height: 1; }
+.prudix-trial-banner-text { flex: 1; min-width: 0; font-weight: 500; }
+.prudix-trial-banner-cta {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: #ef4444;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.prudix-trial-banner-cta:hover { background: #dc2626; }
+
+@media (max-width: 768px) {
+  .prudix-trial-banner {
+    margin: 10px 16px 0;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .prudix-trial-banner-cta { width: 100%; text-align: center; }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   BatchQueuePage — rewrite card header + side-by-side compare
+   ───────────────────────────────────────────────────────────────── */
+.prudix-rewrite-header {
+  padding: 14px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.prudix-rewrite-compare {
+  padding: 14px 20px 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 600px) {
+  .prudix-rewrite-header {
+    /* Stack title/badges above action buttons on narrow screens */
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .prudix-rewrite-compare {
+    /* Stack Current above Rewritten on mobile */
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   DescriptionsPage — output language picker + picker footer
+   ───────────────────────────────────────────────────────────────── */
+.prudix-lang-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.prudix-lang-picker-select {
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  color: #1e293b;
+  cursor: pointer;
+  min-width: 160px;
+  flex-shrink: 0;
+}
+.prudix-picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.prudix-picker-footer-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .prudix-lang-picker {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .prudix-lang-picker-select {
+    width: 100%;
+    min-width: 0;
+  }
+  .prudix-picker-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .prudix-picker-footer-actions {
+    width: 100%;
+  }
+  .prudix-picker-footer-actions .Polaris-Button {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   GeneratePage — sample-preview card
+   ───────────────────────────────────────────────────────────────── */
+.prudix-preview-card {
+  background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+  border-radius: 12px;
+  padding: 20px 28px;
+  border: 1px solid #fde68a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.prudix-preview-card-body {
+  flex: 1;
+  min-width: 0;
+}
+.prudix-preview-card-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 10px 20px;
+  background: #1e293b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+.prudix-preview-card-btn:hover { background: #0f172a; }
+
+@media (max-width: 600px) {
+  .prudix-preview-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 18px 20px;
+    gap: 14px;
+  }
+  .prudix-preview-card-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Rich text editor (TipTap) — used in BlogPostEditorPage
+   ───────────────────────────────────────────────────────────────── */
+
+.prudix-rte-content {
+  padding: 14px 18px;
+  border: 1px solid #e2e8f0;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  background: white;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #1e293b;
+}
+.prudix-rte-content .ProseMirror {
+  outline: none;
+  min-height: inherit;
+}
+.prudix-rte-content .ProseMirror p {
+  margin: 0 0 12px;
+}
+.prudix-rte-content .ProseMirror h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 20px 0 10px;
+  color: #0f172a;
+}
+.prudix-rte-content .ProseMirror h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 16px 0 8px;
+  color: #0f172a;
+}
+.prudix-rte-content .ProseMirror ul,
+.prudix-rte-content .ProseMirror ol {
+  padding-left: 22px;
+  margin: 0 0 12px;
+}
+.prudix-rte-content .ProseMirror li { margin: 4px 0; }
+.prudix-rte-content .ProseMirror a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+.prudix-rte-content .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 8px 0;
+}
+.prudix-rte-content .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* Two-tone palette for the Content Kits event-feed Generate /
+   Regenerate buttons. Polaris 13.9.5 Button only ships
+   `tone: 'critical' | 'success'`, neither of which fits AI
+   generation semantics. Custom CSS overrides the primary-button
+   surface using Prudix brand tokens for consistency.
+   Generate  = Prudix gold gradient (brand-forward, signals AI magic).
+   Regenerate = Prudix slate gradient (utility refresh, neutral). */
+.prudix-kit-event-generate .Polaris-Button--variantPrimary,
+.prudix-kit-event-generate .Polaris-Button--toneSuccess,
+.prudix-kit-event-generate .Polaris-Button {
+  background: linear-gradient(135deg, var(--prudix) 0%, var(--prudix-dark) 100%) !important;
+  border-color: transparent !important;
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+.prudix-kit-event-generate .Polaris-Button:hover {
+  background: linear-gradient(135deg, var(--prudix-dark) 0%, var(--prudix-darker) 100%) !important;
+  color: #ffffff !important;
+}
+.prudix-kit-event-regenerate .Polaris-Button--variantPrimary,
+.prudix-kit-event-regenerate .Polaris-Button--toneSuccess,
+.prudix-kit-event-regenerate .Polaris-Button {
+  background: linear-gradient(135deg, var(--prudix-slate) 0%, var(--prudix-slate-dark) 100%) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+.prudix-kit-event-regenerate .Polaris-Button:hover {
+  background: linear-gradient(135deg, var(--prudix-slate-dark) 0%, #0f172a 100%) !important;
+}

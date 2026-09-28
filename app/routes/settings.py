@@ -29,6 +29,7 @@ async def get_settings(
         "model_weight": MODEL_WEIGHTS.get(selected_model, 1),
         "models_available": plan["models_available"],
         "model_weights": {m: MODEL_WEIGHTS[m] for m in plan["models_available"]},
+        "features": plan["features"],
         "plan_tier": plan_tier,
         "plan_status": shop_record.plan_status,
         "plan_name": plan["name"],

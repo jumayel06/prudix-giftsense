@@ -16,6 +16,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import (
     CYCLE_DAYS,
+    FEATURE_CATEGORIES,
+    FEATURE_LABELS,
+    MODEL_WEIGHTS,
     PLAN_DEFAULT_MODELS,
     PLANS,
     derive_tier_from_subscription_name,
@@ -124,9 +127,14 @@ async def list_plans():
                 "features": p.get("features", []),
                 "max_products": p["max_products"],
                 "media_messages_per_month": p["media_messages_per_month"],
+                "trial_media_messages": p["trial_media_messages"],
             }
             for tier, p in PLANS.items()
-        ]
+        ],
+        # Display catalog for the dashboard, so it never hardcodes these.
+        "feature_labels": FEATURE_LABELS,
+        "feature_categories": FEATURE_CATEGORIES,
+        "model_weights": MODEL_WEIGHTS,
     }
 
 

@@ -963,3 +963,28 @@ class TestMonthlyOnlyCharge:
         assert variables["name"] == f"GiftSense {PLANS[tier]['name']} Monthly Plan"
         assert variables["trialDays"] == PLANS[tier]["trial_days"]
         assert "interval=" not in variables["returnUrl"]
+
+
+class TestPlansCatalogForDashboard:
+    """/api/plans also serves feature labels, categories and model weights from
+    app/config.py, so the dashboard never hardcodes them (Commerce duplicated
+    MODEL_WEIGHTS/PLAN_FEATURES in the frontend and they drifted)."""
+
+    def test_plans_response_includes_display_catalog(self, db_session):
+        from app.config import FEATURE_CATEGORIES, FEATURE_LABELS, MODEL_WEIGHTS
+        for client in _make_client(db_session):
+            data = client.get("/api/plans").json()
+        assert data["feature_labels"] == FEATURE_LABELS
+        assert data["feature_categories"] == FEATURE_CATEGORIES
+        assert data["model_weights"] == MODEL_WEIGHTS
+        growth = next(p for p in data["plans"] if p["tier"] == "growth")
+        assert "arrive_by" in growth["features"]
+        assert growth["max_products"] == PLANS["growth"]["max_products"]
+
+    def test_every_plan_feature_has_a_label_and_category(self):
+        from app.config import FEATURE_CATEGORIES, FEATURE_LABELS
+        categorized = {f for feats in FEATURE_CATEGORIES.values() for f in feats}
+        for tier, plan in PLANS.items():
+            for f in plan["features"]:
+                assert f in FEATURE_LABELS, f"{tier}: {f} has no label"
+                assert f in categorized, f"{tier}: {f} has no category"

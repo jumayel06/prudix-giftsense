@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.routes import auth, billing, webhooks
 from app.routes import settings as settings_routes
+from app.routes import stats
 from app.admin.auth import require_admin
 from core.config import settings
 
@@ -180,6 +181,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(billing.router)
 app.include_router(settings_routes.router)
+app.include_router(stats.router)
 app.include_router(webhooks.router)
 
 

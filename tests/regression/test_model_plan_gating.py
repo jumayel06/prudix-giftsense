@@ -142,3 +142,19 @@ class TestModelPlanGating:
         assert "gpt-4.1" in PLANS["growth"]["models_available"]
         assert "claude-sonnet-5" not in PLANS["growth"]["models_available"]
         assert "claude-sonnet-5" in PLANS["pro"]["models_available"]
+
+
+class TestSettingsPayload:
+
+    @pytest.mark.asyncio
+    async def test_get_settings_lists_plan_models_weights_and_features(self, db_session):
+        shop = make_shop(plan_tier="growth", plan_status="active", selected_model="gpt-4.1")
+        db_session.add(shop)
+        await db_session.commit()
+
+        for client in _make_client(db_session):
+            data = client.get(f"/api/settings?shop={TEST_SHOP_DOMAIN}").json()
+        assert data["selected_model"] == "gpt-4.1"
+        assert data["models_available"] == PLANS["growth"]["models_available"]
+        assert data["model_weights"]["gpt-4.1"] == 4
+        assert data["features"] == PLANS["growth"]["features"]
