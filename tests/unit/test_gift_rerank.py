@@ -120,3 +120,10 @@ async def test_rerank_uses_a_short_timeout_for_shoppers():
     await rerank(INTAKE, CANDS, model="claude-haiku-4-5", chat_fn=chat)
     from app.services.gifting.rerank import RERANK_TIMEOUT_SECS
     assert chat.await_args.kwargs["timeout"] == RERANK_TIMEOUT_SECS <= 10
+
+
+def test_prompt_forbids_stretching_a_product_to_fit_the_note_or_vibes():
+    # Eval 2026-09-28: most unfaithful reasons tied unrelated products to the
+    # shopper's note ("marathon") or a vibe ("sentimental") the listing didn't support.
+    p = RERANK_SYSTEM_PROMPT.lower()
+    assert "shopper's note" in p and "don't claim" in p

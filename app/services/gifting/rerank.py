@@ -24,7 +24,7 @@ logger = structlog.get_logger()
 
 ChatFn = Callable[..., Awaitable[LLMResponse]]
 
-PROMPT_VERSION = "rerank-v1"
+PROMPT_VERSION = "rerank-v2"
 MIN_PICKS = 3
 MAX_PICKS = 5
 MAX_REASON_CHARS = 160
@@ -38,7 +38,9 @@ You get the shopper's brief and a numbered shortlist of products. Choose the 3 t
 
 Rules:
 - Choose only from the shortlist, using the exact product_id given.
-- Base every reason ONLY on the facts, pitch and details given for that product. Never invent features, materials, sizes, reviews or awards.
+- Base every reason ONLY on the facts, pitch and details given for that product. Never invent features, materials, sizes, reviews, awards, ease of use or effects ("hilarious", "easy to assemble", "great for recovery").
+- Link a product to the shopper's note or to a trait (e.g. sentimental, classic) only when that product's own details support the link. If they don't, don't claim it: say plainly what the product is and why it's a nice gift.
+- If nothing on the shortlist fits the note, still pick the best gifts, but don't pretend they match it.
 - Don't mention a price unless it's the product's listed price.
 - Prefer variety: don't pick several near-identical products.
 - No links, emojis or exclamation marks.
