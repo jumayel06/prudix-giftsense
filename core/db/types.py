@@ -42,4 +42,4 @@ class Embedding(TypeDecorator):
     def load_dialect_impl(self, dialect):
         if dialect.name == "postgresql":
             return dialect.type_descriptor(_PgVector(self.dims))
-        return dialect.type_descriptor(JSON())
+        return dialect.type_descriptor(JSON(none_as_null=True))  # SQL NULL, like pgvector

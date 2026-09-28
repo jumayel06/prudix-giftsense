@@ -24,6 +24,7 @@ from app.config import (
     derive_tier_from_subscription_name,
     subscription_name,
 )
+from app.jobs import enqueue
 from core.config import settings
 from core.db.models import BillingEvent, Shop
 from core.db.session import AsyncSessionLocal, get_db
@@ -393,6 +394,10 @@ async def billing_callback(
             )
         await db.commit()
         logger.info("billing_activated", shop=shop, plan=plan, status=event_type)
+        # Start analyzing the catalog now (kick_catalog_syncs cron is the fallback;
+        # after a plan change this re-exports so newly allowed products are added).
+        await enqueue("catalog_start_sync", str(shop_record.id),
+                      "plan_change" if previous_tier in PLANS else "initial")
 
     elif status == "declined":
         # Don't overwrite an already-active subscription. A merchant on Pro who declines

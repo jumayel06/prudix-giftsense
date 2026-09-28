@@ -15,7 +15,7 @@ from typing import Optional
 
 import structlog
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import (
@@ -24,8 +24,9 @@ from app.config import (
     GRACE_PERIOD_DAYS,
     PLANS,
 )
+from app.jobs import enqueue
 from core.config import settings
-from core.db.models import BillingEvent, ProcessedWebhook, Shop, SuppressedEmail
+from core.db.models import BillingEvent, CatalogProductRow, ProcessedWebhook, Shop, SuppressedEmail
 from core.db.session import get_db
 
 logger = structlog.get_logger()
@@ -94,9 +95,13 @@ async def handle_webhook(
         await _handle_uninstalled(shop_domain, db, x_shopify_triggered_at)
     elif topic == "app_subscriptions/update":
         await _handle_subscription_update(shop_domain, payload, db)
-    # products/*, orders/create and bulk_operations/finish handlers land with
-    # catalog sync (week 3) and gift orders (week 4). Until then they're
-    # acknowledged with 200 so Shopify doesn't retry.
+    elif topic in ("products/create", "products/update"):
+        await _handle_product_changed(shop_domain, payload, db)
+    elif topic == "products/delete":
+        await _handle_product_deleted(shop_domain, payload, db)
+    elif topic == "bulk_operations/finish":
+        await _handle_bulk_finished(shop_domain, payload, db)
+    # orders/create lands with gift orders (week 4); acknowledged with 200 until then.
 
     return {"ok": True}
 
@@ -550,3 +555,40 @@ async def _handle_subscription_update(shop_domain: str, payload: dict, db: Async
     ))
     await db.commit()
     logger.info("subscription_updated", shop=shop_domain, status=status)
+
+
+# ── Catalog (docs/TECHNICAL_PLAN.md §4.1) ────────────────────────────────────
+# Webhooks only enqueue: the worker fetches the product over GraphQL, so one
+# parser handles bulk and single-product syncs. Missed or failed enqueues are
+# caught by the nightly reconcile_catalogs cron.
+
+async def _catalog_shop(shop_domain: str, db: AsyncSession) -> Optional[Shop]:
+    return (await db.execute(
+        select(Shop).where(Shop.shop_domain == shop_domain, Shop.plan_status.in_(("active", "trial_active")))
+    )).scalar_one_or_none()
+
+
+async def _handle_product_changed(shop_domain: str, payload: dict, db: AsyncSession) -> None:
+    product_id = str(payload.get("id") or "")
+    if not product_id or await _catalog_shop(shop_domain, db) is None:
+        return
+    # Same job id + short delay: a burst of updates to one product runs once.
+    await enqueue("catalog_sync_product", shop_domain, product_id,
+                  _job_id=f"catalog-product:{shop_domain}:{product_id}", _defer_by=10)
+
+
+async def _handle_product_deleted(shop_domain: str, payload: dict, db: AsyncSession) -> None:
+    product_id = str(payload.get("id") or "")
+    shop = (await db.execute(select(Shop).where(Shop.shop_domain == shop_domain))).scalar_one_or_none()
+    if not product_id or shop is None:
+        return
+    await db.execute(delete(CatalogProductRow).where(
+        CatalogProductRow.shop_id == shop.id, CatalogProductRow.product_id == product_id))
+    await db.commit()
+
+
+async def _handle_bulk_finished(shop_domain: str, payload: dict, db: AsyncSession) -> None:
+    op_id = payload.get("admin_graphql_api_id")
+    if not op_id or await _catalog_shop(shop_domain, db) is None:
+        return
+    await enqueue("catalog_finish_bulk", shop_domain, op_id, _job_id=f"catalog-bulk:{op_id}")

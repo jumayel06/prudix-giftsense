@@ -195,3 +195,26 @@ def patch_settings(monkeypatch):
     monkeypatch.setattr(core_config.settings, "app_env", "test")
     # /billing/callback retries an unconfirmed subscription lookup; no real sleeps in tests.
     monkeypatch.setattr("app.routes.billing._SUBSCRIPTION_LOOKUP_DELAY_SECS", 0)
+
+
+# ── Job queue ─────────────────────────────────────────────────────────────────
+
+class FakeJobPool:
+    """Stands in for the ARQ Redis pool: records enqueued jobs, never touches Redis."""
+
+    def __init__(self):
+        self.jobs: list[tuple] = []
+
+    async def enqueue_job(self, function, *args, **kwargs):
+        self.jobs.append((function, *args))
+
+    def names(self) -> list[str]:
+        return [j[0] for j in self.jobs]
+
+
+@pytest.fixture(autouse=True)
+def job_pool(monkeypatch):
+    import app.jobs
+    pool = FakeJobPool()
+    monkeypatch.setattr(app.jobs, "_pool", pool)
+    return pool

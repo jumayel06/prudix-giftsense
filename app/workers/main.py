@@ -13,12 +13,15 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import structlog
-from arq import cron
+from arq import cron, func
 from arq.connections import RedisSettings
 from sqlalchemy import delete, select
 
 from app.config import GRACE_PERIOD_DAYS, derive_tier_from_subscription_name
 from app.purge import purge_shop_data
+from app.workers.catalog import (
+    catalog_finish_bulk, catalog_start_sync, catalog_sync_product, kick_catalog_syncs, reconcile_catalogs,
+)
 from core.config import settings
 from core.db.models import BillingEvent, ProcessedWebhook, Shop
 from core.db.session import AsyncSessionLocal
@@ -309,6 +312,15 @@ class WorkerSettings:
     max_tries = 3
     keep_result = 3600
 
+    # Analyzing a catalog is many LLM + embedding calls: allow up to an hour.
+    # Product jobs keep no result so a later update to the same product (same
+    # _job_id) can be queued again as soon as the previous one ran.
+    functions = [
+        func(catalog_start_sync, timeout=120),
+        func(catalog_finish_bulk, timeout=3600, max_tries=1),
+        func(catalog_sync_product, timeout=300, keep_result=0),
+    ]
+
     cron_jobs = [
         cron(cleanup_processed_webhooks, hour={0, 6, 12, 18}, minute=0),
         # Missed `app/uninstalled` safety net. 01:00 UTC, before the purge.
@@ -318,4 +330,8 @@ class WorkerSettings:
         # Missed trial conversion/expiry webhook safety net. Hourly at :40.
         cron(reconcile_trial_conversions, minute=40),
         cron(purge_uninstalled_shops, hour=3, minute=0),
+        # First catalog sync for newly active shops + missed bulk_operations/finish.
+        cron(kick_catalog_syncs, minute=set(range(0, 60, 5)), timeout=3600),
+        # Nightly full re-export (missed product webhooks, deletions, upgrades).
+        cron(reconcile_catalogs, hour=2, minute=30),
     ]

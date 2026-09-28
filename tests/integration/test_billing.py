@@ -80,7 +80,7 @@ def _graphql_subscription_response(status: str = "ACTIVE", name: str | None = No
 class TestBillingCallback:
 
     @pytest.mark.asyncio
-    async def test_first_install_accepted_activates_trial(self, db_session):
+    async def test_first_install_accepted_activates_trial(self, db_session, job_pool):
         """Fresh install (trial_used=False) + accepted charge → trial_active."""
         shop = make_shop(plan_tier="none", plan_status="pending")
         shop.trial_used = False
@@ -122,6 +122,8 @@ class TestBillingCallback:
         # Active trial: no purge date, not uninstalled
         assert s.data_purge_at is None
         assert s.uninstalled_at is None
+        # Catalog analysis starts right away
+        assert job_pool.jobs == [("catalog_start_sync", str(s.id), "initial")]
 
     @pytest.mark.asyncio
     async def test_first_install_accepted_creates_trial_started_event(self, db_session):
