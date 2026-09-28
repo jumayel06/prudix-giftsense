@@ -72,7 +72,7 @@ def _money(x: float) -> str:
     return f"{x:.0f}" if float(x).is_integer() else f"{x:.2f}"
 
 
-def _budget_label(band: str) -> str:
+def budget_label(band: str) -> str:
     lo, hi = vocab.budget_range(band)
     if hi is None:
         return f"${_money(lo)}+"
@@ -84,7 +84,7 @@ def _budget_label(band: str) -> str:
 def template_reason(intake: Intake, c: Candidate) -> str:
     """Honest, fact-only reason used when the LLM isn't (or can't be) used."""
     matched = [vocab.LABELS[v].lower() for v in c.profile.vibes if v in intake.vibes]
-    parts = [f"Fits your {_budget_label(intake.budget_band)} budget"]
+    parts = [f"Fits your {budget_label(intake.budget_band)} budget"]
     if matched:
         parts.append(" & ".join(matched[:2]))
     elif intake.recipient in c.profile.recipients:
@@ -165,7 +165,7 @@ def _prompt(intake: Intake, candidates: list[Candidate]) -> str:
         "Shopper brief:",
         f"- For: {vocab.LABELS.get(intake.recipient, intake.recipient)}",
         f"- Occasion: {vocab.LABELS.get(intake.occasion, intake.occasion)}",
-        f"- Budget: {_budget_label(intake.budget_band)}",
+        f"- Budget: {budget_label(intake.budget_band)}",
         f"- They are: {', '.join(vocab.LABELS.get(v, v) for v in intake.vibes) or 'not specified'}",
     ]
     if intake.free_text.strip():

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Page, Layout, Card, BlockStack, InlineStack, Text, Banner, ProgressBar, Badge,
   IndexTable, Thumbnail, TextField, Pagination, Button, SkeletonBodyText, EmptyState,
@@ -83,6 +84,7 @@ function ProfileCell({ p }) {
 }
 
 export default function CatalogPage() {
+  const navigate = useNavigate()
   const [status, setStatus] = useState(null)
   const [list, setList] = useState(null)
   const [query, setQuery] = useState('')
@@ -164,7 +166,11 @@ export default function CatalogPage() {
   const pages = list ? Math.max(1, Math.ceil(list.total / list.page_size)) : 1
 
   return (
-    <Page title="Catalog" subtitle="What the gift finder knows about each product.">
+    <Page
+      title="Catalog"
+      subtitle="What the gift finder knows about each product."
+      primaryAction={{ content: 'Try the gift finder', onAction: () => navigate('/playground'), disabled: status.analyzed === 0 }}
+    >
       <Layout>
         {error && (
           <Layout.Section>

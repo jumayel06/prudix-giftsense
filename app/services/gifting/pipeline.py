@@ -35,7 +35,10 @@ async def recommend(
     model: str,
     chat_fn: ChatFn = chat,
     use_llm: bool = True,
+    query_vector: list[float] | None = None,
 ) -> Recommendation:
+    """`query_vector` skips embedding the brief again when the caller already
+    did (the DB index embeds it once to order its prefetch)."""
     if len(items) <= SMALL_CATALOG_MAX:
         mode = "small_catalog"
         no_vector: list[float] = []
@@ -47,7 +50,10 @@ async def recommend(
         candidates.sort(key=lambda c: c.score, reverse=True)
     else:
         mode = "vector"
-        [qvec] = await embedder.embed([query_text(intake)])
+        if query_vector is not None:
+            qvec = query_vector
+        else:
+            [qvec] = await embedder.embed([query_text(intake)])
         candidates = retrieve(intake, items, qvec)
 
     result = await rerank(intake, candidates, model=model, chat_fn=chat_fn, use_llm=use_llm)

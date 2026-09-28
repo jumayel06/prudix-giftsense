@@ -3,13 +3,14 @@ import { flushSync } from 'react-dom'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { AppProvider, Frame, Navigation, SkeletonPage, SkeletonBodyText } from '@shopify/polaris'
 import { TitleBar } from '@shopify/app-bridge-react'
-import { HomeIcon, CreditCardIcon, SettingsIcon, ChatIcon, ProductIcon } from '@shopify/polaris-icons'
+import { HomeIcon, CreditCardIcon, SettingsIcon, ChatIcon, ProductIcon, WandIcon } from '@shopify/polaris-icons'
 import enTranslations from '@shopify/polaris/locales/en.json'
 import '@shopify/polaris/build/esm/styles.css'
 
 import { shopifyFetch } from './utils/shopifyFetch'
 import HomePage from './pages/HomePage'
 import CatalogPage from './pages/CatalogPage'
+import PlaygroundPage from './pages/PlaygroundPage'
 import PlanPickerPage from './pages/PlanPickerPage'
 import SettingsPage from './pages/SettingsPage'
 import SupportPage from './pages/SupportPage'
@@ -63,7 +64,7 @@ function SidebarNav({ planStatus, onMobileClose }) {
       </div>
       <div className="prudix-nav-scroll">
         <Navigation location={pathname}>
-          <Navigation.Section items={[item('Home', '/', HomeIcon), item('Catalog', '/catalog', ProductIcon)]} />
+          <Navigation.Section items={[item('Home', '/', HomeIcon), item('Catalog', '/catalog', ProductIcon), item('Try it', '/playground', WandIcon)]} />
           <Navigation.Section
             title="Account"
             items={[
@@ -104,7 +105,7 @@ function AppFooter() {
   )
 }
 
-const TITLES = { '/': APP_NAME, '/catalog': 'Catalog', '/plans': 'Plans', '/settings': 'Settings', '/support': 'Support' }
+const TITLES = { '/': APP_NAME, '/catalog': 'Catalog', '/playground': 'Try the gift finder', '/plans': 'Plans', '/settings': 'Settings', '/support': 'Support' }
 
 function AppShell() {
   const navigate = useNavigate()
@@ -201,6 +202,7 @@ function AppShell() {
           <Routes>
             <Route path="/" element={<HomePage stats={stats} />} />
             <Route path="/catalog" element={<CatalogPage />} />
+            <Route path="/playground" element={<PlaygroundPage />} />
             <Route path="/plans" element={<PlanPickerPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/support" element={<SupportPage />} />

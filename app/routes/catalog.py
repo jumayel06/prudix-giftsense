@@ -3,25 +3,41 @@
     GET   /api/catalog/status              counts, plan limit, latest sync (progress bar)
     GET   /api/catalog/products            paged list with search
     POST  /api/catalog/resync              queue a fresh export
+    GET   /api/catalog/playground/options  intake vocabulary for the test form
+    POST  /api/catalog/playground          run the gift finder on this shop's catalog
     PATCH /api/catalog/products/{id}       exclude / include a product
 
 Literal routes are declared before the parameterized one.
 """
+import uuid
+from datetime import datetime, timedelta, timezone
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
+from app.config import PLAN_DEFAULT_MODELS, PLANS
 from app.jobs import enqueue
+from app.llm import calc_cost, chat
+from app.services import catalog_index
+from app.services.gifting import vocab
+from app.services.gifting.embeddings import OpenAIEmbedder
+from app.services.gifting.rerank import PROMPT_VERSION as RERANK_PROMPT_VERSION
+from app.services.gifting.rerank import budget_label
+from app.services.gifting.retrieval import Intake
 from app.services.catalog_sync import ACTIVE_STATUSES, IN_PROGRESS, count_pending, product_limit
-from core.db.models import CatalogProductRow, CatalogSync, Shop
+from core.db.models import CatalogProductRow, CatalogSync, Shop, UsageLog
 from core.db.session import get_db
 from core.shopify_deps import get_current_shop
 
 router = APIRouter()
 
 PAGE_SIZE = 25
+# Test searches don't use generations (yet) but cost us an LLM call each.
+PLAYGROUND_DAILY_LIMIT = 30
 
 
 def _sync_json(s: CatalogSync | None) -> dict | None:
@@ -98,6 +114,110 @@ async def catalog_resync(shop: Shop = Depends(get_current_shop), db: AsyncSessio
         raise HTTPException(409, "A catalog sync is already in progress.")
     await enqueue("catalog_start_sync", str(shop.id), "manual")
     return {"queued": True}
+
+
+def _options(values: list[str]) -> list[dict]:
+    return [{"value": v, "label": vocab.LABELS.get(v, v)} for v in values]
+
+
+@router.get("/api/catalog/playground/options")
+async def playground_options(shop: Shop = Depends(get_current_shop)):
+    return {
+        "recipients": _options(vocab.RECIPIENTS),
+        "occasions": _options(vocab.OCCASIONS),
+        "vibes": _options(vocab.VIBES),
+        "age_bands": _options(vocab.AGE_BANDS),
+        "budgets": [{"value": b, "label": budget_label(b)} for b in vocab.BUDGET_BANDS],
+        "max_vibes": 3,
+    }
+
+
+class PlaygroundBrief(BaseModel):
+    recipient: str
+    occasion: str
+    budget_band: str
+    vibes: list[str] = Field(default_factory=list, max_length=3)
+    age_band: Optional[str] = None
+    free_text: str = Field(default="", max_length=200)
+
+    @field_validator("recipient")
+    @classmethod
+    def _recipient(cls, v):
+        if v not in vocab.RECIPIENTS:
+            raise ValueError("unknown recipient")
+        return v
+
+    @field_validator("occasion")
+    @classmethod
+    def _occasion(cls, v):
+        if v not in vocab.OCCASIONS:
+            raise ValueError("unknown occasion")
+        return v
+
+    @field_validator("budget_band")
+    @classmethod
+    def _budget(cls, v):
+        if v not in vocab.BUDGET_BANDS:
+            raise ValueError("unknown budget")
+        return v
+
+    @field_validator("vibes")
+    @classmethod
+    def _vibes(cls, v):
+        if any(x not in vocab.VIBES for x in v):
+            raise ValueError("unknown vibe")
+        return v
+
+    @field_validator("age_band")
+    @classmethod
+    def _age(cls, v):
+        if v is not None and v not in vocab.AGE_BANDS:
+            raise ValueError("unknown age band")
+        return v
+
+
+def _model_for(shop: Shop) -> str:
+    tier = shop.plan_tier if shop.plan_tier in PLANS else "starter"
+    allowed = PLANS[tier]["models_available"]
+    return shop.selected_model if shop.selected_model in allowed else PLAN_DEFAULT_MODELS[tier]
+
+
+@router.post("/api/catalog/playground")
+async def playground_search(
+    brief: PlaygroundBrief,
+    shop: Shop = Depends(get_current_shop),
+    db: AsyncSession = Depends(get_db),
+):
+    if shop.plan_status not in ACTIVE_STATUSES:
+        raise HTTPException(403, "Choose a plan to try the gift finder.")
+    since = datetime.now(timezone.utc) - timedelta(days=1)
+    used_today = (await db.execute(
+        select(func.count()).select_from(UsageLog).where(
+            UsageLog.shop_id == shop.id, UsageLog.action_type == "playground", UsageLog.created_at >= since)
+    )).scalar_one()
+    if used_today >= PLAYGROUND_DAILY_LIMIT:
+        raise HTTPException(429, f"You've run {PLAYGROUND_DAILY_LIMIT} test searches today. Try again tomorrow.")
+
+    model = _model_for(shop)
+    intake = Intake(**brief.model_dump())
+    rec, latency_ms = await catalog_index.recommend_for_shop(db, shop.id, intake, OpenAIEmbedder(), model, chat_fn=chat)
+
+    if rec.input_tokens or rec.output_tokens:
+        db.add(UsageLog(id=uuid.uuid4(), shop_id=shop.id, action_type="playground", generations_consumed=0,
+                        tokens_input=rec.input_tokens, tokens_output=rec.output_tokens, model_used=model,
+                        cost_usd=calc_cost(model, rec.input_tokens, rec.output_tokens),
+                        prompt_version=RERANK_PROMPT_VERSION, duration_ms=latency_ms))
+        await db.commit()
+
+    return {
+        "picks": [{
+            "product_id": p.product.product_id, "title": p.product.title, "image_url": p.product.image_url,
+            "url": p.product.url, "price_min": p.product.price_min, "price_max": p.product.price_max,
+            "reason": p.reason, "source": p.source,
+        } for p in rec.picks],
+        "model": model, "mode": rec.mode, "latency_ms": latency_ms, "used_fallback": rec.used_fallback,
+        "candidates_considered": rec.candidates_considered,
+    }
 
 
 class ProductPatch(BaseModel):
