@@ -96,3 +96,25 @@ async def test_stop_during_catalog_generation_saves_no_partial_catalog(tmp_path)
     with pytest.raises(BudgetExceeded):
         await run.run(PERSONAS)
     assert not (tmp_path / "data" / "catalogs" / "candles.json").exists()
+
+
+class ThinkingOverrunModel(FakeModel):
+    """The judge burns its whole budget thinking (empty text) unless thinking is off."""
+
+    async def __call__(self, *, model, system, prompt, **kw):
+        if "grading a gift finder" in system and kw.get("thinking"):
+            self.calls["judge"] += 1
+            return LLMResponse("", 3000, 8000)
+        return await super().__call__(model=model, system=system, prompt=prompt, **kw)
+
+
+@pytest.mark.asyncio
+async def test_empty_judge_reply_is_retried_without_thinking(tmp_path):
+    model = ThinkingOverrunModel()
+    run = EvalRun(["candles"], ["claude-haiku-4-5"], Ledger(cap_usd=5), FakeEmbedder(),
+                  chat_fn=model, data_dir=tmp_path / "data", results_dir=tmp_path / "results", log=lambda *_: None)
+    report = await run.run(PERSONAS)
+
+    assert model.calls["judge"] == 4  # one failed + one retry per persona
+    assert report["summary"]["claude-haiku-4-5"]["unjudged"] == 0
+    assert not (tmp_path / "results" / "judge_failures").exists()

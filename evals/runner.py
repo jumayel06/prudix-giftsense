@@ -159,6 +159,22 @@ class EvalRun:
                           for p in rec.picks]}
 
     # 5. labels ──────────────────────────────────────────────────────────────
+    async def _judge_call(self, system: str, prompt: str, thinking: bool):
+        async with self.sem:
+            self.ledger.check(EST_JUDGE_USD)
+            for attempt in range(RETRIES + 1):
+                try:
+                    resp = await self.chat_fn(model=JUDGE_MODEL, system=system, prompt=prompt,
+                                              max_tokens=16000, temperature=0.0, json_mode=True,
+                                              thinking=thinking, timeout=180.0)
+                    break
+                except TRANSIENT_ERRORS:
+                    if attempt == RETRIES:
+                        raise
+                    await asyncio.sleep(5 * (attempt + 1))
+        self.ledger.charge("labels", JUDGE_MODEL, resp.input_tokens, resp.output_tokens)
+        return resp
+
     async def judge(self, store: str, persona: dict, pool: list[IndexedProduct], runs: list[dict],
                     labels: dict) -> list[dict]:
         """Label unlabeled pool products for this persona and check AI reasons.
@@ -189,23 +205,18 @@ class EvalRun:
             'Return JSON only: {"acceptable": [product_id, ...], "unfaithful": [{"model": ..., "product_id": ..., '
             '"why": "the unsupported claim, in a few words"}]}'
         )
-        async with self.sem:
-            self.ledger.check(EST_JUDGE_USD)
-            # The judge may think (accuracy over speed); thinking counts toward max_tokens.
-            for attempt in range(RETRIES + 1):
-                try:
-                    resp = await self.chat_fn(model=JUDGE_MODEL, system=system, prompt="\n".join(lines),
-                                              max_tokens=8000, temperature=0.0, json_mode=True, thinking=True,
-                                              timeout=180.0)
-                    break
-                except TRANSIENT_ERRORS:
-                    if attempt == RETRIES:
-                        raise
-                    await asyncio.sleep(5 * (attempt + 1))
-        self.ledger.charge("labels", JUDGE_MODEL, resp.input_tokens, resp.output_tokens)
-        try:
-            data = json.loads(resp.text)
-        except ValueError:
+        data = None
+        # The judge thinks first (accuracy over speed). Thinking counts toward
+        # max_tokens and can use all of it (empty reply, seen for gn08), so an
+        # unreadable reply is retried once with thinking off.
+        for thinking in (True, False):
+            resp = await self._judge_call(system, "\n".join(lines), thinking)
+            try:
+                data = json.loads(resp.text)
+                break
+            except ValueError:
+                continue
+        if data is None:
             self.log(f"[{store}] judge returned unparseable output for {persona['id']}; saved to results/judge_failures/")
             _write(self.results / "judge_failures" / f"{store}-{persona['id']}.json",
                    {"text": resp.text, "output_tokens": resp.output_tokens})
@@ -267,6 +278,7 @@ class EvalRun:
                             catalog_has_5_types=has_5_types, latency_ms=r["latency_ms"],
                             input_tokens=r["input_tokens"], output_tokens=r["output_tokens"],
                             used_fallback=r["used_fallback"],
+                            judged=bool(persona_labels),
                         ))
                     for pid, ok in persona_labels.items():
                         if random.random() < REVIEW_SAMPLE_RATE and pid in by_id:
@@ -295,13 +307,15 @@ class EvalRun:
 
 
 def render_markdown(report: dict) -> str:
-    lines = ["# Gift finder evaluation", "", "| Model | Searches | Good picks /5 | Over budget | Invented | "
-             "Faithful reasons | Types in top 5 | p95 latency | Fallback | Cost/search | Pass |",
-             "|---|---|---|---|---|---|---|---|---|---|---|"]
+    lines = ["# Gift finder evaluation", "", "| Model | Searches | Good picks /5 | Share of possible | Unjudged | Over budget | "
+             "Invented | Faithful reasons | Types in top 5 | p95 latency | Fallback | Cost/search | Pass |",
+             "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for model, r in report["summary"].items():
         types = f"{r['avg_distinct_types']:.1f}" if r["avg_distinct_types"] is not None else "n/a"
+        share = f"{r['share_of_possible']:.0%}" if r["share_of_possible"] is not None else "n/a"
         lines.append(
-            f"| {model} | {r['searches']} | {r['avg_relevant_at_5']:.2f} | {r['budget_violations']} | "
+            f"| {model} | {r['searches']} | {r['avg_relevant_at_5']:.2f} | {share} | {r['unjudged']} | "
+            f"{r['budget_violations']} | "
             f"{r['invented']} | {r['faithfulness']:.0%} | {types} | {r['p95_latency_ms']} ms | "
             f"{r['fallback_rate']:.0%} | ${r['cost_per_search']:.4f} | {'✅' if r['passes'] else '❌'} |")
     lines += ["", "## Good picks /5 by store", ""]

@@ -32,6 +32,7 @@ class SearchOutcome:
     input_tokens: int = 0
     output_tokens: int = 0
     used_fallback: bool = False
+    judged: bool = True  # False when the judge failed to label this persona
 
 
 def cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:
@@ -40,11 +41,16 @@ def cost_usd(model: str, input_tokens: int, output_tokens: int) -> float:
 
 def score_search(o: SearchOutcome) -> dict:
     """Relevant picks normalized to a 5-pick scale (3 of 3 counts as 5 of 5 —
-    returning fewer picks isn't penalized, picking badly is)."""
-    if not o.picked:
-        return {"relevant_at_5": 0.0}
-    hits = sum(1 for pid in o.picked[:5] if pid in o.acceptable)
-    return {"relevant_at_5": hits * 5 / min(5, len(o.picked))}
+    returning fewer picks isn't penalized, picking badly is).
+    `share_of_possible` divides by what the pool could offer (2 acceptable
+    products, both picked = 1.0); None when nothing acceptable exists."""
+    top = o.picked[:5]
+    hits = sum(1 for pid in top if pid in o.acceptable)
+    possible = min(len(top), len(o.acceptable))
+    share = (hits / possible) if possible else None
+    if not top:
+        return {"relevant_at_5": 0.0, "share_of_possible": share}
+    return {"relevant_at_5": hits * 5 / len(top), "share_of_possible": share}
 
 
 def _p95(values: list[int]) -> int:
@@ -61,12 +67,16 @@ def summarize(outcomes: list[SearchOutcome]) -> dict[str, dict]:
 
     summary = {}
     for model, outs in by_model.items():
-        rel = [score_search(o)["relevant_at_5"] for o in outs]
+        scores = [score_search(o) for o in outs if o.judged]
+        rel = [s["relevant_at_5"] for s in scores]
+        shares = [s["share_of_possible"] for s in scores if s["share_of_possible"] is not None]
         reasons_total = sum(o.reasons_total for o in outs)
         typed = [o.distinct_types for o in outs if o.catalog_has_5_types]
         row = {
             "searches": len(outs),
             "avg_relevant_at_5": mean(rel) if rel else 0.0,
+            "share_of_possible": mean(shares) if shares else None,
+            "unjudged": sum(1 for o in outs if not o.judged),
             "budget_violations": sum(o.budget_violations for o in outs),
             "invented": sum(o.invented for o in outs),
             "faithfulness": (sum(o.reasons_faithful for o in outs) / reasons_total) if reasons_total else 1.0,

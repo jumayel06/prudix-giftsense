@@ -137,4 +137,12 @@ def retrieve(
         total, sim = score(it, intake, query_vector)
         scored.append(Candidate(it.product, it.profile, it.vector, total, sim))
     scored.sort(key=lambda c: c.score, reverse=True)
-    return diversify(scored[:pool_size], limit)
+    # Items under the band floor (allowed by BUDGET_FLOOR_SLACK) only top up a
+    # thin band; a "$25-50" shopper shouldn't see $16 gifts ahead of $30 ones.
+    lo, _ = vocab.budget_range(intake.budget_band)
+    in_band = [c for c in scored if (c.product.price_max or c.product.price_min) >= lo]
+    if len(in_band) >= limit:
+        return diversify(in_band[:pool_size], limit)
+    picked = diversify(in_band, limit)
+    below = [c for c in scored if (c.product.price_max or c.product.price_min) < lo]
+    return picked + diversify(below[:pool_size], limit - len(picked))

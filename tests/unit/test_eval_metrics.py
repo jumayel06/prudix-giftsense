@@ -51,3 +51,16 @@ def test_any_budget_violation_or_invented_product_fails_the_model():
 
 def test_low_relevance_fails():
     assert summarize([outcome(acceptable={"a"})])["claude-haiku-4-5"]["passes"] is False
+
+
+def test_unjudged_searches_are_left_out_of_relevance():
+    # The judge failed for p2 (no labels): it must not count as 0 good picks.
+    outs = [outcome(), outcome(persona_id="p2", acceptable=set(), judged=False)]
+    assert summarize(outs)["claude-haiku-4-5"]["avg_relevant_at_5"] == pytest.approx(3)
+
+
+def test_share_of_possible_accounts_for_thin_catalogs():
+    # Only 2 acceptable products exist in the pool; picking both is a perfect score.
+    s = score_search(outcome(picked=["a", "b", "x", "y", "z"], acceptable={"a", "b"}))
+    assert s["share_of_possible"] == pytest.approx(1.0)
+    assert score_search(outcome(acceptable=set()))["share_of_possible"] is None

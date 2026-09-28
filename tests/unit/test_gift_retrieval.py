@@ -113,3 +113,19 @@ def test_query_text_reads_like_a_gift_brief():
     text = query_text(Intake(recipient="parent", occasion="birthday", budget_band="25_50",
                              vibes=["cozy"], free_text="loves gardening"))
     assert "Parent" in text and "Birthday" in text and "Cozy" in text and "gardening" in text
+
+
+def test_in_band_items_beat_cheaper_ones_allowed_by_the_floor_slack():
+    # $16 is under the $25 floor but within slack; it should only appear when
+    # the band itself can't fill the results (the eval judge and shoppers both
+    # read "$25-50" as "not a $16 gift").
+    items = [item(f"in{i}", f"Candle {i}", price=30 + i) for i in range(3)]
+    items.append(item("cheap", "Cozy Relaxing Birthday Candle for Parent", price=16))
+    ids = [r.product.product_id for r in run(items, BASE, limit=3)]
+    assert "cheap" not in ids and len(ids) == 3
+
+
+def test_cheaper_items_top_up_when_the_band_is_thin():
+    items = [item("in", "Candle", price=30), item("cheap", "Tea Candle", price=16)]
+    ids = [r.product.product_id for r in run(items, BASE, limit=3)]
+    assert ids[0] == "in" and "cheap" in ids
