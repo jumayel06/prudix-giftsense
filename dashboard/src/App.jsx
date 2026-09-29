@@ -14,6 +14,8 @@ import PlaygroundPage from './pages/PlaygroundPage'
 import PlanPickerPage from './pages/PlanPickerPage'
 import SettingsPage from './pages/SettingsPage'
 import SupportPage from './pages/SupportPage'
+import ComingSoonPage from './pages/ComingSoonPage'
+import { UPCOMING } from './utils/upcoming'
 
 const APP_NAME = 'Prudix GiftSense'
 
@@ -54,8 +56,10 @@ function SidebarNav({ planStatus, onMobileClose }) {
     label, icon, selected: pathname === path,
     onClick: () => { onMobileClose(); navigate(path) },
   })
+  // Planned sections (utils/upcoming.js): shown with a "Soon" badge until they ship.
+  const soon = section => UPCOMING.filter(u => u.section === section)
+    .map(u => ({ ...item(u.label, u.path, u.icon), badge: 'Soon' }))
 
-  // Feature sections (Gift Finder, Notes, Wrap…) are added as each ships.
   return (
     <div className="prudix-sidebar-wrapper">
       <button type="button" className="prudix-sidebar-close" onClick={onMobileClose} aria-label="Close menu">✕</button>
@@ -64,7 +68,14 @@ function SidebarNav({ planStatus, onMobileClose }) {
       </div>
       <div className="prudix-nav-scroll">
         <Navigation location={pathname}>
-          <Navigation.Section items={[item('Home', '/', HomeIcon), item('Catalog', '/catalog', ProductIcon), item('Try it', '/playground', WandIcon)]} />
+          <Navigation.Section items={[item('Home', '/', HomeIcon)]} />
+          <Navigation.Section
+            title="Gift finder"
+            items={[item('Catalog', '/catalog', ProductIcon), item('Try it', '/playground', WandIcon), ...soon('finder')]}
+          />
+          <Navigation.Section title="Gifting" items={soon('gifting')} />
+          <Navigation.Section title="Orders" items={soon('orders')} />
+          <Navigation.Section title="Insights" items={soon('insights')} />
           <Navigation.Section
             title="Account"
             items={[
@@ -105,7 +116,10 @@ function AppFooter() {
   )
 }
 
-const TITLES = { '/': APP_NAME, '/catalog': 'Catalog', '/playground': 'Try the gift finder', '/plans': 'Plans', '/settings': 'Settings', '/support': 'Support' }
+const TITLES = {
+  '/': APP_NAME, '/catalog': 'Catalog', '/playground': 'Try the gift finder', '/plans': 'Plans', '/settings': 'Settings', '/support': 'Support',
+  ...Object.fromEntries(UPCOMING.map(u => [u.path, u.title])),
+}
 
 function AppShell() {
   const navigate = useNavigate()
@@ -206,6 +220,9 @@ function AppShell() {
             <Route path="/plans" element={<PlanPickerPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/support" element={<SupportPage />} />
+            {UPCOMING.map(u => (
+              <Route key={u.path} path={u.path} element={<ComingSoonPage planTier={stats?.plan_tier} />} />
+            ))}
           </Routes>
         </div>
         {planStatus !== 'pending' && <AppFooter />}
