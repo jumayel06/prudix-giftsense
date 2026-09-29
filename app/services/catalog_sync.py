@@ -27,6 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
 from app.config import PLANS, TRIAL_MAX_PRODUCTS
+from app.plan_guard import effective_cycle_start
 from app.llm import calc_cost, chat
 from app.services.gifting.catalog import CatalogProduct
 from app.services.gifting.embeddings import Embedder
@@ -39,7 +40,10 @@ from core.shopify_graphql import numeric_id_from_gid, product_gid, shopify_graph
 logger = structlog.get_logger()
 
 ACTIVE_STATUSES = ("active", "trial_active")
-IN_PROGRESS = ("running", "importing")  # catalog_syncs.status while a sync isn't finished
+# catalog_syncs.status while a sync isn't finished. "queued": Sync now was
+# clicked and the worker hasn't picked it up yet (shown as "Waiting to start").
+IN_PROGRESS = ("queued", "running", "importing")
+QUEUED_TIMEOUT = timedelta(minutes=30)
 ANALYZE_CHUNK = 25          # products enriched + embedded per commit (progress bar granularity)
 ENRICH_CONCURRENCY = 5
 STALE_SYNC_AFTER = timedelta(hours=6)
@@ -206,6 +210,39 @@ async def count_pending(db: AsyncSession, shop_id: uuid.UUID) -> int:
     )).scalar_one()
 
 
+def rereads_limit(shop: Shop) -> int:
+    return PLANS.get(shop.plan_tier, PLANS["starter"])["product_rereads_per_month"]
+
+
+def rereads_remaining(shop: Shop) -> int:
+    """Paid re-reads of edited products left this billing cycle (resets the
+    counter in place when a new cycle has started; caller commits)."""
+    cycle = effective_cycle_start(shop)
+    stored = shop.catalog_rereads_cycle_start
+    if stored is not None and stored.tzinfo is None:
+        stored = stored.replace(tzinfo=timezone.utc)
+    if cycle is not None and stored != cycle:
+        shop.catalog_rereads_used = 0
+        shop.catalog_rereads_cycle_start = cycle
+    return max(0, rereads_limit(shop) - (shop.catalog_rereads_used or 0))
+
+
+def _is_reread():
+    """Edited since its last AI read (had a profile, content changed)."""
+    return (CatalogProductRow.profile_hash.is_not(None)) & (CatalogProductRow.profile_hash != CatalogProductRow.content_hash)
+
+
+async def count_held(db: AsyncSession, shop: Shop) -> int:
+    """Edited products waiting for next cycle's re-reads (they keep serving
+    their previous profile meanwhile)."""
+    if rereads_remaining(shop) > 0:
+        return 0
+    return (await db.execute(
+        select(func.count()).select_from(CatalogProductRow)
+        .where(CatalogProductRow.shop_id == shop.id, _is_reread(), CatalogProductRow.embedding.is_not(None))
+    )).scalar_one()
+
+
 async def count_upgrades(db: AsyncSession, shop: Shop) -> int:
     version = profile_version_for(catalog_model_for(shop))
     return (await db.execute(
@@ -222,17 +259,23 @@ async def analyze_pending(
     sync: CatalogSync | None = None,
     upgrade_limit: int = UPGRADES_PER_RUN,
 ) -> int:
-    """Enrich + embed new or edited products (all), then re-read up to
+    """Enrich + embed new or edited products, then re-read up to
     `upgrade_limit` products whose profile predates the current prompt or
     catalog_analysis model, so a model switch spreads over several syncs
     while old profiles keep serving. Commits per chunk so the dashboard's
     progress bar moves. Returns how many were analyzed. Enrichment never
-    raises (fallback profile); an embedding failure leaves the chunk pending."""
+    raises (fallback profile); an embedding failure leaves the chunk pending.
+
+    Edited products (re-reads) count against the plan's monthly
+    product_rereads_per_month; past it they keep their previous profile and
+    stay searchable (price/stock still update free). New products and our own
+    prompt/model upgrades never count."""
     model = catalog_model_for(shop)
     version = profile_version_for(model)
     done = upgraded = 0
+    budget = rereads_remaining(shop)
     sem = asyncio.Semaphore(ENRICH_CONCURRENCY)
-    failed_ids: set[str] = set()
+    failed_ids: set[str] = set()   # embedding failed, or held by the re-read cap
 
     async def _enrich(row: CatalogProductRow):
         # A current profile for unchanged content only needs its embedding redone.
@@ -255,6 +298,19 @@ async def analyze_pending(
                 .limit(min(ANALYZE_CHUNK, upgrade_limit - upgraded))
             )).scalars())
             is_upgrade = True
+        if rows and not is_upgrade:
+            allowed = []
+            for r in rows:
+                if r.profile_hash is not None and r.profile_hash != r.content_hash:
+                    if budget <= 0:
+                        failed_ids.add(r.product_id)   # held until next cycle
+                        continue
+                    budget -= 1
+                    shop.catalog_rereads_used = (shop.catalog_rereads_used or 0) + 1
+                allowed.append(r)
+            if not allowed:
+                continue
+            rows = allowed
         if not rows:
             break
 
@@ -313,13 +369,18 @@ async def _running_sync(db: AsyncSession, shop_id: uuid.UUID) -> CatalogSync | N
 async def start_bulk_sync(
     db: AsyncSession, shop: Shop, token: str, kind: str, gql: GraphQLFn = shopify_graphql_post,
 ) -> CatalogSync:
-    """Kick off a bulk product export. Reuses a sync that's already running."""
+    """Kick off a bulk product export. Reuses a sync that's already running;
+    a "queued" one (from Sync now) is started on its own row."""
     running = await _running_sync(db, shop.id)
-    if running is not None:
+    if running is not None and running.status != "queued":
         return running
-
-    sync = CatalogSync(id=uuid.uuid4(), shop_id=shop.id, kind=kind, status="running")
-    db.add(sync)
+    if running is not None:
+        sync = running
+        sync.status = "running"
+        sync.started_at = datetime.now(timezone.utc)
+    else:
+        sync = CatalogSync(id=uuid.uuid4(), shop_id=shop.id, kind=kind, status="running")
+        db.add(sync)
     try:
         resp = await gql(shop.shop_domain, token, BULK_RUN_MUTATION, {"query": BULK_PRODUCTS_QUERY})
         body = resp.json() if resp.status_code == 200 else {}

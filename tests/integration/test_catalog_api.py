@@ -1,6 +1,7 @@
 """Catalog page API: status/progress, product list, exclude toggle, manual resync."""
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -118,3 +119,56 @@ async def test_inactive_shop_cannot_resync(db_session, job_pool):
     await db_session.commit()
     assert call(db_session, "POST", "/api/catalog/resync").status_code == 403
     assert job_pool.jobs == []
+
+
+# ── Sync now: queued state, cooldown, queue failure ──────────────────────────
+
+@pytest.mark.asyncio
+async def test_resync_records_a_queued_sync_the_page_can_show(db_session, job_pool):
+    shop = await seed(db_session)
+    await db_session.commit()
+    assert call(db_session, "POST", "/api/catalog/resync").status_code == 202
+    data = call(db_session, "GET", "/api/catalog/status").json()
+    assert data["sync"]["status"] == "queued" and data["sync"]["kind"] == "manual"
+    # Second click while queued: refused, nothing enqueued twice.
+    assert call(db_session, "POST", "/api/catalog/resync").status_code == 409
+    assert len(job_pool.jobs) == 1
+
+
+@pytest.mark.asyncio
+async def test_resync_cooldown(db_session, job_pool):
+    shop = await seed(db_session)
+    db_session.add(CatalogSync(id=uuid.uuid4(), shop_id=shop.id, kind="manual", status="done",
+                               started_at=datetime.now(timezone.utc) - timedelta(minutes=5)))
+    await db_session.commit()
+    resp = call(db_session, "POST", "/api/catalog/resync")
+    assert resp.status_code == 429 and "minute" in resp.json()["detail"]
+    assert call(db_session, "GET", "/api/catalog/status").json()["next_manual_sync_at"]
+
+
+@pytest.mark.asyncio
+async def test_resync_reports_queue_down(db_session, monkeypatch):
+    await seed(db_session)
+    await db_session.commit()
+    monkeypatch.setattr("app.routes.catalog.enqueue", AsyncMock(return_value=False))
+    assert call(db_session, "POST", "/api/catalog/resync").status_code == 503
+    assert call(db_session, "GET", "/api/catalog/status").json()["sync"]["status"] == "failed"
+
+
+@pytest.mark.asyncio
+async def test_status_shows_reread_budget(db_session):
+    shop = await seed(db_session, plan_tier="growth")
+    shop.catalog_rereads_used = 40
+    shop.catalog_rereads_cycle_start = shop.billing_cycle_start
+    await db_session.commit()
+    data = call(db_session, "GET", "/api/catalog/status").json()
+    assert data["rereads_used"] == 40 and data["rereads_limit"] == 500 and data["held"] == 0
+
+
+@pytest.mark.asyncio
+async def test_long_queued_sync_is_flagged_slow(db_session):
+    shop = await seed(db_session)
+    db_session.add(CatalogSync(id=uuid.uuid4(), shop_id=shop.id, kind="manual", status="queued",
+                               started_at=datetime.now(timezone.utc) - timedelta(minutes=5)))
+    await db_session.commit()
+    assert call(db_session, "GET", "/api/catalog/status").json()["sync"]["slow_start"] is True

@@ -138,14 +138,16 @@ def daily_cost_cap_for(shop: Shop) -> float:
 
 
 async def get_daily_cost_usd(shop: Shop, db: AsyncSession) -> float:
-    """Sum LLM cost (USD) this shop has accrued today (UTC).
-    Refunds (negative generations_consumed entries) have cost_usd=0,
-    so they neither inflate nor deflate the total."""
+    """Sum LLM cost (USD) this shop's shopper-facing AI accrued today (UTC).
+    Catalog analysis is excluded: it's our background cost with its own cap
+    (product re-reads per month) and must never push shoppers onto template
+    reasons."""
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     result = await db.execute(
         select(func.coalesce(func.sum(UsageLog.cost_usd), 0)).where(
             UsageLog.shop_id == shop.id,
             UsageLog.created_at >= today_start,
+            UsageLog.action_type != "catalog_analysis",
         )
     )
     return float(result.scalar() or 0)

@@ -10,33 +10,49 @@ import { parseApiError } from '../utils/apiError'
 import { showToast } from '../utils/toast'
 
 const POLL_MS = 5000
-const IN_PROGRESS = ['running', 'importing']
+const IN_PROGRESS = ['queued', 'running', 'importing']
 
 function money(n) {
   return `$${Number(n).toFixed(2).replace(/\.00$/, '')}`
+}
+
+function timeOf(iso) {
+  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }
 
 function SyncCard({ status, onResync, resyncing }) {
   const sync = status.sync
   const busy = sync && IN_PROGRESS.includes(sync.status)
   const pct = busy && sync.total ? Math.round((100 * sync.enriched) / sync.total) : null
+  const slowStart = !!sync?.slow_start
+  const coolingDown = !busy && !!status.next_manual_sync_at
 
   return (
     <Card>
       <BlockStack gap="300">
         <InlineStack align="space-between" blockAlign="center">
           <Text as="h2" variant="headingMd">Catalog analysis</Text>
-          <Button onClick={onResync} loading={resyncing} disabled={busy}>Sync now</Button>
+          <BlockStack gap="050" inlineAlign="end">
+            <Button onClick={onResync} loading={resyncing} disabled={busy || coolingDown}>Sync now</Button>
+            {coolingDown && (
+              <Text as="span" variant="bodySm" tone="subdued">Available again at {timeOf(status.next_manual_sync_at)}</Text>
+            )}
+          </BlockStack>
         </InlineStack>
 
         {busy && (
           <BlockStack gap="200">
             <Text as="p">
-              {sync.status === 'running'
-                ? 'Reading your products from Shopify…'
-                : `Analyzing your catalog… ${sync.enriched} of ${sync.total}`}
+              {sync.status === 'queued' && 'Waiting to start…'}
+              {sync.status === 'running' && 'Reading your products from Shopify…'}
+              {sync.status === 'importing' && `Analyzing your catalog… ${sync.enriched} of ${sync.total}`}
             </Text>
             <ProgressBar progress={pct ?? 5} size="small" />
+            {slowStart && (
+              <Banner tone="warning">
+                <p>This is taking longer than usual to start. It will run as soon as our background service picks it up; if it's still waiting in 30 minutes, contact support.</p>
+              </Banner>
+            )}
           </BlockStack>
         )}
 
@@ -52,6 +68,19 @@ function SyncCard({ status, onResync, resyncing }) {
           <Text as="p"><b>{status.analyzed}</b> of {status.products} products ready for gift matching</Text>
           {status.excluded > 0 && <Text as="p" tone="subdued">{status.excluded} excluded</Text>}
         </InlineStack>
+        <Text as="p" variant="bodySm" tone="subdued">
+          Edited products re-analyzed this month: {status.rereads_used} of {status.rereads_limit}.
+          New products and price or stock changes don't count.
+        </Text>
+
+        {status.held > 0 && (
+          <Banner tone="info">
+            <p>
+              {status.held} edited product{status.held === 1 ? '' : 's'} will be re-analyzed when your monthly
+              allowance resets. Until then they keep working in the gift finder with their current profile.
+            </p>
+          </Banner>
+        )}
 
         {status.products >= status.limit && (
           <Banner tone="info">
@@ -69,7 +98,7 @@ function SyncCard({ status, onResync, resyncing }) {
 
 function ProfileCell({ p }) {
   if (p.excluded) return <Badge>Excluded</Badge>
-  if (!p.analyzed) return <Badge tone="attention">Analyzing</Badge>
+  if (!p.analyzed && !p.update_pending) return <Badge tone="attention">Analyzing</Badge>
   const prof = p.profile || {}
   return (
     <BlockStack gap="100">
@@ -78,6 +107,7 @@ function ProfileCell({ p }) {
         {(prof.vibes || []).slice(0, 3).map(v => <Badge key={v} tone="info">{v}</Badge>)}
         {(prof.recipients || []).slice(0, 2).map(r => <Badge key={r}>{r}</Badge>)}
         {p.profile_fallback && <Badge tone="warning">Basic profile</Badge>}
+        {p.update_pending && <Badge tone="info">Update pending</Badge>}
       </InlineStack>
     </BlockStack>
   )
@@ -114,6 +144,14 @@ export default function CatalogPage() {
     return () => clearInterval(t)
   }, [busy, loadStatus, loadProducts, query, page])
 
+  // Re-enable Sync now when its cooldown ends.
+  const nextManual = status?.next_manual_sync_at
+  useEffect(() => {
+    if (!nextManual) return undefined
+    const t = setTimeout(loadStatus, Math.max(0, new Date(nextManual).getTime() - Date.now()) + 1000)
+    return () => clearTimeout(t)
+  }, [nextManual, loadStatus])
+
   function onSearch(value) {
     setQuery(value)
     clearTimeout(searchTimer.current)
@@ -131,7 +169,7 @@ export default function CatalogPage() {
         return
       }
       showToast('Sync started')
-      setTimeout(loadStatus, 1500)
+      loadStatus()
     } finally {
       setResyncing(false)
     }

@@ -291,3 +291,41 @@ async def test_new_catalog_model_rereads_gradually_while_old_profiles_keep_servi
     assert r.profile_version.endswith("+gpt-6-sol")
     log = (await db_session.execute(select(UsageLog).order_by(UsageLog.created_at.desc()))).scalars().first()
     assert log.model_used == "gpt-6-sol"
+
+
+# ── Monthly re-read cap (PLANS[...]["product_rereads_per_month"]) ────────────
+
+@pytest.mark.asyncio
+async def test_edited_products_past_the_monthly_cap_keep_their_profile(db_session, monkeypatch):
+    shop = await add_shop(db_session, plan_tier="starter")
+    monkeypatch.setitem(cs.PLANS["starter"], "product_rereads_per_month", 2)
+    await cs.upsert_products(db_session, shop, [cs.parse_product(node(i)) for i in range(1, 5)])
+    await db_session.commit()
+    await cs.analyze_pending(db_session, shop, FakeEmbedder(), FakeChat())   # first reads: free of the cap
+
+    await cs.upsert_products(db_session, shop, [cs.parse_product(node(i, title=f"New {i}")) for i in range(1, 5)])
+    await db_session.commit()
+    chat = FakeChat()
+    await cs.analyze_pending(db_session, shop, FakeEmbedder(), chat)
+    assert chat.calls == 2 and shop.catalog_rereads_used == 2
+    assert await cs.count_held(db_session, shop) == 2
+    assert await cs.count_pending(db_session, shop.id) == 2   # held ones still count as not current…
+    held = [r for r in (await rows(db_session, shop)).values() if r.profile_hash != r.content_hash]
+    assert len(held) == 2 and all(r.embedding is not None for r in held)  # …but stay searchable
+
+    # New products are never held.
+    await cs.upsert_products(db_session, shop, [cs.parse_product(node(9))])
+    await db_session.commit()
+    chat = FakeChat()
+    await cs.analyze_pending(db_session, shop, FakeEmbedder(), chat)
+    assert chat.calls == 1
+
+
+@pytest.mark.asyncio
+async def test_reread_budget_resets_each_billing_cycle(db_session, monkeypatch):
+    shop = await add_shop(db_session, plan_tier="starter")
+    monkeypatch.setitem(cs.PLANS["starter"], "product_rereads_per_month", 1)
+    shop.catalog_rereads_used = 1
+    shop.catalog_rereads_cycle_start = shop.billing_cycle_start - timedelta(days=30)   # last cycle
+    await db_session.commit()
+    assert cs.rereads_remaining(shop) == 1 and shop.catalog_rereads_used == 0

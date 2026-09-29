@@ -500,3 +500,22 @@ class TestEffectiveCycleStart:
         naive = datetime(2026, 1, 1, 12, 0, 0)
         shop = make_shop(billing_cycle_start=naive)
         assert effective_cycle_start(shop).tzinfo is not None
+
+
+@pytest.mark.asyncio
+async def test_catalog_analysis_does_not_count_toward_the_daily_cost_cap(db_session):
+    import uuid as _uuid
+    from app.plan_guard import get_daily_cost_usd
+    from core.db.models import UsageLog
+    from tests.conftest import make_shop
+    shop = make_shop()
+    db_session.add(shop)
+    await db_session.flush()
+    db_session.add_all([
+        UsageLog(id=_uuid.uuid4(), shop_id=shop.id, action_type="catalog_analysis", generations_consumed=0,
+                 model_used="gpt-6-luna", cost_usd=5),
+        UsageLog(id=_uuid.uuid4(), shop_id=shop.id, action_type="gift_search", generations_consumed=0,
+                 model_used="gpt-6-luna", cost_usd=0.25),
+    ])
+    await db_session.commit()
+    assert await get_daily_cost_usd(shop, db_session) == pytest.approx(0.25)

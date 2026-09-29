@@ -26,7 +26,9 @@ from app.services.gifting.embeddings import OpenAIEmbedder
 from app.services.gifting.rerank import PROMPT_VERSION as RERANK_PROMPT_VERSION
 from app.services.gifting.brief import GiftBrief, intake_options
 from app.services.gifting.retrieval import Intake
-from app.services.catalog_sync import ACTIVE_STATUSES, IN_PROGRESS, count_pending, product_limit
+from app.services.catalog_sync import (
+    ACTIVE_STATUSES, IN_PROGRESS, count_held, count_pending, product_limit, rereads_limit, rereads_remaining,
+)
 from core.db.models import CatalogProductRow, CatalogSync, Shop, UsageLog
 from core.db.session import get_db
 from core.shopify_deps import get_current_shop
@@ -34,14 +36,23 @@ from core.shopify_deps import get_current_shop
 router = APIRouter()
 
 PAGE_SIZE = 25
+# Sync now at most this often (webhooks + the nightly re-sync cover the rest).
+MANUAL_SYNC_COOLDOWN = timedelta(minutes=15)
 # Test searches don't use generations (yet) but cost us an LLM call each.
 PLAYGROUND_DAILY_LIMIT = 30
+
+
+SLOW_START = timedelta(minutes=2)
 
 
 def _sync_json(s: CatalogSync | None) -> dict | None:
     if s is None:
         return None
+    started = s.started_at.replace(tzinfo=timezone.utc) if s.started_at and s.started_at.tzinfo is None else s.started_at
     return {
+        # Queued for a while = the background worker hasn't picked it up.
+        "slow_start": s.status == "queued" and started is not None
+                      and datetime.now(timezone.utc) - started > SLOW_START,
         "status": s.status, "kind": s.kind, "total": s.total, "enriched": s.enriched, "failed": s.failed,
         "error": s.error, "started_at": s.started_at.isoformat() if s.started_at else None,
         "finished_at": s.finished_at.isoformat() if s.finished_at else None,
@@ -55,6 +66,8 @@ def _product_json(r: CatalogProductRow) -> dict:
         "product_type": r.product_type, "price_min": float(r.price_min), "price_max": float(r.price_max),
         "available": r.available, "excluded": r.excluded,
         "analyzed": r.gift_profile is not None and r.profile_hash == r.content_hash,
+        # Edited since its last AI read but still searchable with the old profile.
+        "update_pending": r.gift_profile is not None and r.profile_hash != r.content_hash,
         "profile_fallback": r.profile_fallback,
         "profile": {k: prof.get(k) for k in ("giftable", "recipients", "occasions", "vibes", "age_band", "gift_pitch")}
         if prof else None,
@@ -68,15 +81,34 @@ async def catalog_status(shop: Shop = Depends(get_current_shop), db: AsyncSessio
     excluded = (await db.execute(
         select(func.count()).select_from(CatalogProductRow).where(mine, CatalogProductRow.excluded.is_(True))
     )).scalar_one()
-    pending = await count_pending(db, shop.id)
+    held = await count_held(db, shop)          # edited, waiting for next cycle's re-reads
+    pending = await count_pending(db, shop.id) - held
     latest = (await db.execute(
         select(CatalogSync).where(CatalogSync.shop_id == shop.id).order_by(CatalogSync.started_at.desc()).limit(1)
     )).scalar_one_or_none()
+    remaining = rereads_remaining(shop)
+    await db.commit()  # persists a cycle reset of the re-read counter
+    next_manual = await _next_manual_sync_at(db, shop)
     return {
         "products": total, "analyzed": total - pending, "pending": pending, "excluded": excluded,
         "limit": product_limit(shop), "is_trial": shop.plan_status == "trial_active",
+        "rereads_used": rereads_limit(shop) - remaining, "rereads_limit": rereads_limit(shop), "held": held,
+        "next_manual_sync_at": next_manual.isoformat() if next_manual else None,
         "sync": _sync_json(latest),
     }
+
+
+async def _next_manual_sync_at(db: AsyncSession, shop: Shop) -> datetime | None:
+    """When Sync now can be used again (None = now)."""
+    last = (await db.execute(
+        select(func.max(CatalogSync.started_at)).where(CatalogSync.shop_id == shop.id, CatalogSync.kind == "manual")
+    )).scalar()
+    if last is None:
+        return None
+    if last.tzinfo is None:
+        last = last.replace(tzinfo=timezone.utc)
+    ready = last + MANUAL_SYNC_COOLDOWN
+    return ready if ready > datetime.now(timezone.utc) else None
 
 
 @router.get("/api/catalog/products")
@@ -110,7 +142,21 @@ async def catalog_resync(shop: Shop = Depends(get_current_shop), db: AsyncSessio
     )).first()
     if running:
         raise HTTPException(409, "A catalog sync is already in progress.")
-    await enqueue("catalog_start_sync", str(shop.id), "manual")
+    ready_at = await _next_manual_sync_at(db, shop)
+    if ready_at:
+        minutes = max(1, int((ready_at - datetime.now(timezone.utc)).total_seconds() // 60) + 1)
+        raise HTTPException(429, f"You can sync again in {minutes} minute{'s' if minutes != 1 else ''}. "
+                                 "Product changes also sync automatically.")
+
+    # Recorded before enqueueing so the page shows "Waiting to start" at once.
+    sync = CatalogSync(id=uuid.uuid4(), shop_id=shop.id, kind="manual", status="queued")
+    db.add(sync)
+    await db.commit()
+    if not await enqueue("catalog_start_sync", str(shop.id), "manual"):
+        sync.status, sync.error = "failed", "Background queue unavailable."
+        sync.finished_at = datetime.now(timezone.utc)
+        await db.commit()
+        raise HTTPException(503, "Couldn't start the sync right now. Please try again in a few minutes.")
     return {"queued": True}
 
 

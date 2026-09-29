@@ -42,6 +42,10 @@ class Shop(Base):
     # Admin override per slot, e.g. {"ai_premium": "claude-sonnet-5"}: holds a
     # shop on a model during a rollout. Retired pins are ignored.
     model_pins: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Paid AI re-reads of edited products this billing cycle, capped by
+    # PLANS[tier]["product_rereads_per_month"]; reset when the cycle changes.
+    catalog_rereads_used: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    catalog_rereads_cycle_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     trial_used: Mapped[bool] = mapped_column(Boolean, default=False)
     trial_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

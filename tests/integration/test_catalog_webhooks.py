@@ -134,3 +134,39 @@ async def test_kick_fails_imports_interrupted_hours_ago(db_session):
         p.stop()
     await db_session.refresh(stuck)
     assert stuck.status == "failed" and stuck.error == "import interrupted"
+
+
+@pytest.mark.asyncio
+async def test_worker_starts_a_queued_manual_sync_on_its_row(db_session):
+    from app.services import catalog_sync as cs
+    from unittest.mock import MagicMock
+    shop = make_shop()
+    db_session.add(shop)
+    await db_session.flush()
+    queued = CatalogSync(id=uuid.uuid4(), shop_id=shop.id, kind="manual", status="queued")
+    db_session.add(queued)
+    await db_session.commit()
+    resp = MagicMock(status_code=200)
+    resp.json.return_value = {"data": {"bulkOperationRunQuery": {"bulkOperation": {"id": "op9"}, "userErrors": []}}}
+    sync = await cs.start_bulk_sync(db_session, shop, "tok", "manual", gql=AsyncMock(return_value=resp))
+    assert sync.id == queued.id and sync.status == "running" and sync.bulk_operation_id == "op9"
+
+
+@pytest.mark.asyncio
+async def test_kick_fails_queued_syncs_the_worker_never_started(db_session):
+    from datetime import datetime, timedelta, timezone
+    shop = make_shop()
+    db_session.add(shop)
+    await db_session.flush()
+    stuck = CatalogSync(id=uuid.uuid4(), shop_id=shop.id, kind="manual", status="queued",
+                        started_at=datetime.now(timezone.utc) - timedelta(hours=1))
+    db_session.add(stuck)
+    await db_session.commit()
+    p = _session(db_session)
+    try:
+        with patch("app.workers.catalog.get_valid_access_token", AsyncMock(return_value="tok")):
+            await kick_catalog_syncs({})
+    finally:
+        p.stop()
+    await db_session.refresh(stuck)
+    assert stuck.status == "failed"

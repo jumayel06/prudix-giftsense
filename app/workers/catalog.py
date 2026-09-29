@@ -86,10 +86,14 @@ async def kick_catalog_syncs(ctx: dict) -> None:
                     select(CatalogSync).where(CatalogSync.shop_id == shop.id)
                 )).scalars().all()
                 running = [s for s in syncs if s.status == "running" and s.bulk_operation_id]
-                # An import whose worker died (deploy, crash) would block new syncs.
+                # An import whose worker died (deploy, crash) would block new syncs,
+                # and so would a Sync now the queue lost.
                 for s in syncs:
                     if s.status == "importing" and _age(s.started_at) > catalog_sync.STALE_SYNC_AFTER:
                         s.status, s.error = "failed", "import interrupted"
+                        s.finished_at = datetime.now(timezone.utc)
+                    elif s.status == "queued" and _age(s.started_at) > catalog_sync.QUEUED_TIMEOUT:
+                        s.status, s.error = "failed", "never started"
                         s.finished_at = datetime.now(timezone.utc)
                 await db.commit()
                 if not syncs:
