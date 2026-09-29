@@ -3,7 +3,7 @@ import { Page, Spinner, Banner } from '@shopify/polaris'
 import { shopifyFetch, fetchJson } from '../utils/shopifyFetch'
 
 // Adapted from Prudix Commerce's PlanPickerPage: monthly-only, and every
-// feature row / label / AI tier weight comes from /api/plans (app/config.py),
+// feature row / label / AI option comes from /api/plans (app/config.py),
 // so nothing here can drift from the backend.
 
 const PLAN_ACCENTS = { starter: '#64748b', growth: '#eab308', pro: '#6366f1' }
@@ -156,17 +156,23 @@ function PlanCard({ plan, catalog, recommended, trialUsed, currentTier, planStat
 
         <div style={{ marginBottom: '20px' }}>
           <p style={{ margin: '0 0 6px', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            AI options (generations per use)
+            AI options
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-            {plan.ai_tiers.map(t => (
-              <span key={t} style={{
-                fontSize: '11px', fontWeight: 600, color: accent, background: `${accent}12`,
-                border: `1px solid ${accent}30`, borderRadius: '6px', padding: '3px 7px',
-              }}>
-                {catalog.ai_tiers[t].label} · {catalog.ai_tiers[t].weight}
-              </span>
-            ))}
+          <div style={{ display: 'grid', gap: '6px' }}>
+            {Object.entries(catalog.ai_tiers).map(([t, tier]) => {
+              const included = plan.ai_tiers.includes(t)
+              return (
+                <div key={t} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: included ? '#0f172a' : '#94a3b8' }}>{tier.label}</div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.4 }}>{tier.description}</div>
+                  </div>
+                  {included
+                    ? <span style={{ color: '#10b981', fontWeight: 700 }}>✓</span>
+                    : <span style={{ fontSize: '13px' }}>🔒</span>}
+                </div>
+              )
+            })}
           </div>
         </div>
 
@@ -295,7 +301,7 @@ export default function PlanPickerPage() {
       </div>
 
       <div style={{ marginTop: '24px', fontSize: '12px', color: '#64748b', lineHeight: 1.6 }}>
-        Each AI gift search, note or registry suggestion uses generations: 1 on Fast, 2 on Balanced or 4 on Premium, the AI option you pick in Settings.
+        Each AI gift search, note or registry suggestion uses your monthly generations; stronger AI options use more per use. You choose the option in Settings.
         When a limit is reached, the gift finder and notes keep working in basic mode.
       </div>
     </Page>

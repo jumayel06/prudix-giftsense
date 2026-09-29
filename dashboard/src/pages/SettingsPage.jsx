@@ -114,7 +114,7 @@ export default function SettingsPage() {
                     key={t}
                     id={`ai-tier-${t}`}
                     name="ai-tier"
-                    label={`${tier.label} · ${tier.weight} generation${tier.weight === 1 ? '' : 's'} per use`}
+                    label={tier.label}
                     helpText={
                       <BlockStack gap="050">
                         <span>{tier.description}</span>
