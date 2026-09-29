@@ -18,11 +18,12 @@ from tests.conftest import make_shop
 
 
 def node(pid, *, title=None, price="30.00", price_max=None, status="ACTIVE", gift_card=False,
-         url="https://shop/products/x", tracks=True, inventory=5, tags=("cozy",), desc="<p>Soft.</p>"):
+         published="2026-08-20T10:00:00Z", tracks=True, inventory=5, tags=("cozy",), desc="<p>Soft.</p>"):
     return {
         "id": f"gid://shopify/Product/{pid}", "handle": f"p-{pid}", "title": title or f"Throw {pid}",
         "descriptionHtml": desc, "productType": "Blankets", "vendor": "Wool Co", "tags": list(tags),
-        "status": status, "isGiftCard": gift_card, "onlineStoreUrl": url,
+        "status": status, "isGiftCard": gift_card, "publishedAt": published,
+        "onlineStoreUrl": None,  # null on password-protected stores even when published
         "totalInventory": inventory, "tracksInventory": tracks,
         "priceRangeV2": {"minVariantPrice": {"amount": price}, "maxVariantPrice": {"amount": price_max or price}},
         "featuredMedia": {"preview": {"image": {"url": f"https://cdn/{pid}.jpg"}}},
@@ -64,10 +65,11 @@ def test_parse_product_maps_fields():
     p = cs.parse_product(node(7, price="20.00", price_max="45.50"))
     assert p["product_id"] == "7" and p["price_min"] == 20.0 and p["price_max"] == 45.5
     assert p["image_url"] == "https://cdn/7.jpg" and p["available"] is True and p["tags"] == ["cozy"]
+    assert p["url"] == "/products/p-7"   # storefront-relative: works on any domain, password page or not
 
 
 @pytest.mark.parametrize("kw", [
-    {"status": "DRAFT"}, {"status": "ARCHIVED"}, {"gift_card": True}, {"url": None}, {"price": "0.00"},
+    {"status": "DRAFT"}, {"status": "ARCHIVED"}, {"gift_card": True}, {"published": None}, {"price": "0.00"},
 ])
 def test_parse_product_skips_non_gifts(kw):
     assert cs.parse_product(node(1, **kw)) is None

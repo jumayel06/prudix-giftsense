@@ -49,7 +49,7 @@ UPGRADES_PER_RUN = 1000
 
 PRODUCT_FIELDS = """
   id handle title descriptionHtml productType vendor tags status isGiftCard
-  onlineStoreUrl totalInventory tracksInventory
+  publishedAt totalInventory tracksInventory
   priceRangeV2 { minVariantPrice { amount } maxVariantPrice { amount } }
   featuredMedia { preview { image { url } } }
 """
@@ -81,8 +81,12 @@ FetchText = Callable[[str], Awaitable[str]]
 
 def parse_product(node: dict | None) -> dict | None:
     """Shopify Product node → catalog row fields, or None if the product can't
-    be a gift here (draft/archived, not on the Online Store, gift card, $0)."""
-    if not node or node.get("status") != "ACTIVE" or node.get("isGiftCard") or not node.get("onlineStoreUrl"):
+    be a gift here (draft/archived, not on the Online Store, gift card, $0).
+
+    "On the Online Store" = `publishedAt` set. Not `onlineStoreUrl`: it is null
+    on password-protected (not yet launched) stores even for published
+    products, which silently emptied the dev store's catalog (2026-09-29)."""
+    if not node or node.get("status") != "ACTIVE" or node.get("isGiftCard") or not node.get("publishedAt"):
         return None
     prices = node.get("priceRangeV2") or {}
     price_min = float(((prices.get("minVariantPrice") or {}).get("amount")) or 0)
@@ -102,7 +106,9 @@ def parse_product(node: dict | None) -> dict | None:
         "price_max": price_max,
         "available": (not node.get("tracksInventory")) or (node.get("totalInventory") or 0) > 0,
         "image_url": image.get("url"),
-        "url": node.get("onlineStoreUrl"),
+        # Storefront-relative: the widget runs on the storefront, so this works
+        # on myshopify, custom domains and password-protected stores alike.
+        "url": f"/products/{node['handle']}" if node.get("handle") else None,
     }
 
 
