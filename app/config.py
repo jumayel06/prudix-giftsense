@@ -14,13 +14,14 @@ DATA_RETENTION_DAYS = 30
 USAGE_WARN_THRESHOLD  = 0.75
 USAGE_BLOCK_THRESHOLD = 1.00
 
-# AI tier (app/ai_models.py: Fast / Balanced / Premium) a plan starts on.
-# Chosen by the 2026-09-28 six-model eval: Fast (GPT-6 Luna) was fastest with
-# 97% faithful reasons; Balanced (GPT-6 Sol) 100%; Premium (Sonnet 5) the most
+# AI tier (app/ai_models.py: Standard / Advanced / Premium) a plan starts on:
+# each plan's best option (most merchants never change it). Models chosen by
+# the 2026-09-28 six-model eval: Standard (GPT-6 Luna) fastest with 97%
+# faithful reasons; Advanced (GPT-6 Sol) 100%; Premium (Sonnet 5) the most
 # good picks.
 PLAN_DEFAULT_AI_TIER = {
-    "starter": "fast",
-    "growth":  "balanced",
+    "starter": "standard",
+    "growth":  "advanced",
     "pro":     "premium",
 }
 
@@ -76,7 +77,7 @@ PLANS = {
         "trial_days":                  TRIAL_DAYS,
         "generation_limit":            600,
         "trial_generations":           60,
-        "ai_tiers":                    ["fast"],
+        "ai_tiers":                    ["standard"],
         "features":                    _STARTER_FEATURES,
         "max_products":                250,
         "product_rereads_per_month":   200,
@@ -90,7 +91,7 @@ PLANS = {
         "trial_days":                  TRIAL_DAYS,
         "generation_limit":            1750,
         "trial_generations":           100,
-        "ai_tiers":                    ["fast", "balanced"],
+        "ai_tiers":                    ["standard", "advanced"],
         "features":                    _GROWTH_FEATURES,
         "max_products":                2000,
         "product_rereads_per_month":   500,
@@ -104,7 +105,7 @@ PLANS = {
         "trial_days":                  TRIAL_DAYS,
         "generation_limit":            4500,
         "trial_generations":           150,
-        "ai_tiers":                    ["fast", "balanced", "premium"],
+        "ai_tiers":                    ["standard", "advanced", "premium"],
         "features":                    _PRO_FEATURES,
         "max_products":                5000,
         "product_rereads_per_month":   1200,

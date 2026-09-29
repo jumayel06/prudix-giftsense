@@ -36,9 +36,9 @@ class Shop(Base):
     plan_tier: Mapped[str] = mapped_column(String, default="none")
     plan_status: Mapped[str] = mapped_column(String, default="pending")
     shopify_charge_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    # Merchant-selected AI tier ("fast" / "balanced" / "premium", app/ai_models.py);
+    # Merchant-selected AI tier ("standard" / "advanced" / "premium", app/ai_models.py);
     # must be in PLANS[plan_tier]["ai_tiers"]. Named selected_model for Commerce parity.
-    selected_model: Mapped[str] = mapped_column(String, default="fast")
+    selected_model: Mapped[str] = mapped_column(String, default="standard")
     # Admin override per slot, e.g. {"ai_premium": "claude-sonnet-5"}: holds a
     # shop on a model during a rollout. Retired pins are ignored.
     model_pins: Mapped[dict | None] = mapped_column(JSON, nullable=True)

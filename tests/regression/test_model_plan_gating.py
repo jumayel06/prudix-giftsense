@@ -36,16 +36,16 @@ def _make_client(db_session):
 class TestModelPlanGating:
 
     @pytest.mark.asyncio
-    async def test_starter_cannot_select_balanced(self, db_session):
-        """Balanced is Growth+; not in the Starter plan."""
-        shop = make_shop(plan_tier="starter", plan_status="active", selected_model="fast")
+    async def test_starter_cannot_select_advanced(self, db_session):
+        """Advanced is Growth+; not in the Starter plan."""
+        shop = make_shop(plan_tier="starter", plan_status="active", selected_model="standard")
         db_session.add(shop)
         await db_session.commit()
 
         for client in _make_client(db_session):
             resp = client.put(
                 f"/api/settings?shop={TEST_SHOP_DOMAIN}",
-                json={"ai_tier": "balanced"},
+                json={"ai_tier": "advanced"},
             )
         assert resp.status_code == 403
         detail = resp.json()["detail"]
@@ -53,7 +53,7 @@ class TestModelPlanGating:
 
     @pytest.mark.asyncio
     async def test_starter_cannot_select_premium(self, db_session):
-        shop = make_shop(plan_tier="starter", plan_status="active", selected_model="fast")
+        shop = make_shop(plan_tier="starter", plan_status="active", selected_model="standard")
         db_session.add(shop)
         await db_session.commit()
 
@@ -70,7 +70,7 @@ class TestModelPlanGating:
         from sqlalchemy import select
         from core.db.models import Shop
 
-        shop = make_shop(plan_tier="starter", plan_status="active", selected_model="fast")
+        shop = make_shop(plan_tier="starter", plan_status="active", selected_model="standard")
         db_session.add(shop)
         await db_session.commit()
 
@@ -84,25 +84,25 @@ class TestModelPlanGating:
             select(Shop).where(Shop.shop_domain == TEST_SHOP_DOMAIN)
         )
         refreshed = result.scalar_one()
-        assert refreshed.selected_model == "fast"  # unchanged
+        assert refreshed.selected_model == "standard"  # unchanged
 
     @pytest.mark.asyncio
-    async def test_growth_can_select_balanced(self, db_session):
-        shop = make_shop(plan_tier="growth", plan_status="active", selected_model="fast")
+    async def test_growth_can_select_advanced(self, db_session):
+        shop = make_shop(plan_tier="growth", plan_status="active", selected_model="standard")
         db_session.add(shop)
         await db_session.commit()
 
         for client in _make_client(db_session):
             resp = client.put(
                 f"/api/settings?shop={TEST_SHOP_DOMAIN}",
-                json={"ai_tier": "balanced"},
+                json={"ai_tier": "advanced"},
             )
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
     async def test_growth_cannot_select_premium(self, db_session):
         """Premium is Pro-only."""
-        shop = make_shop(plan_tier="growth", plan_status="active", selected_model="fast")
+        shop = make_shop(plan_tier="growth", plan_status="active", selected_model="standard")
         db_session.add(shop)
         await db_session.commit()
 
@@ -115,7 +115,7 @@ class TestModelPlanGating:
 
     @pytest.mark.asyncio
     async def test_pro_can_select_premium(self, db_session):
-        shop = make_shop(plan_tier="pro", plan_status="active", selected_model="fast")
+        shop = make_shop(plan_tier="pro", plan_status="active", selected_model="standard")
         db_session.add(shop)
         await db_session.commit()
 
@@ -127,15 +127,15 @@ class TestModelPlanGating:
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_all_plans_have_the_fast_tier(self):
+    async def test_all_plans_have_the_standard_tier(self):
         for tier, plan in PLANS.items():
-            assert "fast" in plan["ai_tiers"], f"Plan '{tier}' is missing the Fast AI tier"
+            assert "standard" in plan["ai_tiers"], f"Plan '{tier}' is missing the Standard AI tier"
 
     @pytest.mark.asyncio
     async def test_models_available_per_plan_matches_config(self):
         """Document the expected AI tiers for each plan."""
-        assert PLANS["starter"]["ai_tiers"] == ["fast"]
-        assert "balanced" in PLANS["growth"]["ai_tiers"]
+        assert PLANS["starter"]["ai_tiers"] == ["standard"]
+        assert "advanced" in PLANS["growth"]["ai_tiers"]
         assert "premium" not in PLANS["growth"]["ai_tiers"]
         assert "premium" in PLANS["pro"]["ai_tiers"]
 
@@ -144,17 +144,17 @@ class TestSettingsPayload:
 
     @pytest.mark.asyncio
     async def test_get_settings_lists_plan_models_weights_and_features(self, db_session):
-        shop = make_shop(plan_tier="growth", plan_status="active", selected_model="balanced")
+        shop = make_shop(plan_tier="growth", plan_status="active", selected_model="advanced")
         db_session.add(shop)
         await db_session.commit()
 
         for client in _make_client(db_session):
             data = client.get(f"/api/settings?shop={TEST_SHOP_DOMAIN}").json()
-        assert data["ai_tier"] == "balanced" and data["ai_tier_weight"] == 2
+        assert data["ai_tier"] == "advanced" and data["ai_tier_weight"] == 2
         assert data["ai_tiers_available"] == PLANS["growth"]["ai_tiers"]
-        assert data["ai_tiers"]["balanced"]["label"] == "Balanced"
+        assert data["ai_tiers"]["advanced"]["label"] == "Advanced"
         # The store sees which model each of its options runs on right now (a
         # display label), but never raw model IDs it could send back.
-        assert data["ai_tier_models"] == {"fast": "GPT-6 Luna", "balanced": "GPT-6 Sol"}
+        assert data["ai_tier_models"] == {"standard": "GPT-6 Luna", "advanced": "GPT-6 Sol"}
         assert "gpt-6" not in str(data) and "claude-" not in str(data)
         assert data["features"] == PLANS["growth"]["features"]

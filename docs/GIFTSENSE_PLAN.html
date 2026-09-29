@@ -185,7 +185,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
           <div><h5>What the shopper sees</h5><ul><li>A "Find a gift" button or floating bubble.</li><li>Questions: who it's for, the occasion, budget, 2–3 words that describe them. Under 30 seconds.</li><li>3–5 different products (not near-copies), each with a short honest reason.</li><li>"None of these": one follow-up question, then fresh picks.</li></ul></div>
           <div><h5>How it works</h5><ul><li>When the app is installed, AI reads each product once and writes a "gift profile": who it suits, which occasions, what kind of person.</li><li>Shopper answers are matched against those profiles. Products outside the budget are never shown.</li><li>AI picks the best few and writes the reasons, using only facts about the product.</li><li>Stores with fewer than ~60 products skip the matching step, and the AI looks at the whole catalog directly.</li></ul></div>
         </div>
-        <div class="meta"><span><b>AI cost:</b> uses AI generations: 1 to 4 per search, depending on the AI option (Fast, Balanced or Premium) the merchant picks (see Plans)</span><span><b>Reuse:</b> storefront widget, security checks and budget counters from the Commerce AI Concierge</span></div>
+        <div class="meta"><span><b>AI cost:</b> uses AI generations: 1 to 4 per search, depending on the AI option (Standard, Advanced or Premium) the merchant picks (see Plans)</span><span><b>Reuse:</b> storefront widget, security checks and budget counters from the Commerce AI Concierge</span></div>
       </div>
     </details>
 
@@ -374,7 +374,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
         <li>AI Gift Finder and AI notes</li>
         <li>Several gifts per order, gift wrap, printable cards, gift receipt</li>
         <li>Basic analytics</li>
-        <li>AI: Fast</li>
+        <li>AI: Standard</li>
         <li><span class="num">600</span> AI generations a month</li>
         <li>Up to <span class="num">250</span> products</li>
         <li>Small "by GiftSense" link on the widget</li>
@@ -391,7 +391,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
         <li>Voice messages with QR codes</li>
         <li>Full analytics and weekly sales email</li>
         <li>Hide the GiftSense link</li>
-        <li>Adds the Balanced AI option</li>
+        <li>Adds the Advanced AI option</li>
         <li><span class="num">1,750</span> AI generations a month</li>
         <li>Up to <span class="num">2,000</span> products</li>
         <li><span class="num">200</span> voice messages</li>
@@ -420,9 +420,9 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
   <div class="note">
     <h4>How AI options and generations work</h4>
     <ul>
-      <li>The merchant picks an AI option in Settings: <b>Fast</b>, <b>Balanced</b> or <b>Premium</b>, from those their plan includes. Each plan has a default: Fast on Starter, Balanced on Growth, Premium on Pro. Plans and the App Store listing name only the options; we choose (and can upgrade) the model behind each. For transparency, Settings shows what each option currently runs on for that store (e.g. "Premium: currently runs on Claude Sonnet 5").</li>
+      <li>The merchant picks an AI option in Settings: <b>Standard</b>, <b>Advanced</b> or <b>Premium</b>, from those their plan includes. Each plan has a default: Standard on Starter, Advanced on Growth, Premium on Pro. Plans and the App Store listing name only the options; we choose (and can upgrade) the model behind each. For transparency, Settings shows what each option currently runs on for that store (e.g. "Premium: currently runs on Claude Sonnet 5").</li>
       <li>Every AI gift search, AI note and registry suggestion uses generations. Stronger models use more generations per use, in proportion to what they cost us.</li>
-      <li>So a merchant can trade volume for quality: 1,750 generations on Growth is 1,750 searches or notes on Fast, 875 on Balanced, or 437 on Premium (Pro).</li>
+      <li>So a merchant can trade volume for quality: 1,750 generations on Growth is 1,750 searches or notes on Standard, 875 on Advanced, or 437 on Premium (Pro).</li>
       <li>Reading the catalog doesn't use generations. It runs in the background on our cheapest model (GPT-6 Luna today), within the plan's product limit.</li>
       <li>Every model on this list must pass the week-2 quality test for gift picks. A model that fails isn't offered.</li>
     </ul>
@@ -432,12 +432,12 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
     <table>
       <thead><tr><th>AI option (model today)</th><th class="c">Generations per use</th><th class="c">Starter</th><th class="c">Growth</th><th class="c">Pro</th></tr></thead>
       <tbody>
-        <tr><td>Fast (GPT-6 Luna)</td><td class="c num">1</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
-        <tr><td>Balanced (GPT-6 Sol)</td><td class="c num">2</td><td class="c no">–</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>Standard (GPT-6 Luna)</td><td class="c num">1</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>Advanced (GPT-6 Sol)</td><td class="c num">2</td><td class="c no">–</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
         <tr><td>Premium (Claude Sonnet 5)</td><td class="c num">4</td><td class="c no">–</td><td class="c no">–</td><td class="c yes">✓</td></tr>
         <tr class="sep"><td colspan="5">What a month's generations buy (gift searches or notes)</td></tr>
-        <tr><td>With Fast</td><td class="c no">–</td><td class="c num">600</td><td class="c num">1,750</td><td class="c num">4,500</td></tr>
-        <tr><td>With Balanced</td><td class="c no">–</td><td class="c no">–</td><td class="c num">875</td><td class="c num">2,250</td></tr>
+        <tr><td>With Standard</td><td class="c no">–</td><td class="c num">600</td><td class="c num">1,750</td><td class="c num">4,500</td></tr>
+        <tr><td>With Advanced</td><td class="c no">–</td><td class="c no">–</td><td class="c num">875</td><td class="c num">2,250</td></tr>
         <tr><td>With Premium</td><td class="c no">–</td><td class="c no">–</td><td class="c no">–</td><td class="c num">1,125</td></tr>
       </tbody>
     </table>
@@ -447,7 +447,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
   <div class="note">
     <h4>Why a merchant moves up</h4>
     <ul>
-      <li><b>Starter to Growth:</b> arrive-by dates for birthdays and holidays, voice messages, a weekly email that shows the sales GiftSense made, the Balanced AI option (the most accurate gift reasons in testing), and about 3× the AI generations.</li>
+      <li><b>Starter to Growth:</b> arrive-by dates for birthdays and holidays, voice messages, a weekly email that shows the sales GiftSense made, the Advanced AI option (more thoughtful picks and the most accurate gift reasons in testing), and about 3× the AI generations.</li>
       <li><b>Growth to Pro:</b> the strongest AI (Premium), registries that bring in new shoppers every time a list is shared, recipient's choice that avoids wrong-size exchanges, video messages, and about 2.5× the AI generations.</li>
     </ul>
   </div>
@@ -479,8 +479,8 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
         <tr><td>15. Full analytics and weekly email</td><td class="c no">–</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
         <tr><td>Priority support</td><td class="c no">–</td><td class="c no">–</td><td class="c yes">✓</td></tr>
         <tr class="sep"><td colspan="4">AI options</td></tr>
-        <tr><td>Fast</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
-        <tr><td>Balanced</td><td class="c no">–</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>Standard</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>Advanced</td><td class="c no">–</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
         <tr><td>Premium</td><td class="c no">–</td><td class="c no">–</td><td class="c yes">✓</td></tr>
         <tr class="sep"><td colspan="4">Monthly limits</td></tr>
         <tr><td>AI generations (gift searches, notes, registry suggestions)</td><td class="c num">600</td><td class="c num">1,750</td><td class="c num">4,500</td></tr>
@@ -531,13 +531,13 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
     <table>
       <thead><tr><th>AI use by model</th><th class="r">Gift search</th><th class="r">Note</th><th class="r">Generations</th><th class="r">Cost per generation (worst)</th></tr></thead>
       <tbody>
-        <tr><td>Fast (GPT-6 Luna)</td><td class="r">$0.0003</td><td class="r">$0.0002</td><td class="r">1</td><td class="r">$0.0003</td></tr>
-        <tr><td>Balanced (GPT-6 Sol)</td><td class="r">$0.0055</td><td class="r">$0.0036</td><td class="r">2</td><td class="r">$0.00275</td></tr>
+        <tr><td>Standard (GPT-6 Luna)</td><td class="r">$0.0003</td><td class="r">$0.0002</td><td class="r">1</td><td class="r">$0.0003</td></tr>
+        <tr><td>Advanced (GPT-6 Sol)</td><td class="r">$0.0055</td><td class="r">$0.0036</td><td class="r">2</td><td class="r">$0.00275</td></tr>
         <tr><td>Premium (Claude Sonnet 5)</td><td class="r">$0.0103</td><td class="r">$0.0036</td><td class="r">4</td><td class="r">$0.00258</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="sub">A note is about 800 tokens in and 200 out. The costliest option a plan allows sets its worst case: Fast at <b class="num">$0.0003</b> per generation on Starter, Balanced at <b class="num">$0.00275</b> on Growth and Pro (Premium is $0.00258). Generations per use go 1 / 2 / 4, each option doubling the last. The merchant's choice can't push cost above the plan's worst case, and a model swap must keep each option within its weight.</p>
+  <p class="sub">A note is about 800 tokens in and 200 out. The costliest option a plan allows sets its worst case: Standard at <b class="num">$0.0003</b> per generation on Starter, Advanced at <b class="num">$0.00275</b> on Growth and Pro (Premium is $0.00258). Generations per use go 1 / 2 / 4, each option doubling the last. The merchant's choice can't push cost above the plan's worst case, and a model swap must keep each option within its weight.</p>
 
   <div class="tbl">
     <table>

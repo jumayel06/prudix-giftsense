@@ -1,7 +1,7 @@
 """Merchant settings: AI tier choice, plan summary, weekly email opt-in.
 
 GET/PUT /api/settings copied from Prudix Commerce, trimmed to GiftSense
-fields. Merchants pick an AI tier (Fast / Balanced / Premium, app/ai_models.py),
+fields. Merchants pick an AI tier (Standard / Advanced / Premium, app/ai_models.py),
 never a model. The choice is validated server-side against the plan's
 ai_tiers: the dashboard grays out locked tiers, but the API must refuse them
 too (tests/regression/test_model_plan_gating.py).

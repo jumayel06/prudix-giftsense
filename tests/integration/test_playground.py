@@ -138,7 +138,7 @@ async def test_options_lists_the_intake_vocabulary(db_session):
 
 @pytest.mark.asyncio
 async def test_playground_returns_picks_and_logs_cost_without_generations(db_session, fake_models):
-    shop = make_shop(selected_model="balanced")
+    shop = make_shop(selected_model="advanced")
     db_session.add(shop)
     await db_session.flush()
     db_session.add_all([row(shop, str(i)) for i in range(4)])
@@ -147,7 +147,7 @@ async def test_playground_returns_picks_and_logs_cost_without_generations(db_ses
     resp = call(db_session, "POST", "/api/catalog/playground", json={**BRIEF, "free_text": "loves reading"})
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data["picks"]) == 3 and data["ai_tier"] == "balanced" and data["ai_tier_label"] == "Balanced"
+    assert len(data["picks"]) == 3 and data["ai_tier"] == "advanced" and data["ai_tier_label"] == "Advanced"
     assert data["ai_model_label"] == "GPT-6 Sol"
     pick = data["picks"][0]
     assert pick["title"].startswith("Candle") and pick["reason"] and pick["source"] == "ai"
@@ -203,4 +203,4 @@ async def test_playground_uses_plan_default_when_selected_model_not_allowed(db_s
     await db_session.flush()
     db_session.add(row(shop, "1"))
     await db_session.commit()
-    assert call(db_session, "POST", "/api/catalog/playground", json=BRIEF).json()["ai_tier"] == "fast"
+    assert call(db_session, "POST", "/api/catalog/playground", json=BRIEF).json()["ai_tier"] == "standard"

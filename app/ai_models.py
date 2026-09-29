@@ -1,7 +1,7 @@
 """AI models: registry, merchant-facing AI tiers, slots and gradual rollout.
 
 The one place model IDs live. Merchants never see a model name: they pick an
-AI tier (Fast / Balanced / Premium) and each tier, like each background job,
+AI tier (Standard / Advanced / Premium) and each tier, like each background job,
 is a slot that points at a model. Swapping a model is a config change here:
 
   1. add the model to MODELS (price, weight-relevant cost, capabilities)
@@ -81,8 +81,8 @@ MODELS = {
 
 # ── Slots: what each tier / background job runs on ──────────────────────────
 SLOTS = {
-    "ai_fast":          {"model": "gpt-6-luna",      "next": None, "rollout_pct": 0},
-    "ai_balanced":      {"model": "gpt-6-sol",       "next": None, "rollout_pct": 0},
+    "ai_standard":      {"model": "gpt-6-luna",      "next": None, "rollout_pct": 0},
+    "ai_advanced":      {"model": "gpt-6-sol",       "next": None, "rollout_pct": 0},
     "ai_premium":       {"model": "claude-sonnet-5", "next": None, "rollout_pct": 0},
     # Product gift profiles (was Haiku 4.5 until 2026-09-28; Luna ≈ 12× cheaper).
     "catalog_analysis": {"model": "gpt-6-luna",      "next": None, "rollout_pct": 0},
@@ -93,18 +93,18 @@ SLOTS = {
 # It belongs to the tier, not the model, so a model swap never changes what a
 # merchant is charged (a new model must fit the tier's cost per generation).
 AI_TIERS = {
-    "fast":     {"label": "Fast",     "weight": 1, "slot": "ai_fast",
-                 "description": "Quickest answers, and uses the fewest generations."},
-    "balanced": {"label": "Balanced", "weight": 2, "slot": "ai_balanced",
-                 "description": "The most carefully worded gift reasons."},
+    "standard": {"label": "Standard", "weight": 1, "slot": "ai_standard",
+                 "description": "Solid gift picks with clear reasons."},
+    "advanced": {"label": "Advanced", "weight": 2, "slot": "ai_advanced",
+                 "description": "More thoughtful picks with carefully worded, accurate reasons."},
     "premium":  {"label": "Premium",  "weight": 4, "slot": "ai_premium",
-                 "description": "Our strongest AI for gift picks and notes."},
+                 "description": "Our most capable AI: the strongest picks and most personal notes."},
 }
 
-# Values stored before AI tiers existed (model IDs) → their tier.
+# Older stored values (model IDs, and the first tier names) → current tier.
 LEGACY_SELECTIONS = {
-    "gpt-6-luna": "fast", "gpt-4o-mini": "fast", "claude-haiku-4-5": "fast",
-    "gpt-6-sol": "balanced", "gpt-4.1": "balanced",
+    "gpt-6-luna": "standard", "gpt-4o-mini": "standard", "claude-haiku-4-5": "standard", "fast": "standard",
+    "gpt-6-sol": "advanced", "gpt-4.1": "advanced", "balanced": "advanced",
     "claude-sonnet-5": "premium", "claude-sonnet-5-5": "premium",
 }
 

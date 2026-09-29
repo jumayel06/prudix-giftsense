@@ -308,7 +308,7 @@ class TestListPlans:
         assert growth["price_usd"] == PLANS["growth"]["price_usd"]
         assert growth["generation_limit"] == PLANS["growth"]["generation_limit"]
         assert growth["trial_days"] == 7
-        assert "balanced" in growth["ai_tiers"]
+        assert "advanced" in growth["ai_tiers"]
 
     def test_starter_plan_fields(self, db_session):
         for client in _make_client(db_session):
@@ -316,7 +316,7 @@ class TestListPlans:
         starter = next(p for p in resp.json()["plans"] if p["tier"] == "starter")
         assert starter["price_usd"] > 0
         assert starter["generation_limit"] > 0
-        assert starter["ai_tiers"] == ["fast"]
+        assert starter["ai_tiers"] == ["standard"]
         assert starter["price_usd"] < 30  # starter must be cheapest tier
 
     def test_pro_plan_fields(self, db_session):

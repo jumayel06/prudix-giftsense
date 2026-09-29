@@ -43,12 +43,12 @@ def test_registry_and_plans_are_consistent():
 
 
 def test_current_lineup():
-    assert PLANS["starter"]["ai_tiers"] == ["fast"]
-    assert PLANS["growth"]["ai_tiers"] == ["fast", "balanced"]
-    assert PLANS["pro"]["ai_tiers"] == ["fast", "balanced", "premium"]
-    assert am.AI_TIER_WEIGHTS == {"fast": 1, "balanced": 2, "premium": 4}
+    assert PLANS["starter"]["ai_tiers"] == ["standard"]
+    assert PLANS["growth"]["ai_tiers"] == ["standard", "advanced"]
+    assert PLANS["pro"]["ai_tiers"] == ["standard", "advanced", "premium"]
+    assert am.AI_TIER_WEIGHTS == {"standard": 1, "advanced": 2, "premium": 4}
     assert {t: am.SLOTS[s["slot"]]["model"] for t, s in am.AI_TIERS.items()} == {
-        "fast": "gpt-6-luna", "balanced": "gpt-6-sol", "premium": "claude-sonnet-5"}
+        "standard": "gpt-6-luna", "advanced": "gpt-6-sol", "premium": "claude-sonnet-5"}
     assert am.SLOTS["catalog_analysis"]["model"] == "gpt-6-luna"
     assert am.model_status("claude-haiku-4-5") == "retired"
 
@@ -57,12 +57,14 @@ def test_current_lineup():
 
 @pytest.mark.parametrize("plan,selected,expected", [
     ("pro", "premium", "premium"),
-    ("starter", "premium", "fast"),          # not in plan → plan default
-    ("growth", None, "balanced"),
-    ("none", None, "fast"),                  # no plan → starter default
+    ("starter", "premium", "standard"),          # not in plan → plan default
+    ("growth", None, "advanced"),
+    ("none", None, "standard"),                  # no plan → starter default
     ("pro", "claude-sonnet-5", "premium"),   # stored before tiers existed
-    ("pro", "claude-haiku-4-5", "fast"),
-    ("growth", "gpt-4.1", "balanced"),
+    ("pro", "claude-haiku-4-5", "standard"),
+    ("growth", "gpt-4.1", "advanced"),
+    ("pro", "fast", "standard"),              # first tier names (renamed 2026-09-28)
+    ("growth", "balanced", "advanced"),
 ])
 def test_ai_tier_for(plan, selected, expected):
     assert am.ai_tier_for(plan, selected) == expected
@@ -96,15 +98,15 @@ def test_pin_holds_a_shop_on_a_model(rollout):
 
 
 def test_retired_models_resolve_to_their_replacement(monkeypatch):
-    monkeypatch.setattr(am, "SLOTS", {**am.SLOTS, "ai_fast": {"model": "claude-haiku-4-5", "next": None,
+    monkeypatch.setattr(am, "SLOTS", {**am.SLOTS, "ai_standard": {"model": "claude-haiku-4-5", "next": None,
                                                               "rollout_pct": 0}})
-    assert am.resolve_model("ai_fast", uuid.uuid4()) == "gpt-6-luna"
+    assert am.resolve_model("ai_standard", uuid.uuid4()) == "gpt-6-luna"
     assert am.resolve_model("ai_premium", uuid.uuid4(), pins={"ai_premium": "gpt-4.1"}) == "gpt-6-sol"
 
 
 def test_model_for_shop_uses_its_ai_tier():
     class S:
-        id = uuid.uuid4(); plan_tier = "pro"; selected_model = "balanced"; model_pins = None  # noqa: E702
+        id = uuid.uuid4(); plan_tier = "pro"; selected_model = "advanced"; model_pins = None  # noqa: E702
     assert am.model_for_shop(S) == "gpt-6-sol"
 
 
@@ -116,7 +118,7 @@ def test_tier_models_for_shop_follows_rollout_and_pins(rollout):
     class S:
         plan_tier = "pro"; model_pins = None  # noqa: E702
     S.id = next(s for s in (uuid.uuid4() for _ in range(1000)) if am.rollout_bucket("ai_premium", s) < 25)
-    assert am.tier_models_for_shop(S) == {"fast": "GPT-6 Luna", "balanced": "GPT-6 Sol", "premium": "Claude Sonnet 5.5"}
+    assert am.tier_models_for_shop(S) == {"standard": "GPT-6 Luna", "advanced": "GPT-6 Sol", "premium": "Claude Sonnet 5.5"}
     S.model_pins = {"ai_premium": "claude-sonnet-5"}
     assert am.tier_models_for_shop(S)["premium"] == "Claude Sonnet 5"
 

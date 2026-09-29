@@ -529,7 +529,7 @@ class TestGdprEndpoints:
         assert shop.plan_tier == "none"
 
         # Defaults reset to cheapest model
-        assert shop.selected_model == "fast"
+        assert shop.selected_model == "standard"
         assert shop.review_prompt_shown is False
 
         # trial_used must survive purge — prevents re-trial after reinstall
