@@ -114,6 +114,29 @@ async def require_feature(feature: str, shop_domain: str, db: AsyncSession) -> t
     return shop, plan
 
 
+def may_generate(shop: Shop) -> bool:
+    """Can this shop use AI right now? Active or trialling, or cancelled but
+    still inside the period it paid for."""
+    if shop.plan_status in GENERATE_STATUSES:
+        return True
+    return shop.plan_status == "cancelled" and _in_paid_period(shop)
+
+
+def generation_limit_for(shop: Shop) -> int:
+    """This cycle's generation budget: the plan's, or its trial cap while trialling."""
+    plan = PLANS.get(shop.plan_tier or "starter", PLANS["starter"])
+    if shop.plan_status == "trial_active":
+        return min(plan["generation_limit"], plan.get("trial_generations", plan["generation_limit"]))
+    return plan["generation_limit"]
+
+
+def daily_cost_cap_for(shop: Shop) -> float:
+    """USD/day backstop; 0 disables it."""
+    plan = PLANS.get(shop.plan_tier or "starter", PLANS["starter"])
+    cap = plan.get("daily_cost_cap_usd")
+    return settings.max_daily_cost_usd_per_shop if cap is None else cap
+
+
 async def get_daily_cost_usd(shop: Shop, db: AsyncSession) -> float:
     """Sum LLM cost (USD) this shop has accrued today (UTC).
     Refunds (negative generations_consumed entries) have cost_usd=0,
@@ -137,10 +160,7 @@ async def check_daily_cost_cap(shop: Shop, db: AsyncSession) -> None:
     falls back to the global `max_daily_cost_usd_per_shop` setting if the plan
     doesn't define one. Disabled when the resolved cap is 0.
     """
-    plan = PLANS.get(shop.plan_tier or "starter", PLANS["starter"])
-    cap = plan.get("daily_cost_cap_usd")
-    if cap is None:
-        cap = settings.max_daily_cost_usd_per_shop
+    cap = daily_cost_cap_for(shop)
     if cap <= 0:
         return
     spent = await get_daily_cost_usd(shop, db)
@@ -190,13 +210,7 @@ async def check_generation_limit(shop: Shop, db: AsyncSession, count: int = 1) -
     plan = PLANS.get(shop.plan_tier or "starter", PLANS["starter"])
     full_limit = plan["generation_limit"]
     is_trial = shop.plan_status == "trial_active"
-
-    # During trial, enforce the smaller trial_generations cap
-    if is_trial:
-        trial_cap = plan.get("trial_generations", full_limit)
-        limit = min(full_limit, trial_cap)
-    else:
-        limit = full_limit
+    limit = generation_limit_for(shop)  # trial_generations cap while trialling
 
     used = await get_generations_used(shop, db)
     remaining = limit - used
@@ -283,17 +297,14 @@ async def require_generation(
 
     # Cancelled shops within their paid period can still generate — they already paid.
     # Past the paid period, generation is blocked (grace period is read-only).
-    if shop.plan_status not in GENERATE_STATUSES:
-        if shop.plan_status == "cancelled" and _in_paid_period(shop):
-            pass  # allow generation — paid period still running
-        else:
-            raise HTTPException(
-                status_code=403,
-                detail={
-                    "code": "subscription_ended",
-                    "message": "Your subscription has ended. Please renew your plan to generate new content.",
-                },
-            )
+    if not may_generate(shop):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "subscription_ended",
+                "message": "Your subscription has ended. Please renew your plan to generate new content.",
+            },
+        )
 
     await check_generation_limit(shop, db, count)
     await check_daily_cost_cap(shop, db)
