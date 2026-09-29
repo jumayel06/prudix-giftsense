@@ -11,10 +11,9 @@ Literal routes are declared before the parameterized one.
 """
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
@@ -23,10 +22,9 @@ from app.ai_models import AI_TIERS, ai_tier_for, model_for_shop, model_label
 from app.jobs import enqueue
 from app.llm import calc_cost, chat
 from app.services import catalog_index
-from app.services.gifting import vocab
 from app.services.gifting.embeddings import OpenAIEmbedder
 from app.services.gifting.rerank import PROMPT_VERSION as RERANK_PROMPT_VERSION
-from app.services.gifting.rerank import budget_label
+from app.services.gifting.brief import GiftBrief, intake_options
 from app.services.gifting.retrieval import Intake
 from app.services.catalog_sync import ACTIVE_STATUSES, IN_PROGRESS, count_pending, product_limit
 from core.db.models import CatalogProductRow, CatalogSync, Shop, UsageLog
@@ -116,69 +114,14 @@ async def catalog_resync(shop: Shop = Depends(get_current_shop), db: AsyncSessio
     return {"queued": True}
 
 
-def _options(values: list[str]) -> list[dict]:
-    return [{"value": v, "label": vocab.LABELS.get(v, v)} for v in values]
-
-
 @router.get("/api/catalog/playground/options")
 async def playground_options(shop: Shop = Depends(get_current_shop)):
-    return {
-        "recipients": _options(vocab.RECIPIENTS),
-        "occasions": _options(vocab.OCCASIONS),
-        "vibes": _options(vocab.VIBES),
-        "age_bands": _options(vocab.AGE_BANDS),
-        "budgets": [{"value": b, "label": budget_label(b)} for b in vocab.BUDGET_BANDS],
-        "max_vibes": 3,
-    }
-
-
-class PlaygroundBrief(BaseModel):
-    recipient: str
-    occasion: str
-    budget_band: str
-    vibes: list[str] = Field(default_factory=list, max_length=3)
-    age_band: Optional[str] = None
-    free_text: str = Field(default="", max_length=200)
-
-    @field_validator("recipient")
-    @classmethod
-    def _recipient(cls, v):
-        if v not in vocab.RECIPIENTS:
-            raise ValueError("unknown recipient")
-        return v
-
-    @field_validator("occasion")
-    @classmethod
-    def _occasion(cls, v):
-        if v not in vocab.OCCASIONS:
-            raise ValueError("unknown occasion")
-        return v
-
-    @field_validator("budget_band")
-    @classmethod
-    def _budget(cls, v):
-        if v not in vocab.BUDGET_BANDS:
-            raise ValueError("unknown budget")
-        return v
-
-    @field_validator("vibes")
-    @classmethod
-    def _vibes(cls, v):
-        if any(x not in vocab.VIBES for x in v):
-            raise ValueError("unknown vibe")
-        return v
-
-    @field_validator("age_band")
-    @classmethod
-    def _age(cls, v):
-        if v is not None and v not in vocab.AGE_BANDS:
-            raise ValueError("unknown age band")
-        return v
+    return intake_options()
 
 
 @router.post("/api/catalog/playground")
 async def playground_search(
-    brief: PlaygroundBrief,
+    brief: GiftBrief,
     shop: Shop = Depends(get_current_shop),
     db: AsyncSession = Depends(get_db),
 ):
