@@ -1,0 +1,6 @@
+api_version = "2026-07"
+
+[[extensions]]
+type = "theme"
+name = "GiftSense"
+handle = "giftsense-theme"

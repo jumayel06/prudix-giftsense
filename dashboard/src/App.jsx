@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { AppProvider, Frame, Navigation, SkeletonPage, SkeletonBodyText } from '@shopify/polaris'
 import { TitleBar } from '@shopify/app-bridge-react'
-import { HomeIcon, CreditCardIcon, SettingsIcon, ChatIcon, ProductIcon, WandIcon } from '@shopify/polaris-icons'
+import { HomeIcon, CreditCardIcon, SettingsIcon, ChatIcon, ProductIcon, WandIcon, StoreIcon } from '@shopify/polaris-icons'
 import enTranslations from '@shopify/polaris/locales/en.json'
 import '@shopify/polaris/build/esm/styles.css'
 
@@ -15,6 +15,7 @@ import PlanPickerPage from './pages/PlanPickerPage'
 import SettingsPage from './pages/SettingsPage'
 import SupportPage from './pages/SupportPage'
 import ComingSoonPage from './pages/ComingSoonPage'
+import StorefrontPage from './pages/StorefrontPage'
 import { UPCOMING } from './utils/upcoming'
 
 const APP_NAME = 'Prudix GiftSense'
@@ -71,7 +72,7 @@ function SidebarNav({ planStatus, onMobileClose }) {
           <Navigation.Section items={[item('Home', '/', HomeIcon)]} />
           <Navigation.Section
             title="Gift finder"
-            items={[item('Catalog', '/catalog', ProductIcon), item('Try it', '/playground', WandIcon), ...soon('finder')]}
+            items={[item('Catalog', '/catalog', ProductIcon), item('Try it', '/playground', WandIcon), item('Storefront', '/storefront', StoreIcon)]}
           />
           <Navigation.Section title="Gifting" items={soon('gifting')} />
           <Navigation.Section title="Orders" items={soon('orders')} />
@@ -117,7 +118,7 @@ function AppFooter() {
 }
 
 const TITLES = {
-  '/': APP_NAME, '/catalog': 'Catalog', '/playground': 'Try the gift finder', '/plans': 'Plans', '/settings': 'Settings', '/support': 'Support',
+  '/': APP_NAME, '/catalog': 'Catalog', '/playground': 'Try the gift finder', '/plans': 'Plans', '/settings': 'Settings', '/support': 'Support', '/storefront': 'Storefront',
   ...Object.fromEntries(UPCOMING.map(u => [u.path, u.title])),
 }
 
@@ -216,6 +217,7 @@ function AppShell() {
           <Routes>
             <Route path="/" element={<HomePage stats={stats} />} />
             <Route path="/catalog" element={<CatalogPage />} />
+            <Route path="/storefront" element={<StorefrontPage />} />
             <Route path="/playground" element={<PlaygroundPage />} />
             <Route path="/plans" element={<PlanPickerPage />} />
             <Route path="/settings" element={<SettingsPage />} />

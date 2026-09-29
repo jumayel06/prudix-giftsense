@@ -1,0 +1,47 @@
+{% comment %}
+  GiftSense app embed: a floating "Find a gift" launcher on every page.
+  Merchants turn it on in Theme editor → App embeds. Only the small
+  bootstrap (assets/giftsense.js, <10 KB) loads with the page; the finder UI
+  (giftsense-ui.js + giftsense.css) loads on the shopper's first click.
+  All calls go through the App Proxy (/apps/giftsense/*), signed by Shopify.
+{% endcomment %}
+<div
+  id="giftsense-embed"
+  class="giftsense-embed"
+  data-giftsense-root
+  data-api="/apps/giftsense"
+  data-ui-src="{{ 'giftsense-ui.js' | asset_url }}"
+  data-css-src="{{ 'giftsense.css' | asset_url }}"
+  data-currency="{{ shop.currency }}"
+  data-locale="{{ request.locale.iso_code }}"
+  data-label="{{ block.settings.label | default: 'Find a gift' | escape }}"
+  data-position="{{ block.settings.position }}"
+  style="--gs-accent: {{ block.settings.accent }}; --gs-on-accent: {{ block.settings.on_accent }};"
+  hidden
+></div>
+<style>
+  .giftsense-launcher{position:fixed;bottom:20px;z-index:2147483000;display:inline-flex;align-items:center;gap:8px;
+    padding:12px 18px;border:0;border-radius:999px;background:var(--gs-accent,#111827);color:var(--gs-on-accent,#fff);
+    font:600 15px/1.2 inherit;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+  .giftsense-launcher--right{right:20px}.giftsense-launcher--left{left:20px}
+  .giftsense-launcher:focus-visible{outline:3px solid var(--gs-accent,#111827);outline-offset:3px}
+  @media (max-width:640px){.giftsense-launcher{bottom:14px;padding:11px 15px;font-size:14px}
+    .giftsense-launcher--right{right:14px}.giftsense-launcher--left{left:14px}}
+</style>
+<script src="{{ 'giftsense.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "GiftSense gift finder",
+  "target": "body",
+  "settings": [
+    { "type": "text", "id": "label", "label": "Button text", "default": "Find a gift" },
+    {
+      "type": "select", "id": "position", "label": "Button position", "default": "right",
+      "options": [ { "value": "right", "label": "Bottom right" }, { "value": "left", "label": "Bottom left" } ]
+    },
+    { "type": "color", "id": "accent", "label": "Button and highlight color", "default": "#111827" },
+    { "type": "color", "id": "on_accent", "label": "Button text color", "default": "#ffffff" }
+  ]
+}
+{% endschema %}

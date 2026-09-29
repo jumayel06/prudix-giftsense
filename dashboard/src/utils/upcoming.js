@@ -5,20 +5,11 @@
  * never hardcoded here. Remove an entry when its real page ships.
  */
 import {
-  StoreIcon, NoteIcon, PackageIcon, CalendarIcon, MicrophoneIcon, ReplaceIcon,
+  NoteIcon, PackageIcon, CalendarIcon, MicrophoneIcon, ReplaceIcon,
   ListBulletedIcon, OrderIcon, ChartVerticalIcon,
 } from '@shopify/polaris-icons'
 
 export const UPCOMING = [
-  {
-    path: '/storefront', label: 'Storefront', section: 'finder', icon: StoreIcon,
-    title: 'Storefront widget',
-    intro: 'Put the gift finder in front of shoppers, styled to match your theme.',
-    items: [
-      { feature: 'storefront_placements', text: 'A "Find a gift" button on every page and a gift finder block for any page' },
-      { feature: 'shopper_language', text: "Works in your shopper's own language" },
-    ],
-  },
   {
     path: '/notes', label: 'Gift notes', section: 'gifting', icon: NoteIcon,
     title: 'AI gift notes',

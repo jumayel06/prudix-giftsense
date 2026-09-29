@@ -1,0 +1,48 @@
+{% comment %}
+  GiftSense "Find a gift" block: a heading + button merchants place in any
+  section (home, collection, product pages). Opens the same finder as the
+  app embed launcher; works with or without the embed turned on.
+{% endcomment %}
+<div
+  class="giftsense-block"
+  data-giftsense-root
+  data-giftsense-inline
+  data-api="/apps/giftsense"
+  data-ui-src="{{ 'giftsense-ui.js' | asset_url }}"
+  data-css-src="{{ 'giftsense.css' | asset_url }}"
+  data-currency="{{ shop.currency }}"
+  data-locale="{{ request.locale.iso_code }}"
+  style="--gs-accent: {{ block.settings.accent }}; --gs-on-accent: {{ block.settings.on_accent }}; text-align: {{ block.settings.align }};"
+  {{ block.shopify_attributes }}
+>
+  {% if block.settings.heading != blank %}<h2 class="giftsense-block__heading">{{ block.settings.heading | escape }}</h2>{% endif %}
+  {% if block.settings.text != blank %}<p class="giftsense-block__text">{{ block.settings.text | escape }}</p>{% endif %}
+  <button type="button" class="giftsense-block__button" data-giftsense-open>{{ block.settings.button | default: 'Find a gift' | escape }}</button>
+</div>
+<style>
+  .giftsense-block{padding:24px 0}
+  .giftsense-block__heading{margin:0 0 8px}
+  .giftsense-block__text{margin:0 0 16px;opacity:.8}
+  .giftsense-block__button{padding:12px 22px;border:0;border-radius:999px;background:var(--gs-accent,#111827);
+    color:var(--gs-on-accent,#fff);font:600 15px/1.2 inherit;cursor:pointer}
+  .giftsense-block__button:focus-visible{outline:3px solid var(--gs-accent,#111827);outline-offset:3px}
+</style>
+<script src="{{ 'giftsense.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Find a gift",
+  "target": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Not sure what to get?" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Answer a few quick questions and we'll suggest gifts from our store." },
+    { "type": "text", "id": "button", "label": "Button text", "default": "Find a gift" },
+    {
+      "type": "select", "id": "align", "label": "Alignment", "default": "center",
+      "options": [ { "value": "left", "label": "Left" }, { "value": "center", "label": "Center" } ]
+    },
+    { "type": "color", "id": "accent", "label": "Button color", "default": "#111827" },
+    { "type": "color", "id": "on_accent", "label": "Button text color", "default": "#ffffff" }
+  ]
+}
+{% endschema %}
