@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Page, Layout, Card, BlockStack, InlineStack, Text, Banner, ProgressBar, Badge,
-  IndexTable, Thumbnail, TextField, Pagination, Button, SkeletonBodyText, EmptyState,
+  Thumbnail, TextField, Pagination, Button, SkeletonBodyText, EmptyState,
 } from '@shopify/polaris'
 import { ImageIcon } from '@shopify/polaris-icons'
 import { shopifyFetch, fetchJson } from '../utils/shopifyFetch'
@@ -96,20 +96,53 @@ function SyncCard({ status, onResync, resyncing }) {
   )
 }
 
-function ProfileCell({ p }) {
-  if (p.excluded) return <Badge>Excluded</Badge>
-  if (!p.analyzed && !p.update_pending) return <Badge tone="attention">Analyzing</Badge>
+const CLAMP_2 = { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
+
+function ProductRow({ p, toggling, onToggle }) {
   const prof = p.profile || {}
+  const hasProfile = p.analyzed || p.update_pending
+  const price = p.price_min === p.price_max ? money(p.price_min) : `${money(p.price_min)}–${money(p.price_max)}`
   return (
-    <BlockStack gap="100">
-      <Text as="span" variant="bodySm">{prof.gift_pitch}</Text>
-      <InlineStack gap="100">
-        {(prof.vibes || []).slice(0, 3).map(v => <Badge key={v} tone="info">{v}</Badge>)}
-        {(prof.recipients || []).slice(0, 2).map(r => <Badge key={r}>{r}</Badge>)}
-        {p.profile_fallback && <Badge tone="warning">Basic profile</Badge>}
-        {p.update_pending && <Badge tone="info">Update pending</Badge>}
+    <div style={{ padding: 'var(--p-space-300) var(--p-space-400)', borderTop: 'var(--p-border-width-025) solid var(--p-color-border-secondary)', opacity: p.excluded ? 0.6 : 1 }}>
+      <InlineStack gap="300" blockAlign="start" wrap={false}>
+        <Thumbnail source={p.image_url || ImageIcon} alt={p.title} size="small" />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <BlockStack gap="150">
+            <InlineStack align="space-between" blockAlign="start" gap="200" wrap={false}>
+              <BlockStack gap="050">
+                <Text as="span" fontWeight="semibold" truncate>{p.title}</Text>
+                <InlineStack gap="150" blockAlign="center">
+                  <Text as="span" variant="bodySm" tone="subdued">{[p.product_type, price].filter(Boolean).join(' · ')}</Text>
+                  {!p.available && <Badge tone="critical" size="small">Out of stock</Badge>}
+                  {p.excluded && <Badge size="small">Excluded</Badge>}
+                  {!hasProfile && !p.excluded && <Badge tone="attention" size="small">Analyzing</Badge>}
+                  {p.update_pending && <Badge tone="info" size="small">Update pending</Badge>}
+                  {p.profile_fallback && <Badge tone="warning" size="small">Basic profile</Badge>}
+                </InlineStack>
+              </BlockStack>
+              <Button variant="plain" loading={toggling} onClick={() => onToggle(p)}>
+                {p.excluded ? 'Include' : 'Exclude'}
+              </Button>
+            </InlineStack>
+            {hasProfile && !p.excluded && (
+              <>
+                <div style={CLAMP_2}>
+                  <Text as="p" variant="bodySm" tone="subdued">{prof.gift_pitch}</Text>
+                </div>
+                <InlineStack gap="100" blockAlign="center">
+                  {(prof.vibes || []).slice(0, 3).map(v => <Badge key={v} size="small">{v}</Badge>)}
+                  {(prof.recipients || []).length > 0 && (
+                    <Text as="span" variant="bodySm" tone="subdued">
+                      For {(prof.recipients || []).slice(0, 3).join(', ')}
+                    </Text>
+                  )}
+                </InlineStack>
+              </>
+            )}
+          </BlockStack>
+        </div>
       </InlineStack>
-    </BlockStack>
+    </div>
   )
 }
 
@@ -231,39 +264,12 @@ export default function CatalogPage() {
                 <p>{query ? 'Try a different search.' : 'Products appear here after your first sync.'}</p>
               </EmptyState>
             ) : (
-              <IndexTable
-                resourceName={{ singular: 'product', plural: 'products' }}
-                itemCount={list?.products.length || 0}
-                selectable={false}
-                loading={!list}
-                headings={[{ title: '' }, { title: 'Product' }, { title: 'Price' }, { title: 'Gift profile' }, { title: '' }]}
-              >
-                {(list?.products || []).map((p, i) => (
-                  <IndexTable.Row id={p.product_id} key={p.product_id} position={i}>
-                    <IndexTable.Cell>
-                      <Thumbnail source={p.image_url || ImageIcon} alt={p.title} size="small" />
-                    </IndexTable.Cell>
-                    <IndexTable.Cell>
-                      <BlockStack gap="050">
-                        <Text as="span" fontWeight="semibold">{p.title}</Text>
-                        <InlineStack gap="100">
-                          {p.product_type && <Text as="span" variant="bodySm" tone="subdued">{p.product_type}</Text>}
-                          {!p.available && <Badge tone="critical">Out of stock</Badge>}
-                        </InlineStack>
-                      </BlockStack>
-                    </IndexTable.Cell>
-                    <IndexTable.Cell>
-                      {p.price_min === p.price_max ? money(p.price_min) : `${money(p.price_min)}–${money(p.price_max)}`}
-                    </IndexTable.Cell>
-                    <IndexTable.Cell><ProfileCell p={p} /></IndexTable.Cell>
-                    <IndexTable.Cell>
-                      <Button variant="plain" loading={toggling === p.product_id} onClick={() => toggleExcluded(p)}>
-                        {p.excluded ? 'Include' : 'Exclude'}
-                      </Button>
-                    </IndexTable.Cell>
-                  </IndexTable.Row>
+              <div>
+                {!list && <div style={{ padding: 'var(--p-space-400)' }}><SkeletonBodyText lines={6} /></div>}
+                {(list?.products || []).map(p => (
+                  <ProductRow key={p.product_id} p={p} toggling={toggling === p.product_id} onToggle={toggleExcluded} />
                 ))}
-              </IndexTable>
+              </div>
             )}
             {pages > 1 && (
               <div style={{ padding: 'var(--p-space-300)', display: 'flex', justifyContent: 'center' }}>
