@@ -52,3 +52,7 @@ a.gs-card:hover { border-color: #d1d5db; background: #fafafa; }
   .gs-overlay { align-items: flex-end; padding: 0; }
   .gs-dialog { max-width: none; max-height: 88vh; border-radius: 16px 16px 0 0; }
 }
+
+/* Instant picks while the AI personalizes them */
+.gs-status--pending { color: #6b7280; }
+.gs-reason--pending { color: #9ca3af; }

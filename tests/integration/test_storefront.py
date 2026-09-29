@@ -200,3 +200,37 @@ async def test_ip_limit_applies_across_sessions(db_session, models):
     assert codes.count(200) == 30 and codes[-1] == 429
     other = {"X-Forwarded-For": "198.51.100.7"}
     assert call(db_session, "POST", "/api/storefront/search", json=BRIEF, headers=other).status_code == 200
+
+
+# ── Instant phase (picks at once; AI reasons follow in a parallel request) ──
+
+@pytest.mark.asyncio
+async def test_instant_phase_returns_picks_without_ai_or_charges(db_session, models):
+    shop = await seeded_shop(db_session, plan_tier="pro", selected_model="premium")
+    data = call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "phase": "instant"}).json()
+    assert data["phase"] == "instant" and len(data["picks"]) >= 3 and all(p["reason"] for p in data["picks"])
+    models.assert_not_awaited()
+    assert not (await db_session.execute(select(UsageLog).where(UsageLog.shop_id == shop.id))).scalars().all()
+
+
+@pytest.mark.asyncio
+async def test_default_phase_is_the_metered_ai_search(db_session, models):
+    await seeded_shop(db_session)
+    data = call(db_session, "POST", "/api/storefront/search", json=BRIEF).json()
+    assert data["phase"] == "ai" and models.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_instant_and_ai_calls_have_separate_session_limits(db_session, models):
+    # One search = one instant + one AI request; the pair must not count twice.
+    await seeded_shop(db_session)
+    for _ in range(10):
+        assert call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "phase": "instant"}).status_code == 200
+        assert call(db_session, "POST", "/api/storefront/search", json=BRIEF).status_code == 200
+    assert call(db_session, "POST", "/api/storefront/search", json=BRIEF).status_code == 429
+
+
+@pytest.mark.asyncio
+async def test_unknown_phase_is_rejected(db_session, models):
+    await seeded_shop(db_session)
+    assert call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "phase": "later"}).status_code == 422

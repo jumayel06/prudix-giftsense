@@ -193,41 +193,63 @@
     }
   }
 
+  function post(body) {
+    return fetch(ctx.api + '/search', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (data) { return { ok: r.ok, status: r.status, data: data }; });
+    });
+  }
+
+  // Two requests at once: "instant" (ranked picks, simple reasons, ~0.5 s) and
+  // "ai" (personal picks and reasons, a few seconds). Instant cards show first
+  // and the AI's replace them; if the AI fails, the instant ones stay.
   function search() {
     skeleton();
+    var seq = state.seq = (state.seq || 0) + 1;
     var a = state.answers;
     var body = {
       sid: ctx.sid, recipient: a.recipient, occasion: a.occasion, budget_band: a.budget_band,
       vibes: a.vibes.slice(), free_text: a.free_text.trim(), exclude_ids: state.shown.slice(-MAX_EXCLUDE)
     };
     if (AGE_FOR[a.recipient]) body.age_band = AGE_FOR[a.recipient];
-    fetch(ctx.api + '/search', {
-      method: 'POST', credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(body)
-    }).then(function (r) {
-      return r.json().catch(function () { return {}; }).then(function (data) { return { ok: r.ok, status: r.status, data: data }; });
-    }).then(function (res) {
-      if (!res.ok) {
-        renderMessage(res.status === 429 && res.data.detail ? res.data.detail
-          : 'Something went wrong. Please try again.');
-        return;
-      }
-      renderResults(res.data.picks || []);
-    }).catch(function () { renderMessage('Something went wrong. Please check your connection and try again.'); });
+    var instant = null;
+    var aiDone = false;
+
+    post(Object.assign({}, body, { phase: 'instant' })).then(function (res) {
+      if (seq !== state.seq || aiDone || !res.ok || !(res.data.picks || []).length) return;
+      instant = res.data.picks;
+      renderResults(instant, true);
+    }).catch(function () { /* the AI request still decides */ });
+
+    post(Object.assign({}, body, { phase: 'ai' })).then(function (res) {
+      if (seq !== state.seq) return;
+      aiDone = true;
+      if (res.ok) { renderResults(res.data.picks || [], false); return; }
+      if (instant) { renderResults(instant, false); return; }
+      renderMessage(res.status === 429 && res.data.detail ? res.data.detail : 'Something went wrong. Please try again.');
+    }).catch(function () {
+      if (seq !== state.seq) return;
+      aiDone = true;
+      if (instant) renderResults(instant, false);
+      else renderMessage('Something went wrong. Please check your connection and try again.');
+    });
   }
 
-  function actions(showMore) {
+  function actions(showMore, pending) {
     var row = el('div', 'gs-actions');
     if (showMore) {
       var more = el('button', 'gs-primary', 'Show different ideas');
       more.type = 'button';
+      more.disabled = !!pending;
       more.addEventListener('click', search);
       row.appendChild(more);
     }
     var back = el('button', 'gs-secondary', 'Change answers');
     back.type = 'button';
-    back.addEventListener('click', function () { renderIntake(); });
+    back.addEventListener('click', function () { state.seq = (state.seq || 0) + 1; renderIntake(); });
     row.appendChild(back);
     return row;
   }
@@ -241,19 +263,21 @@
     renderFoot();
   }
 
-  function renderResults(picks) {
+  function renderResults(picks, pending) {
+    var replacing = !!els.body.querySelector('.gs-card:not(.gs-card--skeleton)');
     clear(els.body);
     if (!picks.length) {
       renderMessage(state.shown.length
-        ? 'That’s all we found for these answers. Try a different budget or occasion.'
-        : 'We couldn’t find a gift for that budget. Try another budget or occasion.');
+        ? 'That\u2019s all we found for these answers. Try a different budget or occasion.'
+        : 'We couldn\u2019t find a gift for that budget. Try another budget or occasion.');
       return;
     }
-    var heading = el('p', 'gs-status', 'Here are some ideas');
+    var heading = el('p', 'gs-status' + (pending ? ' gs-status--pending' : ''),
+      pending ? 'Here are some ideas \u00B7 personalizing\u2026' : 'Here are some ideas');
     heading.setAttribute('role', 'status');
     els.body.appendChild(heading);
     picks.forEach(function (p) {
-      state.shown.push(p.product_id);
+      if (!pending) state.shown.push(p.product_id);   // only final picks are excluded next time
       var href = safeHref(p.url);
       var card = el(href ? 'a' : 'div', 'gs-card');
       if (href) card.href = href;
@@ -270,15 +294,18 @@
       var text = el('div', 'gs-text');
       text.appendChild(el('span', 'gs-name', p.title));
       text.appendChild(el('span', 'gs-price', p.price_min === p.price_max
-        ? money(p.price_min) : money(p.price_min) + ' – ' + money(p.price_max)));
-      text.appendChild(el('span', 'gs-reason', p.reason));
+        ? money(p.price_min) : money(p.price_min) + ' \u2013 ' + money(p.price_max)));
+      text.appendChild(el('span', 'gs-reason' + (pending ? ' gs-reason--pending' : ''), p.reason));
       card.appendChild(text);
       els.body.appendChild(card);
     });
-    els.body.appendChild(actions(true));
+    els.body.appendChild(actions(true, pending));
     renderFoot();
-    var first = els.body.querySelector('.gs-card');
-    if (first && first.focus) first.focus();
+    // Move focus only on the first render, never when the AI picks swap in.
+    if (!replacing) {
+      var first = els.body.querySelector('.gs-card');
+      if (first && first.focus) first.focus();
+    }
   }
 
   window.GiftSenseUI = { open: open, close: close };

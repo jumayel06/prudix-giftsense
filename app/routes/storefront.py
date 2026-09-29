@@ -2,7 +2,8 @@
 (/apps/giftsense/* on the shop's domain → /api/storefront/*).
 
     GET  /api/storefront/config   widget bootstrap (intake options, branding)
-    POST /api/storefront/search   metered gift search (app/services/metering.py)
+    POST /api/storefront/search   gift search: phase "instant" (no AI, free) and
+                                  phase "ai" (metered, app/services/metering.py)
 
 Trust: Shopify's proxy signature (app/services/proxy_auth.py); the shop is
 the signed `shop` param, never anything in the body. Shoppers always get
@@ -13,6 +14,7 @@ Abuse limits: 10 searches/hour per widget session and 30 per shopper-IP hash
 (template picks, never an error).
 """
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -23,7 +25,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import PLANS
 from app.llm import chat
 from app.plan_guard import may_generate
-from app.services import metering, rate_limit
+from app.ai_models import model_for_shop
+from app.services import catalog_index, metering, rate_limit
 from app.services.gifting.brief import GiftBrief, intake_options
 from app.services.gifting.embeddings import OpenAIEmbedder
 from app.services.gifting.retrieval import Intake
@@ -67,16 +70,21 @@ async def widget_config(shop: Shop = Depends(storefront_shop)):
 class SearchRequest(GiftBrief):
     sid: uuid.UUID                       # widget session id (localStorage)
     exclude_ids: list[str] = Field(default_factory=list, max_length=MAX_EXCLUDE_IDS)
+    # The widget sends both at once: "instant" = ranked picks with template
+    # reasons in ~0.5 s (no AI, nothing charged); "ai" = the metered search
+    # whose picks and reasons replace them when ready.
+    phase: Literal["instant", "ai"] = "ai"
 
 
 SLOW_DOWN = "You've searched a lot in a short time. Please try again in a little while."
 
 
-async def _within_abuse_limits(request: Request, shop: Shop, sid: uuid.UUID) -> bool:
-    if not await rate_limit.hit(f"search:sid:{shop.id}:{sid}", rate_limit.SEARCHES_PER_SID_PER_HOUR, rate_limit.HOUR):
+async def _within_abuse_limits(request: Request, shop: Shop, sid: uuid.UUID, phase: str) -> bool:
+    # Separate counters per phase, so one search (instant + ai) counts once in each.
+    if not await rate_limit.hit(f"{phase}:sid:{shop.id}:{sid}", rate_limit.SEARCHES_PER_SID_PER_HOUR, rate_limit.HOUR):
         return False
     ip = rate_limit.shopper_ip(request.headers.get("x-forwarded-for"))
-    if ip and not await rate_limit.hit(f"search:ip:{shop.id}:{rate_limit.ip_hash(ip)}",
+    if ip and not await rate_limit.hit(f"{phase}:ip:{shop.id}:{rate_limit.ip_hash(ip)}",
                                        rate_limit.SEARCHES_PER_IP_PER_HOUR, rate_limit.HOUR):
         return False
     return True
@@ -87,14 +95,20 @@ async def gift_search(body: SearchRequest, request: Request, shop: Shop = Depend
                       db: AsyncSession = Depends(get_db)):
     if not may_generate(shop):
         raise HTTPException(403, "Gift finder is not available.")
-    if not await _within_abuse_limits(request, shop, body.sid):
+    if not await _within_abuse_limits(request, shop, body.sid, body.phase):
         raise HTTPException(429, SLOW_DOWN)
-    intake = Intake(**body.model_dump(exclude={"sid"}))
-    result = await metering.run_gift_search(db, shop, intake, OpenAIEmbedder(), chat_fn=chat)
+    intake = Intake(**body.model_dump(exclude={"sid", "phase"}))
+    if body.phase == "instant":
+        rec, _ = await catalog_index.recommend_for_shop(db, shop.id, intake, OpenAIEmbedder(),
+                                                        model_for_shop(shop), use_llm=False)
+        picks = rec.picks
+    else:
+        picks = (await metering.run_gift_search(db, shop, intake, OpenAIEmbedder(), chat_fn=chat)).recommendation.picks
     return _no_store({
+        "phase": body.phase,
         "picks": [{
             "product_id": p.product.product_id, "title": p.product.title, "url": p.product.url,
             "image_url": p.product.image_url, "price_min": p.product.price_min, "price_max": p.product.price_max,
             "reason": p.reason,
-        } for p in result.recommendation.picks],
+        } for p in picks],
     })
