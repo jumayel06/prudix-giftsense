@@ -36,16 +36,16 @@ def _make_client(db_session):
 class TestModelPlanGating:
 
     @pytest.mark.asyncio
-    async def test_starter_cannot_select_gpt41(self, db_session):
-        """GPT-4.1 is Growth+; not in Starter plan's models_available."""
-        shop = make_shop(plan_tier="starter", plan_status="active", selected_model="gpt-4o-mini")
+    async def test_starter_cannot_select_gpt6_sol(self, db_session):
+        """GPT-6 Sol is Growth+; not in Starter plan's models_available."""
+        shop = make_shop(plan_tier="starter", plan_status="active", selected_model="gpt-6-luna")
         db_session.add(shop)
         await db_session.commit()
 
         for client in _make_client(db_session):
             resp = client.put(
                 f"/api/settings?shop={TEST_SHOP_DOMAIN}",
-                json={"selected_model": "gpt-4.1"},
+                json={"selected_model": "gpt-6-sol"},
             )
         assert resp.status_code == 403
         detail = resp.json()["detail"]
@@ -53,7 +53,7 @@ class TestModelPlanGating:
 
     @pytest.mark.asyncio
     async def test_starter_cannot_select_claude_sonnet(self, db_session):
-        shop = make_shop(plan_tier="starter", plan_status="active", selected_model="gpt-4o-mini")
+        shop = make_shop(plan_tier="starter", plan_status="active", selected_model="gpt-6-luna")
         db_session.add(shop)
         await db_session.commit()
 
@@ -70,7 +70,7 @@ class TestModelPlanGating:
         from sqlalchemy import select
         from core.db.models import Shop
 
-        shop = make_shop(plan_tier="starter", plan_status="active", selected_model="gpt-4o-mini")
+        shop = make_shop(plan_tier="starter", plan_status="active", selected_model="gpt-6-luna")
         db_session.add(shop)
         await db_session.commit()
 
@@ -84,25 +84,25 @@ class TestModelPlanGating:
             select(Shop).where(Shop.shop_domain == TEST_SHOP_DOMAIN)
         )
         refreshed = result.scalar_one()
-        assert refreshed.selected_model == "gpt-4o-mini"  # unchanged
+        assert refreshed.selected_model == "gpt-6-luna"  # unchanged
 
     @pytest.mark.asyncio
-    async def test_growth_can_select_gpt41(self, db_session):
-        shop = make_shop(plan_tier="growth", plan_status="active", selected_model="gpt-4o-mini")
+    async def test_growth_can_select_gpt6_sol(self, db_session):
+        shop = make_shop(plan_tier="growth", plan_status="active", selected_model="gpt-6-luna")
         db_session.add(shop)
         await db_session.commit()
 
         for client in _make_client(db_session):
             resp = client.put(
                 f"/api/settings?shop={TEST_SHOP_DOMAIN}",
-                json={"selected_model": "gpt-4.1"},
+                json={"selected_model": "gpt-6-sol"},
             )
         assert resp.status_code == 200
 
     @pytest.mark.asyncio
     async def test_growth_cannot_select_claude_sonnet(self, db_session):
         """Claude Sonnet 5 is Pro-only."""
-        shop = make_shop(plan_tier="growth", plan_status="active", selected_model="gpt-4o-mini")
+        shop = make_shop(plan_tier="growth", plan_status="active", selected_model="gpt-6-luna")
         db_session.add(shop)
         await db_session.commit()
 
@@ -115,7 +115,7 @@ class TestModelPlanGating:
 
     @pytest.mark.asyncio
     async def test_pro_can_select_claude_sonnet(self, db_session):
-        shop = make_shop(plan_tier="pro", plan_status="active", selected_model="gpt-4o-mini")
+        shop = make_shop(plan_tier="pro", plan_status="active", selected_model="gpt-6-luna")
         db_session.add(shop)
         await db_session.commit()
 
@@ -130,7 +130,7 @@ class TestModelPlanGating:
     async def test_all_plans_have_baseline_models(self):
         """GPT-4o mini and Claude Haiku 4.5 are available on every plan."""
         for tier, plan in PLANS.items():
-            for model in ("gpt-4o-mini", "claude-haiku-4-5"):
+            for model in ("gpt-6-luna", "claude-haiku-4-5"):
                 assert model in plan["models_available"], (
                     f"Plan '{tier}' is missing {model} from models_available"
                 )
@@ -138,8 +138,8 @@ class TestModelPlanGating:
     @pytest.mark.asyncio
     async def test_models_available_per_plan_matches_config(self):
         """Document the expected model availability for each plan tier."""
-        assert set(PLANS["starter"]["models_available"]) == {"gpt-4o-mini", "claude-haiku-4-5"}
-        assert "gpt-4.1" in PLANS["growth"]["models_available"]
+        assert set(PLANS["starter"]["models_available"]) == {"gpt-6-luna", "claude-haiku-4-5"}
+        assert "gpt-6-sol" in PLANS["growth"]["models_available"]
         assert "claude-sonnet-5" not in PLANS["growth"]["models_available"]
         assert "claude-sonnet-5" in PLANS["pro"]["models_available"]
 
@@ -148,13 +148,13 @@ class TestSettingsPayload:
 
     @pytest.mark.asyncio
     async def test_get_settings_lists_plan_models_weights_and_features(self, db_session):
-        shop = make_shop(plan_tier="growth", plan_status="active", selected_model="gpt-4.1")
+        shop = make_shop(plan_tier="growth", plan_status="active", selected_model="gpt-6-sol")
         db_session.add(shop)
         await db_session.commit()
 
         for client in _make_client(db_session):
             data = client.get(f"/api/settings?shop={TEST_SHOP_DOMAIN}").json()
-        assert data["selected_model"] == "gpt-4.1"
+        assert data["selected_model"] == "gpt-6-sol"
         assert data["models_available"] == PLANS["growth"]["models_available"]
-        assert data["model_weights"]["gpt-4.1"] == 4
+        assert data["model_weights"]["gpt-6-sol"] == 4
         assert data["features"] == PLANS["growth"]["features"]

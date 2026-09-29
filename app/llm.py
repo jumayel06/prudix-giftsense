@@ -20,7 +20,8 @@ MODEL_COSTS = {
     "claude-haiku-4-5": {"input": 0.000001,   "output": 0.000005},
     "gpt-4.1":          {"input": 0.000002,   "output": 0.000008},
     "claude-sonnet-5":  {"input": 0.000002,   "output": 0.000010},
-    # GPT-6 (2026): evaluated as replacements for gpt-4o-mini / gpt-4.1.
+    # GPT-6 (2026) replaced gpt-4o-mini / gpt-4.1 in the plans; the old
+    # prices stay for costing historical usage logs and evals.
     "gpt-6-luna":       {"input": 0.0000001,  "output": 0.0000005},
     "gpt-6-sol":        {"input": 0.000002,   "output": 0.000010},
 }
@@ -55,7 +56,8 @@ class LLMResponse:
 
 
 def calc_cost(model: str, input_tokens: int, output_tokens: int) -> float:
-    c = MODEL_COSTS.get(model, MODEL_COSTS["gpt-4o-mini"])
+    # Unknown model: cost it like Sonnet 5 (our priciest) so it's never understated.
+    c = MODEL_COSTS.get(model, MODEL_COSTS["claude-sonnet-5"])
     return round(input_tokens * c["input"] + output_tokens * c["output"], 8)
 
 

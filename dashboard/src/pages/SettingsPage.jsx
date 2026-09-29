@@ -10,9 +10,9 @@ import { modelLabel } from '../utils/modelLabels'
 import { showToast } from '../utils/toast'
 
 const MODEL_HINTS = {
-  'gpt-4o-mini':      'Fastest and uses the fewest generations.',
-  'claude-haiku-4-5': 'Balanced quality and cost.',
-  'gpt-4.1':          'Stronger reasoning for gift picks.',
+  'gpt-6-luna':       'Fastest, and uses the fewest generations.',
+  'claude-haiku-4-5': 'A solid all-rounder.',
+  'gpt-6-sol':        'The most accurate gift reasons.',
   'claude-sonnet-5':  'Our strongest model for gift picks and notes.',
 }
 

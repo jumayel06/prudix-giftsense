@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import MODEL_WEIGHTS, PLANS
+from app.config import MODEL_WEIGHTS, PLANS, effective_model
 from core.db.models import Shop
 from core.db.session import get_db
 from core.shopify_deps import get_current_shop
@@ -23,7 +23,7 @@ async def get_settings(
 ):
     plan_tier = shop_record.plan_tier if shop_record.plan_tier in PLANS else "starter"
     plan = PLANS[plan_tier]
-    selected_model = shop_record.selected_model
+    selected_model = effective_model(plan_tier, shop_record.selected_model)
     return {
         "selected_model": selected_model,
         "model_weight": MODEL_WEIGHTS.get(selected_model, 1),

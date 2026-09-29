@@ -312,11 +312,11 @@ Metrics shown: concierge sessions, **completion rate**, **concierge→order conv
 |---|---|---|---|
 | Price (monthly) | $19 | $49 | $99 |
 | `features` | finder, catalog, placements, language, notes, gift groups, wrap, cards, gift receipt, basic analytics | + arrive-by, voice, full analytics + weekly email, hide badge | + video, recipient's choice, registries, priority support |
-| `models_available` | gpt-4o-mini, claude-haiku-4-5 | + gpt-4.1 | + claude-sonnet-5 |
-| `PLAN_DEFAULT_MODELS` | claude-haiku-4-5 | gpt-4.1 | claude-sonnet-5 |
+| `models_available` | gpt-6-luna, claude-haiku-4-5 | + gpt-6-sol | + claude-sonnet-5 |
+| `PLAN_DEFAULT_MODELS` | gpt-6-luna | gpt-6-sol | claude-sonnet-5 |
 | `generation_limit` / month | 600 | 1,750 | 4,500 |
 | `trial_generations` (7 days) | 60 | 100 | 150 |
-| Products in the finder | 250 | 2,000 | 5,000 |
+| Products in the finder | 250 | 2,000 | 5,000 (trial: 100 on every plan) |
 | Product re-reads / month | 200 | 500 | 1,200 |
 | Voice/video messages / month | – | 200 voice | 500 voice or video |
 
@@ -324,23 +324,25 @@ Prices can be revised later without code changes. Monthly billing only (no annua
 
 ### 8.2 Model weights and worst-case cost
 
-`MODEL_WEIGHTS`: gpt-4o-mini **1**, claude-haiku-4-5 **2**, gpt-4.1 **4**, claude-sonnet-5 **4**. (Sonnet 5 is $2/$10 per MTok, cheaper than the Sonnet 4.6 that Commerce weights at 6.)
+`MODEL_WEIGHTS`: gpt-6-luna **1**, claude-haiku-4-5 **2**, gpt-6-sol **4**, claude-sonnet-5 **4**. The 2026-09-28 eval of six models replaced gpt-4o-mini and gpt-4.1 with GPT-6 Luna and Sol (same weights); `RETIRED_MODELS` maps old selections and migration 20260928000002 moved stored ones.
 
-| Model | Gift search (2,500 in / 400 out) | Note (800 / 200) | $ per generation (worst) |
+| Model | Gift search (measured) | Note (800 in / 200 out, est.) | $ per generation (worst) |
 |---|---|---|---|
-| gpt-4o-mini ($0.15/$0.60) | $0.0006 | $0.0002 | $0.0006 |
-| claude-haiku-4-5 ($1/$5) | $0.0045 | $0.0020 | $0.00225 |
-| gpt-4.1 ($2/$8) | $0.0082 | $0.0032 | $0.00205 |
-| claude-sonnet-5 ($2/$10) | $0.0090 | $0.0036 | $0.00225 |
+| gpt-6-luna ($0.10/$0.50) | $0.0003 | $0.0002 | $0.0003 |
+| claude-haiku-4-5 ($1/$5) | $0.0037 | $0.0018 | $0.00185 |
+| gpt-6-sol ($2/$10) | $0.0055 | $0.0036 | $0.00138 |
+| claude-sonnet-5 ($2/$10) | $0.0103 | $0.0036 | $0.00258 |
 
-The weights cap cost at **$0.00225 per generation** whatever model the merchant picks. Catalog enrichment doesn't use generations: it always runs on Haiku 4.5 through the Batch API ($0.0015/product), capped by the plan's product and re-read limits.
+Eval results behind the choice (general store, 10 searches each, rerank-v3): Luna 3.25/5 good picks, 97% faithful reasons, 8% template reasons, p95 2.8s; Sol 3.23, 100%, 2%, 4.7s; Sonnet 5 3.50, 95%, 20%, 6.0s; Haiku 3.25, 89%, 30%, 5.1s; (retired) gpt-4o-mini 3.43, 96%, 29%, 4.6s; gpt-4.1 3.20, 92%, 28%, 3.6s. No model went over budget or invented a product.
+
+Each plan's worst case is its costliest allowed model: Haiku ($0.00185/generation) on Starter and Growth, Sonnet 5 ($0.00258) on Pro. Catalog enrichment doesn't use generations: it runs on Haiku 4.5 (measured $0.0017/product real-time, about half with the Batch API), capped by the plan's product and re-read limits.
 
 **Worst-case monthly cost at 100% of every limit** (hosting share $1.50 / $2.00 / $2.50):
-- Starter: $1.35 generations + $0.30 re-reads + $1.50 = **$3.15, a 83.4% margin**.
-- Growth: $3.94 + $0.75 + $0.10 voice + $2.00 = **$6.79, a 86.1% margin**.
-- Pro: $10.13 + $1.80 + $1.00 video + $2.50 = **$15.43, a 84.4% margin**.
+- Starter: $1.11 generations + $0.34 re-reads + $1.50 = **$2.95, a 84.5% margin**.
+- Growth: $3.24 + $0.85 + $0.10 voice + $2.00 = **$6.19, a 87.4% margin**.
+- Pro: $11.59 + $2.04 + $1.00 video + $2.50 = **$17.13, a 82.7% margin**.
 
-In the first month, the one-time catalog read at the product limit lowers these to 81% / 80% / 77%. With 15% Shopify revenue share (after the first $1M) they're about 69–71%. Token counts are estimates; M0 logs real `usage`, and `MODEL_WEIGHTS` and limits get retuned if needed.
+In the first month, the one-time catalog read at the product limit lowers these to 82% / 80% / 74%. With 15% Shopify revenue share (after the first $1M) they're about 68–72%. `MODEL_WEIGHTS` and limits get retuned from real `usage_logs` after launch.
 
 ### 8.3 Metering
 

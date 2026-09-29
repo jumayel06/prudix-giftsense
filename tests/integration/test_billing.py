@@ -308,7 +308,7 @@ class TestListPlans:
         assert growth["price_usd"] == PLANS["growth"]["price_usd"]
         assert growth["generation_limit"] == PLANS["growth"]["generation_limit"]
         assert growth["trial_days"] == 7
-        assert "gpt-4.1" in growth["models_available"]
+        assert "gpt-6-sol" in growth["models_available"]
 
     def test_starter_plan_fields(self, db_session):
         for client in _make_client(db_session):
@@ -325,7 +325,7 @@ class TestListPlans:
         pro = next(p for p in resp.json()["plans"] if p["tier"] == "pro")
         assert pro["price_usd"] > 0
         assert pro["generation_limit"] > 500   # pro has more than growth
-        assert "gpt-4.1" in pro["models_available"]
+        assert "gpt-6-sol" in pro["models_available"]
 
 
 # ── /api/billing/create-charge — success path ─────────────────────────────────

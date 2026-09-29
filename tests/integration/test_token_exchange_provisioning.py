@@ -117,7 +117,7 @@ async def test_reinstall_reactivates_uninstalled_row(db_session):
     existing = make_shop(domain=shop, plan_tier="pro", plan_status="uninstalled")
     existing.access_token_encrypted = ""          # cleared by app/uninstalled
     existing.trial_used = True                     # must survive reinstall
-    existing.selected_model = "gpt-4o-mini"
+    existing.selected_model = "gpt-6-luna"
     existing.store_timezone = "America/New_York"
     db_session.add(existing)
     await db_session.commit()
@@ -139,7 +139,7 @@ async def test_reinstall_reactivates_uninstalled_row(db_session):
     assert result.data_purge_at is None
     # Preserved — no second free trial, merchant prefs kept
     assert result.trial_used is True
-    assert result.selected_model == "gpt-4o-mini"
+    assert result.selected_model == "gpt-6-luna"
     assert result.store_timezone == "America/New_York"
 
 

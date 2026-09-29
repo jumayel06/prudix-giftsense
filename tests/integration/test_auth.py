@@ -178,7 +178,7 @@ class TestAuthCallback:
         existing.trial_used = True
         existing.uninstalled_at = datetime.now(timezone.utc) - timedelta(days=1)  # was uninstalled
         # Seed non-default values that reinstall must NOT reset
-        existing.selected_model = "gpt-4o-mini"       # non-default
+        existing.selected_model = "gpt-6-luna"       # non-default
         existing.store_timezone = "America/New_York"  # non-default
         existing.review_prompt_shown = True            # non-default
         db_session.add(existing)
@@ -219,6 +219,6 @@ class TestAuthCallback:
         assert existing.data_purge_at is None
 
         # Fields NOT reset on reinstall — preserved across the uninstall/reinstall cycle
-        assert existing.selected_model == "gpt-4o-mini"        # merchant's preference kept
+        assert existing.selected_model == "gpt-6-luna"        # merchant's preference kept
         assert existing.store_timezone == "America/New_York"   # timezone kept
         assert existing.review_prompt_shown is True            # prompt state kept

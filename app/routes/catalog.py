@@ -19,7 +19,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
-from app.config import PLAN_DEFAULT_MODELS, PLANS
+from app.config import effective_model
 from app.jobs import enqueue
 from app.llm import calc_cost, chat
 from app.services import catalog_index
@@ -177,9 +177,7 @@ class PlaygroundBrief(BaseModel):
 
 
 def _model_for(shop: Shop) -> str:
-    tier = shop.plan_tier if shop.plan_tier in PLANS else "starter"
-    allowed = PLANS[tier]["models_available"]
-    return shop.selected_model if shop.selected_model in allowed else PLAN_DEFAULT_MODELS[tier]
+    return effective_model(shop.plan_tier, shop.selected_model)
 
 
 @router.post("/api/catalog/playground")

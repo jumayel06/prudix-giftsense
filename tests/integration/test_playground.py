@@ -201,4 +201,4 @@ async def test_playground_uses_plan_default_when_selected_model_not_allowed(db_s
     await db_session.flush()
     db_session.add(row(shop, "1"))
     await db_session.commit()
-    assert call(db_session, "POST", "/api/catalog/playground", json=BRIEF).json()["model"] == "claude-haiku-4-5"
+    assert call(db_session, "POST", "/api/catalog/playground", json=BRIEF).json()["model"] == "gpt-6-luna"

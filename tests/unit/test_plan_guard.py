@@ -176,7 +176,7 @@ class TestCheckGenerationLimit:
 
     @pytest.mark.asyncio
     async def test_weighted_count_check(self, mock_db):
-        # A weight-4 model use (GPT-4.1 / Sonnet 5) when only 3 generations remain
+        # A weight-4 model use (GPT-6 Sol / Sonnet 5) when only 3 generations remain
         shop = make_shop(plan_tier="growth", plan_status="active")
         _mock_usage(mock_db, GROWTH_LIMIT - 3)
 

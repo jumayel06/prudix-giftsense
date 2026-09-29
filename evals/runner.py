@@ -40,7 +40,8 @@ RESULTS = ROOT / "results"
 
 JUDGE_MODEL = "claude-sonnet-5"
 EST_ENRICH_USD = 0.004
-EST_SEARCH_USD = {"gpt-4o-mini": 0.001, "claude-haiku-4-5": 0.008, "gpt-4.1": 0.012, "claude-sonnet-5": 0.02}
+EST_SEARCH_USD = {"gpt-4o-mini": 0.001, "claude-haiku-4-5": 0.008, "gpt-4.1": 0.012, "claude-sonnet-5": 0.02,
+                  "gpt-6-luna": 0.001, "gpt-6-sol": 0.012}
 EST_JUDGE_USD = 0.03
 POOL_TOP_K = 15
 REVIEW_SAMPLE_RATE = 0.2

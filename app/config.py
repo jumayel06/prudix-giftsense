@@ -15,23 +15,33 @@ USAGE_WARN_THRESHOLD  = 0.75
 USAGE_BLOCK_THRESHOLD = 1.00
 
 # Generations consumed per AI use (gift search, note, registry suggestion).
-# Weights are proportional to what each model costs us, which caps worst-case
-# cost at ~$0.00225 per generation whatever model the merchant picks (see
-# docs/TECHNICAL_PLAN.md §8.2). Sonnet 5 is cheaper than the Sonnet 4.6 that
-# Commerce weights at 6, so it counts 4 here.
+# Weights roughly track what each model costs us. Measured cost per gift search
+# (eval 2026-09-28, general store): GPT-6 Luna $0.0003, Haiku 4.5 $0.0037,
+# GPT-6 Sol $0.0055, Sonnet 5 $0.0103, so the worst case is Sonnet 5 at
+# ~$0.0026 per generation (docs/TECHNICAL_PLAN.md §8.2).
 MODEL_WEIGHTS = {
-    "gpt-4o-mini":      1,
+    "gpt-6-luna":       1,
     "claude-haiku-4-5": 2,
-    "gpt-4.1":          4,
+    "gpt-6-sol":        4,
     "claude-sonnet-5":  4,
 }
 
-# Default model assigned when a merchant activates a plan tier.
+# Default model assigned when a merchant activates a plan tier. Chosen by the
+# 2026-09-28 six-model eval: Luna was fastest (p95 2.8s) with 97% faithful
+# reasons; Sol had 100% faithful reasons; Sonnet 5 the most good picks.
 PLAN_DEFAULT_MODELS = {
-    "starter": "claude-haiku-4-5",
-    "growth":  "gpt-4.1",
+    "starter": "gpt-6-luna",
+    "growth":  "gpt-6-sol",
     "pro":     "claude-sonnet-5",
 }
+
+# Retired models → their replacement (shops that had them selected are
+# migrated; effective_model() also maps any leftover value).
+RETIRED_MODELS = {
+    "gpt-4o-mini": "gpt-6-luna",
+    "gpt-4.1":     "gpt-6-sol",
+}
+
 
 # Display categories for the plan picker.
 FEATURE_CATEGORIES = {
@@ -84,7 +94,7 @@ PLANS = {
         "trial_days":                  TRIAL_DAYS,
         "generation_limit":            600,
         "trial_generations":           60,
-        "models_available":            ["gpt-4o-mini", "claude-haiku-4-5"],
+        "models_available":            ["gpt-6-luna", "claude-haiku-4-5"],
         "features":                    _STARTER_FEATURES,
         "max_products":                250,
         "product_rereads_per_month":   200,
@@ -98,7 +108,7 @@ PLANS = {
         "trial_days":                  TRIAL_DAYS,
         "generation_limit":            1750,
         "trial_generations":           100,
-        "models_available":            ["gpt-4o-mini", "claude-haiku-4-5", "gpt-4.1"],
+        "models_available":            ["gpt-6-luna", "claude-haiku-4-5", "gpt-6-sol"],
         "features":                    _GROWTH_FEATURES,
         "max_products":                2000,
         "product_rereads_per_month":   500,
@@ -112,7 +122,7 @@ PLANS = {
         "trial_days":                  TRIAL_DAYS,
         "generation_limit":            4500,
         "trial_generations":           150,
-        "models_available":            ["gpt-4o-mini", "claude-haiku-4-5", "gpt-4.1", "claude-sonnet-5"],
+        "models_available":            ["gpt-6-luna", "claude-haiku-4-5", "gpt-6-sol", "claude-sonnet-5"],
         "features":                    _PRO_FEATURES,
         "max_products":                5000,
         "product_rereads_per_month":   1200,
@@ -126,6 +136,14 @@ PLANS = {
 # catalog read a trial install can cost us: ~$0.30 at ~$0.003/product). On
 # conversion a re-sync adds the rest up to the plan's max_products.
 TRIAL_MAX_PRODUCTS = 100
+
+
+def effective_model(plan_tier: str | None, selected_model: str | None) -> str:
+    """The model a shop's AI calls actually use: its choice if the plan allows
+    it (retired models map to their replacement), else the plan default."""
+    tier = plan_tier if plan_tier in PLANS else "starter"
+    model = RETIRED_MODELS.get(selected_model, selected_model)
+    return model if model in PLANS[tier]["models_available"] else PLAN_DEFAULT_MODELS[tier]
 
 
 def subscription_name(plan_tier: str) -> str:

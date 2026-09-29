@@ -4,9 +4,9 @@
  * never hardcoded here, so they can't drift (a Commerce tech-debt item).
  */
 export const MODEL_LABELS = {
-  'gpt-4o-mini':      'GPT-4o mini',
+  'gpt-6-luna':       'GPT-6 Luna',
   'claude-haiku-4-5': 'Claude Haiku 4.5',
-  'gpt-4.1':          'GPT-4.1',
+  'gpt-6-sol':        'GPT-6 Sol',
   'claude-sonnet-5':  'Claude Sonnet 5',
 }
 
