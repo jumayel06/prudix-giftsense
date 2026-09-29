@@ -354,7 +354,7 @@ First month with the one-time catalog read at the product limit: 90.8% / 85.2% /
 - `usage_logs` rows use the Commerce refund pattern: write `+weight` upfront, then `(0, tokens)` on success or `(-weight, 0)` on failure. Use SUM, not COUNT.
 - The storefront gate is atomic per shop: `app/services/metering.py` locks the shop row (`SELECT … FOR UPDATE`), sums the cycle's usage and writes the `+weight` reservation in one transaction, so concurrent shoppers can't overspend (verified on Postgres: 10 concurrent searches with 1 generation left → exactly 1 reserved). Chosen over Commerce's counter-column `UPDATE … RETURNING` so `usage_logs` stays the single source of truth. The weight is the shop's AI tier weight (1 / 2 / 4).
 - **Over the limit:** templated reasons and note templates, never a hidden widget. Per-shop `daily_cost_cap_usd` stays as a backstop.
-- **Abuse limits** (Redis token bucket): gift searches 10/h per sid and 30/h per IP hash per shop; note drafts 5 per gift per sid; media uploads 3 per sid per day.
+- **Abuse limits** (`app/services/rate_limit.py`, Redis fixed windows, fail-open): gift searches 10/h per sid and 30/h per shopper-IP hash per shop (IP = first `X-Forwarded-For` entry from the App Proxy, keyed-hashed, never stored) → 429. Both can be dodged (new sids, spoofed headers), so metering adds a **per-shop hourly cap**: 10% of the monthly generations (min 20) per rolling hour → template picks, never an error. Still to add: note drafts 5 per gift per sid; media uploads 3 per sid per day.
 
 ## 9. Shopify integration details
 

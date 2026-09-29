@@ -8,7 +8,9 @@ Trust: Shopify's proxy signature (app/services/proxy_auth.py); the shop is
 the signed `shop` param, never anything in the body. Shoppers always get
 picks: limits and AI failures only turn reasons into templates, and nothing
 about plans, limits or models is ever returned to the storefront.
-Rate limits per session/IP: LAUNCH_TODO week 3 (Redis).
+Abuse limits: 10 searches/hour per widget session and 30 per shopper-IP hash
+(app/services/rate_limit.py, 429), plus metering's per-shop hourly cap
+(template picks, never an error).
 """
 import uuid
 
@@ -21,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import PLANS
 from app.llm import chat
 from app.plan_guard import may_generate
-from app.services import metering
+from app.services import metering, rate_limit
 from app.services.gifting.brief import GiftBrief, intake_options
 from app.services.gifting.embeddings import OpenAIEmbedder
 from app.services.gifting.retrieval import Intake
@@ -67,11 +69,26 @@ class SearchRequest(GiftBrief):
     exclude_ids: list[str] = Field(default_factory=list, max_length=MAX_EXCLUDE_IDS)
 
 
+SLOW_DOWN = "You've searched a lot in a short time. Please try again in a little while."
+
+
+async def _within_abuse_limits(request: Request, shop: Shop, sid: uuid.UUID) -> bool:
+    if not await rate_limit.hit(f"search:sid:{shop.id}:{sid}", rate_limit.SEARCHES_PER_SID_PER_HOUR, rate_limit.HOUR):
+        return False
+    ip = rate_limit.shopper_ip(request.headers.get("x-forwarded-for"))
+    if ip and not await rate_limit.hit(f"search:ip:{shop.id}:{rate_limit.ip_hash(ip)}",
+                                       rate_limit.SEARCHES_PER_IP_PER_HOUR, rate_limit.HOUR):
+        return False
+    return True
+
+
 @router.post("/search")
-async def gift_search(body: SearchRequest, shop: Shop = Depends(storefront_shop),
+async def gift_search(body: SearchRequest, request: Request, shop: Shop = Depends(storefront_shop),
                       db: AsyncSession = Depends(get_db)):
     if not may_generate(shop):
         raise HTTPException(403, "Gift finder is not available.")
+    if not await _within_abuse_limits(request, shop, body.sid):
+        raise HTTPException(429, SLOW_DOWN)
     intake = Intake(**body.model_dump(exclude={"sid"}))
     result = await metering.run_gift_search(db, shop, intake, OpenAIEmbedder(), chat_fn=chat)
     return _no_store({

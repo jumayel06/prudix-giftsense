@@ -218,3 +218,27 @@ def job_pool(monkeypatch):
     pool = FakeJobPool()
     monkeypatch.setattr(app.jobs, "_pool", pool)
     return pool
+
+
+# ── Rate-limit store ──────────────────────────────────────────────────────────
+
+class FakeRateStore:
+    """In-memory stand-in for the Redis fixed-window counters."""
+
+    def __init__(self):
+        self.counts: dict[str, int] = {}
+        self.down = False
+
+    async def incr_window(self, key: str, ttl: int) -> int:
+        if self.down:
+            raise ConnectionError("redis down")
+        self.counts[key] = self.counts.get(key, 0) + 1
+        return self.counts[key]
+
+
+@pytest.fixture(autouse=True)
+def rate_store(monkeypatch):
+    import app.services.rate_limit as rl
+    store = FakeRateStore()
+    monkeypatch.setattr(rl, "_store", store)
+    return store

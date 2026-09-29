@@ -154,3 +154,20 @@ async def test_sum_not_count_after_refunds(db_session):
     await metering.run_gift_search(db_session, shop, BRIEF, FakeEmbedder(), chat_fn=AsyncMock(side_effect=RuntimeError))
     await metering.run_gift_search(db_session, shop, BRIEF, FakeEmbedder(), chat_fn=good_chat())
     assert len(await logs(db_session, shop)) == 4 and await net(db_session, shop) == 2
+
+
+@pytest.mark.asyncio
+async def test_hourly_store_cap_serves_templates(db_session, monkeypatch):
+    # A bot rotating sessions/IPs still can't drain the month in an hour.
+    shop = await shop_with_catalog(db_session, plan_tier="starter", selected_model="standard")
+    await add_usage(db_session, shop, metering.hourly_generation_cap(shop))
+    chat = good_chat()
+    result = await metering.run_gift_search(db_session, shop, BRIEF, FakeEmbedder(), chat_fn=chat)
+    assert result.limited == "hourly_cap" and not chat.await_count and result.recommendation.picks
+
+
+def test_hourly_cap_is_a_tenth_of_the_month_with_a_floor():
+    from tests.conftest import make_shop as _mk
+    assert metering.hourly_generation_cap(_mk(plan_tier="starter")) == 60
+    assert metering.hourly_generation_cap(_mk(plan_tier="pro")) == 450
+    assert metering.hourly_generation_cap(_mk(plan_tier="growth", plan_status="trial_active")) == 175

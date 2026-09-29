@@ -16,12 +16,14 @@ returns None and the caller serves template reasons with no LLM call.
 """
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 
 import structlog
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai_models import AI_TIERS, ai_tier_for, model_for_shop
+from app.config import PLANS
 from app.llm import calc_cost, chat
 from app.plan_guard import (
     daily_cost_cap_for, generation_limit_for, get_daily_cost_usd, get_generations_used, may_generate,
@@ -44,6 +46,25 @@ class Reservation:
     model: str
 
 
+HOURLY_SHARE = 0.10        # of the monthly plan limit
+HOURLY_FLOOR = 20
+
+
+def hourly_generation_cap(shop: Shop) -> int:
+    """Per-shop generations per rolling hour: a backstop a bot rotating session
+    ids and IPs can't get around (limits it to ~10% of the month per hour)."""
+    plan = PLANS.get(shop.plan_tier or "starter", PLANS["starter"])
+    return max(HOURLY_FLOOR, int(plan["generation_limit"] * HOURLY_SHARE))
+
+
+async def _generations_last_hour(db: AsyncSession, shop: Shop) -> int:
+    since = datetime.now(timezone.utc) - timedelta(hours=1)
+    return int((await db.execute(
+        select(func.coalesce(func.sum(UsageLog.generations_consumed), 0))
+        .where(UsageLog.shop_id == shop.id, UsageLog.created_at >= since)
+    )).scalar() or 0)
+
+
 async def _lock_shop(db: AsyncSession, shop_id) -> None:
     # Serializes reservations per shop on Postgres; a no-op on SQLite (tests).
     await db.execute(select(Shop.id).where(Shop.id == shop_id).with_for_update())
@@ -52,7 +73,7 @@ async def _lock_shop(db: AsyncSession, shop_id) -> None:
 async def reserve(db: AsyncSession, shop: Shop, action_type: str) -> tuple[Reservation | None, str | None]:
     """Reserve the shop's AI-tier weight in generations for one AI use.
     Returns (reservation, None), or (None, reason) when AI isn't allowed:
-    "inactive" | "generation_limit" | "daily_cost_cap"."""
+    "inactive" | "generation_limit" | "daily_cost_cap" | "hourly_cap"."""
     if not may_generate(shop):
         return None, "inactive"
     tier = ai_tier_for(shop.plan_tier, shop.selected_model)
@@ -68,6 +89,10 @@ async def reserve(db: AsyncSession, shop: Shop, action_type: str) -> tuple[Reser
     if generation_limit_for(shop) - await get_generations_used(shop, db) < weight:
         await db.commit()
         return None, "generation_limit"
+    if hourly_generation_cap(shop) - await _generations_last_hour(db, shop) < weight:
+        await db.commit()
+        logger.warning("metering_hourly_cap", shop=shop.shop_domain)
+        return None, "hourly_cap"
     db.add(UsageLog(id=uuid.uuid4(), shop_id=shop.id, action_type=action_type, generations_consumed=weight,
                     model_used=model, cost_usd=0, prompt_version=RERANK_PROMPT_VERSION))
     await db.commit()  # releases the lock

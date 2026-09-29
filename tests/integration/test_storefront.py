@@ -180,3 +180,23 @@ async def test_exclude_ids_skip_products_already_shown(db_session, models):
     shown = ["0", "1", "2"]
     data = call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "exclude_ids": shown}).json()
     assert not {p["product_id"] for p in data["picks"]} & set(shown)
+
+
+# ── Abuse limits ─────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_session_limit_returns_429_after_10_searches(db_session, models):
+    await seeded_shop(db_session)
+    codes = [call(db_session, "POST", "/api/storefront/search", json=BRIEF).status_code for _ in range(11)]
+    assert codes[:10] == [200] * 10 and codes[10] == 429
+
+
+@pytest.mark.asyncio
+async def test_ip_limit_applies_across_sessions(db_session, models):
+    await seeded_shop(db_session)
+    ip = {"X-Forwarded-For": "203.0.113.9, 162.158.1.1"}
+    codes = [call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "sid": str(uuid.uuid4())},
+                  headers=ip).status_code for _ in range(31)]
+    assert codes.count(200) == 30 and codes[-1] == 429
+    other = {"X-Forwarded-For": "198.51.100.7"}
+    assert call(db_session, "POST", "/api/storefront/search", json=BRIEF, headers=other).status_code == 200
