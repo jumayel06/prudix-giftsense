@@ -19,7 +19,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
-from app.ai_models import AI_TIERS, ai_tier_for, model_for_shop
+from app.ai_models import AI_TIERS, ai_tier_for, model_for_shop, model_label
 from app.jobs import enqueue
 from app.llm import calc_cost, chat
 from app.services import catalog_index
@@ -209,9 +209,10 @@ async def playground_search(
             "url": p.product.url, "price_min": p.product.price_min, "price_max": p.product.price_max,
             "reason": p.reason, "source": p.source,
         } for p in rec.picks],
-        # Merchants see the AI tier, never the model behind it.
         "ai_tier": (tier := ai_tier_for(shop.plan_tier, shop.selected_model)),
-        "ai_tier_label": AI_TIERS[tier]["label"], "mode": rec.mode, "latency_ms": latency_ms, "used_fallback": rec.used_fallback,
+        "ai_tier_label": AI_TIERS[tier]["label"],
+        "ai_model_label": model_label(rec.model or model),  # the model that actually answered
+        "mode": rec.mode, "latency_ms": latency_ms, "used_fallback": rec.used_fallback,
         "candidates_considered": rec.candidates_considered,
     }
 

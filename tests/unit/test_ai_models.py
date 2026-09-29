@@ -110,3 +110,16 @@ def test_model_for_shop_uses_its_ai_tier():
 
 def test_unknown_model_is_priced_like_the_priciest_active_model():
     assert am.price_per_token("mystery-model") == am.price_per_token("claude-sonnet-5")
+
+
+def test_tier_models_for_shop_follows_rollout_and_pins(rollout):
+    class S:
+        plan_tier = "pro"; model_pins = None  # noqa: E702
+    S.id = next(s for s in (uuid.uuid4() for _ in range(1000)) if am.rollout_bucket("ai_premium", s) < 25)
+    assert am.tier_models_for_shop(S) == {"fast": "GPT-6 Luna", "balanced": "GPT-6 Sol", "premium": "Claude Sonnet 5.5"}
+    S.model_pins = {"ai_premium": "claude-sonnet-5"}
+    assert am.tier_models_for_shop(S)["premium"] == "Claude Sonnet 5"
+
+
+def test_every_model_has_a_display_label():
+    assert all(spec.get("label") for spec in am.MODELS.values())

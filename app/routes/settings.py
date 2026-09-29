@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai_models import AI_TIERS, ai_tier_for
+from app.ai_models import AI_TIERS, ai_tier_for, tier_models_for_shop
 from app.config import PLANS
 from core.db.models import Shop
 from core.db.session import get_db
@@ -31,6 +31,8 @@ async def get_settings(
         "ai_tier_weight": AI_TIERS[ai_tier]["weight"],
         "ai_tiers_available": plan["ai_tiers"],
         "ai_tiers": _ai_tier_catalog(),
+        # "Currently runs on …" per tier, resolved for this store (rollout-aware).
+        "ai_tier_models": tier_models_for_shop(shop_record),
         "features": plan["features"],
         "plan_tier": plan_tier,
         "plan_status": shop_record.plan_status,

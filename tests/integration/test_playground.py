@@ -148,6 +148,7 @@ async def test_playground_returns_picks_and_logs_cost_without_generations(db_ses
     assert resp.status_code == 200
     data = resp.json()
     assert len(data["picks"]) == 3 and data["ai_tier"] == "balanced" and data["ai_tier_label"] == "Balanced"
+    assert data["ai_model_label"] == "GPT-6 Sol"
     pick = data["picks"][0]
     assert pick["title"].startswith("Candle") and pick["reason"] and pick["source"] == "ai"
     assert pick["price_min"] == 30.0

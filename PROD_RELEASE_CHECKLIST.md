@@ -44,6 +44,8 @@ Everything that must be flipped, set, rotated or verified before GiftSense goes 
 - [ ] Prod `OPENAI_API_KEY` has access to `gpt-6-luna` and `gpt-6-sol` (Fast/Balanced + catalog analysis); prod `ANTHROPIC_API_KEY` for Sonnet 5 (Premium) and the eval judge; run migrations through 20260928000003 (AI tiers)
 - [ ] App Store listing copy says AI tiers (Fast / Balanced / Premium), never model names, so model swaps never need a listing edit
 
+- [ ] Privacy policy + Partner Dashboard data-sharing answers name OpenAI and Anthropic as subprocessors (product data and shopper gift answers are sent to them for AI); keep in sync with the providers in `app/ai_models.py`
+
 ## 🚀 Launch day
 - [ ] Install the **prod** app (Partner Dashboard → GiftSense → select store), not a `shopify app dev` session. Confirm `shop_provisioned_via_token_exchange` in logs, a `pending` row, and the plan picker.
 - [ ] Protected customer data: request **Level 1** only (orders). Filed for the **dev** app 2026-09-27 — reasons: Store management, App functionality, Analytics; no protected fields (name/email/phone/address). Survey: all Purpose = Yes; Consent = Yes (agreements), Yes (consent decisions), N/A (data sale), N/A (automated decisions); Storage = Yes, Yes. **Refile identically for the prod app.**

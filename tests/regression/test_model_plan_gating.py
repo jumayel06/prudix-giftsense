@@ -153,6 +153,8 @@ class TestSettingsPayload:
         assert data["ai_tier"] == "balanced" and data["ai_tier_weight"] == 2
         assert data["ai_tiers_available"] == PLANS["growth"]["ai_tiers"]
         assert data["ai_tiers"]["balanced"]["label"] == "Balanced"
-        # Merchants never see vendor model names.
-        assert "gpt" not in str(data).lower() and "claude" not in str(data).lower()
+        # The store sees which model each of its options runs on right now (a
+        # display label), but never raw model IDs it could send back.
+        assert data["ai_tier_models"] == {"fast": "GPT-6 Luna", "balanced": "GPT-6 Sol"}
+        assert "gpt-6" not in str(data) and "claude-" not in str(data)
         assert data["features"] == PLANS["growth"]["features"]

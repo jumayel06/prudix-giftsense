@@ -23,6 +23,10 @@ from datetime import date
 from app.config import PLAN_DEFAULT_AI_TIER, PLANS
 
 # ── Registry ─────────────────────────────────────────────────────────────────
+# label: shown to merchants only on per-store screens (Settings, Home, Try it)
+#   as "currently runs on …", resolved for that store, so it's always accurate
+#   mid-rollout. Never in the plan picker or App Store listing (a promise there
+#   would go stale on the next swap).
 # price: USD per million tokens. caps drive request shaping in app/llm.py:
 #   max_tokens_param   request field for the output cap
 #   temperature        "always" | "never" (400s on non-default) | "thinking_off"
@@ -35,15 +39,15 @@ _OPENAI_CLASSIC = {"max_tokens_param": "max_tokens", "temperature": "always", "t
 
 MODELS = {
     "gpt-6-luna": {
-        "provider": "openai", "price": (0.10, 0.50), "status": "active", "fallback": "gpt-6-sol",
+        "label": "GPT-6 Luna", "provider": "openai", "price": (0.10, 0.50), "status": "active", "fallback": "gpt-6-sol",
         "caps": _OPENAI_REASONING, "provider_retires_on": None,
     },
     "gpt-6-sol": {
-        "provider": "openai", "price": (2.00, 10.00), "status": "active", "fallback": "gpt-6-luna",
+        "label": "GPT-6 Sol", "provider": "openai", "price": (2.00, 10.00), "status": "active", "fallback": "gpt-6-luna",
         "caps": _OPENAI_REASONING, "provider_retires_on": None,
     },
     "claude-sonnet-5": {
-        "provider": "anthropic", "price": (2.00, 10.00), "status": "active", "fallback": "gpt-6-sol",
+        "label": "Claude Sonnet 5", "provider": "anthropic", "price": (2.00, 10.00), "status": "active", "fallback": "gpt-6-sol",
         "caps": {"max_tokens_param": "max_tokens", "temperature": "never",
                  "thinking_off": {"thinking": {"type": "disabled"}}, "thinking_on": {}},
         "provider_retires_on": date(2027, 6, 30),
@@ -51,7 +55,7 @@ MODELS = {
     # Evaluated 2026-09-28 against Sonnet 5 (same price, ~20% faster, no clear
     # quality gain); ready to roll out to ai_premium as "next".
     "claude-sonnet-5-5": {
-        "provider": "anthropic", "price": (2.00, 10.00), "status": "active", "fallback": "claude-sonnet-5",
+        "label": "Claude Sonnet 5.5", "provider": "anthropic", "price": (2.00, 10.00), "status": "active", "fallback": "claude-sonnet-5",
         # Rejects thinking "disabled" (400); "between_tools" without tools = no thinking.
         "caps": {"max_tokens_param": "max_tokens", "temperature": "never",
                  "thinking_off": {"thinking": {"type": "between_tools"}}, "thinking_on": {}},
@@ -61,16 +65,16 @@ MODELS = {
     # so old stored values resolve): GPT-6 Luna beat Haiku 4.5 on speed, reason
     # accuracy and cost, and GPT-6 replaced the GPT-4 generation.
     "claude-haiku-4-5": {
-        "provider": "anthropic", "price": (1.00, 5.00), "status": "retired", "replacement": "gpt-6-luna",
+        "label": "Claude Haiku 4.5", "provider": "anthropic", "price": (1.00, 5.00), "status": "retired", "replacement": "gpt-6-luna",
         "caps": {"max_tokens_param": "max_tokens", "temperature": "always", "thinking_off": {}, "thinking_on": {}},
         "provider_retires_on": date(2026, 10, 15),
     },
     "gpt-4o-mini": {
-        "provider": "openai", "price": (0.15, 0.60), "status": "retired", "replacement": "gpt-6-luna",
+        "label": "GPT-4o mini", "provider": "openai", "price": (0.15, 0.60), "status": "retired", "replacement": "gpt-6-luna",
         "caps": _OPENAI_CLASSIC, "provider_retires_on": None,
     },
     "gpt-4.1": {
-        "provider": "openai", "price": (2.00, 8.00), "status": "retired", "replacement": "gpt-6-sol",
+        "label": "GPT-4.1", "provider": "openai", "price": (2.00, 8.00), "status": "retired", "replacement": "gpt-6-sol",
         "caps": _OPENAI_CLASSIC, "provider_retires_on": None,
     },
 }
@@ -152,6 +156,18 @@ def model_for_shop(shop) -> str:
     """The model a shop's gift searches and notes run on right now."""
     tier = ai_tier_for(shop.plan_tier, shop.selected_model)
     return resolve_model(AI_TIERS[tier]["slot"], shop.id, getattr(shop, "model_pins", None))
+
+
+def model_label(model: str) -> str:
+    return (MODELS.get(model) or {}).get("label", model)
+
+
+def tier_models_for_shop(shop) -> dict[str, str]:
+    """{ai_tier: display label of the model it runs for this shop} for the
+    tiers the shop's plan includes."""
+    plan = shop.plan_tier if shop.plan_tier in PLANS else "starter"
+    pins = getattr(shop, "model_pins", None)
+    return {t: model_label(resolve_model(AI_TIERS[t]["slot"], shop.id, pins)) for t in PLANS[plan]["ai_tiers"]}
 
 
 def catalog_model_for(shop) -> str:

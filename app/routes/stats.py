@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai_models import AI_TIERS, ai_tier_for
+from app.ai_models import AI_TIERS, ai_tier_for, model_for_shop, model_label
 from app.config import CYCLE_DAYS, PLANS
 from app.plan_guard import effective_cycle_start
 from core.config import settings
@@ -112,6 +112,7 @@ async def get_stats(
         "ai_tier": ai_tier_for(plan_tier, shop_record.selected_model),
         "ai_tier_label": AI_TIERS[ai_tier_for(plan_tier, shop_record.selected_model)]["label"],
         "ai_tier_weight": AI_TIERS[ai_tier_for(plan_tier, shop_record.selected_model)]["weight"],
+        "ai_model_label": model_label(model_for_shop(shop_record)),
         "scheduled_plan_tier": shop_record.scheduled_plan_tier,
         "scheduled_plan_name": (
             PLANS.get(shop_record.scheduled_plan_tier, {}).get("name")

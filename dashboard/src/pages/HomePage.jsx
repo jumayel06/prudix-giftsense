@@ -23,7 +23,7 @@ function UsageCard({ stats }) {
         <ProgressBar progress={pct} tone={tone} size="small" />
         <Text as="p" tone="subdued">
           {used.toLocaleString()} of {limit.toLocaleString()} used{isTrial ? ' in your trial' : ' this month'}
-          {' · '}AI: {stats.ai_tier_label} ({stats.ai_tier_weight} per use)
+          {' · '}AI: {stats.ai_tier_label}{stats.ai_model_label ? ` (${stats.ai_model_label})` : ''}, {stats.ai_tier_weight} per use
         </Text>
       </BlockStack>
     </Card>

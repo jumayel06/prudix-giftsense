@@ -60,7 +60,7 @@ async def test_active_shop_usage_is_sum_within_current_cycle(db_session):
     assert data["plan_name"] == "Growth"
     assert data["days_remaining"] == 25
     assert data["ai_tier"] == "fast" and data["ai_tier_label"] == "Fast"
-    assert data["ai_tier_weight"] == 1
+    assert data["ai_tier_weight"] == 1 and data["ai_model_label"] == "GPT-6 Luna"
 
 
 @pytest.mark.asyncio

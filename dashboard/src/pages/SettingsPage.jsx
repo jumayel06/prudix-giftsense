@@ -115,17 +115,25 @@ export default function SettingsPage() {
                     id={`ai-tier-${t}`}
                     name="ai-tier"
                     label={`${tier.label} · ${tier.weight} generation${tier.weight === 1 ? '' : 's'} per use`}
-                    helpText={tier.description}
+                    helpText={
+                      <BlockStack gap="050">
+                        <span>{tier.description}</span>
+                        {data.ai_tier_models?.[t] && (
+                          <Text as="span" variant="bodySm" tone="subdued">
+                            Currently runs on {data.ai_tier_models[t]}.
+                          </Text>
+                        )}
+                      </BlockStack>
+                    }
                     checked={aiTier === t}
                     onChange={() => setAiTier(t)}
                   />
                 )
               })}
-              {data.plan_tier !== 'pro' && (
-                <Text as="p" tone="subdued">
-                  Stronger AI options are available on higher plans.
-                </Text>
-              )}
+              <Text as="p" variant="bodySm" tone="subdued">
+                We move each option to better AI models as they're released, at no extra cost to you.
+                {data.plan_tier !== 'pro' && ' Stronger options are available on higher plans.'}
+              </Text>
             </BlockStack>
           </Card>
         </Layout.AnnotatedSection>

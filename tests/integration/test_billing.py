@@ -980,6 +980,7 @@ class TestPlansCatalogForDashboard:
         assert data["feature_labels"] == FEATURE_LABELS
         assert data["feature_categories"] == FEATURE_CATEGORIES
         assert {t: v["weight"] for t, v in data["ai_tiers"].items()} == {t: v["weight"] for t, v in AI_TIERS.items()}
+        # Pre-signup screens promise AI options, never models (a swap would make them stale).
         assert "gpt" not in str(data).lower() and "claude" not in str(data).lower()
         growth = next(p for p in data["plans"] if p["tier"] == "growth")
         assert "arrive_by" in growth["features"]

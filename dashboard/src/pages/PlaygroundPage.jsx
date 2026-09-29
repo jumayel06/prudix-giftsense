@@ -148,7 +148,7 @@ export default function PlaygroundPage() {
             {result && result.picks.length > 0 && (
               <>
                 <InlineStack gap="200">
-                  <Tag>{`AI: ${result.ai_tier_label}`}</Tag>
+                  <Tag>{`AI: ${result.ai_tier_label} (${result.ai_model_label})`}</Tag>
                   <Tag>{(result.latency_ms / 1000).toFixed(1)} s</Tag>
                   <Tag>{result.candidates_considered} products considered</Tag>
                   {result.mode === 'small_catalog' && <Tag>Small-catalog mode</Tag>}
