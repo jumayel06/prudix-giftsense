@@ -295,7 +295,7 @@ export default function PlanPickerPage() {
       </div>
 
       <div style={{ marginTop: '24px', fontSize: '12px', color: '#64748b', lineHeight: 1.6 }}>
-        Each AI gift search, note or registry suggestion uses generations: 1 to 4 depending on the AI option you pick in Settings (Fast, Balanced or Premium).
+        Each AI gift search, note or registry suggestion uses generations: 1 on Fast, 2 on Balanced or 4 on Premium, the AI option you pick in Settings.
         When a limit is reached, the gift finder and notes keep working in basic mode.
       </div>
     </Page>

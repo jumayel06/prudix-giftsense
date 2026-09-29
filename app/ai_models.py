@@ -85,12 +85,13 @@ SLOTS = {
 }
 
 # ── AI tiers (what merchants see and pick) ───────────────────────────────────
-# "weight" = generations per AI use. It belongs to the tier, not the model, so
-# a model swap never changes what a merchant is charged.
+# "weight" = generations per AI use: 1 / 2 / 4, each tier doubling the last.
+# It belongs to the tier, not the model, so a model swap never changes what a
+# merchant is charged (a new model must fit the tier's cost per generation).
 AI_TIERS = {
     "fast":     {"label": "Fast",     "weight": 1, "slot": "ai_fast",
                  "description": "Quickest answers, and uses the fewest generations."},
-    "balanced": {"label": "Balanced", "weight": 4, "slot": "ai_balanced",
+    "balanced": {"label": "Balanced", "weight": 2, "slot": "ai_balanced",
                  "description": "The most carefully worded gift reasons."},
     "premium":  {"label": "Premium",  "weight": 4, "slot": "ai_premium",
                  "description": "Our strongest AI for gift picks and notes."},

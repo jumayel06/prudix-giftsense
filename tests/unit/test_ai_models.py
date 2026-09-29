@@ -46,7 +46,7 @@ def test_current_lineup():
     assert PLANS["starter"]["ai_tiers"] == ["fast"]
     assert PLANS["growth"]["ai_tiers"] == ["fast", "balanced"]
     assert PLANS["pro"]["ai_tiers"] == ["fast", "balanced", "premium"]
-    assert am.AI_TIER_WEIGHTS == {"fast": 1, "balanced": 4, "premium": 4}
+    assert am.AI_TIER_WEIGHTS == {"fast": 1, "balanced": 2, "premium": 4}
     assert {t: am.SLOTS[s["slot"]]["model"] for t, s in am.AI_TIERS.items()} == {
         "fast": "gpt-6-luna", "balanced": "gpt-6-sol", "premium": "claude-sonnet-5"}
     assert am.SLOTS["catalog_analysis"]["model"] == "gpt-6-luna"

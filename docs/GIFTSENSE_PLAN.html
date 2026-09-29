@@ -162,7 +162,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
   <div class="facts">
     <div class="fact"><span class="eyebrow">Features</span><strong>15 features, one release</strong><p>Gift finder, notes, wrap, delivery dates, voice and video messages, recipient's choice, registries and analytics.</p></div>
     <div class="fact"><span class="eyebrow">Plans</span><strong>3 plans: $19 · $49 · $99</strong><p>Suggested prices. Every limit is a setting, so prices and limits can change later without code changes.</p></div>
-    <div class="fact"><span class="eyebrow">Worst-case profit</span><strong>85% – 91% per merchant</strong><p>Even if a merchant uses 100% of every AI limit, every month. Normal usage will be much higher.</p></div>
+    <div class="fact"><span class="eyebrow">Worst-case profit</span><strong>84% – 91% per merchant</strong><p>Even if a merchant uses 100% of every AI limit, every month. Normal usage will be much higher.</p></div>
     <div class="fact"><span class="eyebrow">Timeline</span><strong>About 10 weeks</strong><p>Copying the setup work from Prudix Commerce saves roughly 3–4 weeks of plumbing.</p></div>
   </div>
   <div class="note">
@@ -396,7 +396,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
         <li>Up to <span class="num">2,000</span> products</li>
         <li><span class="num">200</span> voice messages</li>
       </ul>
-      <div class="marginbar"><div class="lbl"><span>Worst-case profit</span><b>91%</b></div><div class="bar"><span style="width:91%"></span></div></div>
+      <div class="marginbar"><div class="lbl"><span>Worst-case profit</span><b>86%</b></div><div class="bar"><span style="width:86%"></span></div></div>
     </div>
     <div class="plan">
       <span class="pill p-pro" style="justify-self:start">Pro</span>
@@ -413,7 +413,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
         <li>Up to <span class="num">5,000</span> products</li>
         <li><span class="num">500</span> voice or video messages</li>
       </ul>
-      <div class="marginbar"><div class="lbl"><span>Worst-case profit</span><b>85%</b></div><div class="bar"><span style="width:85%"></span></div></div>
+      <div class="marginbar"><div class="lbl"><span>Worst-case profit</span><b>84%</b></div><div class="bar"><span style="width:84%"></span></div></div>
     </div>
   </div>
 
@@ -422,7 +422,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
     <ul>
       <li>The merchant picks an AI option in Settings: <b>Fast</b>, <b>Balanced</b> or <b>Premium</b>, from those their plan includes. Each plan has a default: Fast on Starter, Balanced on Growth, Premium on Pro. Merchants never see model names; we choose (and can upgrade) the model behind each option.</li>
       <li>Every AI gift search, AI note and registry suggestion uses generations. Stronger models use more generations per use, in proportion to what they cost us.</li>
-      <li>So a merchant can trade volume for quality: 1,750 generations on Growth is 1,750 searches or notes on Fast, or 437 on Balanced.</li>
+      <li>So a merchant can trade volume for quality: 1,750 generations on Growth is 1,750 searches or notes on Fast, 875 on Balanced, or 437 on Premium (Pro).</li>
       <li>Reading the catalog doesn't use generations. It runs in the background on our cheapest model (GPT-6 Luna today), within the plan's product limit.</li>
       <li>Every model on this list must pass the week-2 quality test for gift picks. A model that fails isn't offered.</li>
     </ul>
@@ -433,11 +433,11 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
       <thead><tr><th>AI option (model today)</th><th class="c">Generations per use</th><th class="c">Starter</th><th class="c">Growth</th><th class="c">Pro</th></tr></thead>
       <tbody>
         <tr><td>Fast (GPT-6 Luna)</td><td class="c num">1</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
-        <tr><td>Balanced (GPT-6 Sol)</td><td class="c num">4</td><td class="c no">–</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
+        <tr><td>Balanced (GPT-6 Sol)</td><td class="c num">2</td><td class="c no">–</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
         <tr><td>Premium (Claude Sonnet 5)</td><td class="c num">4</td><td class="c no">–</td><td class="c no">–</td><td class="c yes">✓</td></tr>
         <tr class="sep"><td colspan="5">What a month's generations buy (gift searches or notes)</td></tr>
         <tr><td>With Fast</td><td class="c no">–</td><td class="c num">600</td><td class="c num">1,750</td><td class="c num">4,500</td></tr>
-        <tr><td>With Balanced</td><td class="c no">–</td><td class="c no">–</td><td class="c num">437</td><td class="c num">1,125</td></tr>
+        <tr><td>With Balanced</td><td class="c no">–</td><td class="c no">–</td><td class="c num">875</td><td class="c num">2,250</td></tr>
         <tr><td>With Premium</td><td class="c no">–</td><td class="c no">–</td><td class="c no">–</td><td class="c num">1,125</td></tr>
       </tbody>
     </table>
@@ -517,7 +517,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
         <tr><td>AI generations</td><td class="c num">60</td><td class="c num">100</td><td class="c num">150</td></tr>
         <tr><td>Products in the gift finder</td><td class="c num">100</td><td class="c num">100</td><td class="c num">100</td></tr>
         <tr><td>Voice or video messages</td><td class="c num">–</td><td class="c num">5 voice</td><td class="c num">10 voice or video</td></tr>
-        <tr><td>Worst-case cost per trial</td><td class="c num">$0.23</td><td class="c num">$0.35</td><td class="c num">$0.62</td></tr>
+        <tr><td>Worst-case cost per trial</td><td class="c num">$0.23</td><td class="c num">$0.49</td><td class="c num">$0.65</td></tr>
       </tbody>
     </table>
   </div>
@@ -532,12 +532,12 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
       <thead><tr><th>AI use by model</th><th class="r">Gift search</th><th class="r">Note</th><th class="r">Generations</th><th class="r">Cost per generation (worst)</th></tr></thead>
       <tbody>
         <tr><td>Fast (GPT-6 Luna)</td><td class="r">$0.0003</td><td class="r">$0.0002</td><td class="r">1</td><td class="r">$0.0003</td></tr>
-        <tr><td>Balanced (GPT-6 Sol)</td><td class="r">$0.0055</td><td class="r">$0.0036</td><td class="r">4</td><td class="r">$0.00138</td></tr>
+        <tr><td>Balanced (GPT-6 Sol)</td><td class="r">$0.0055</td><td class="r">$0.0036</td><td class="r">2</td><td class="r">$0.00275</td></tr>
         <tr><td>Premium (Claude Sonnet 5)</td><td class="r">$0.0103</td><td class="r">$0.0036</td><td class="r">4</td><td class="r">$0.00258</td></tr>
       </tbody>
     </table>
   </div>
-  <p class="sub">A note is about 800 tokens in and 200 out. The costliest option a plan allows sets its worst case: Fast at <b class="num">$0.0003</b> per generation on Starter, Balanced at <b class="num">$0.00138</b> on Growth, Premium at <b class="num">$0.00258</b> on Pro. The merchant's choice can't push cost above the plan's worst case, and a model swap must keep each option within its weight.</p>
+  <p class="sub">A note is about 800 tokens in and 200 out. The costliest option a plan allows sets its worst case: Fast at <b class="num">$0.0003</b> per generation on Starter, Balanced at <b class="num">$0.00275</b> on Growth and Pro (Premium is $0.00258). Generations per use go 1 / 2 / 4, each option doubling the last. The merchant's choice can't push cost above the plan's worst case, and a model swap must keep each option within its weight.</p>
 
   <div class="tbl">
     <table>
@@ -567,25 +567,25 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
     <div class="tbl"><table>
       <thead><tr><th>Growth · $49</th><th class="r">Monthly</th></tr></thead>
       <tbody>
-        <tr><td>1,750 AI generations × $0.00138</td><td class="r">$2.41</td></tr>
+        <tr><td>1,750 AI generations × $0.00275</td><td class="r">$4.81</td></tr>
         <tr><td>500 product re-reads</td><td class="r">$0.07</td></tr>
         <tr><td>200 voice messages</td><td class="r">$0.10</td></tr>
         <tr><td>Hosting share</td><td class="r">$2.00</td></tr>
-        <tr class="total"><td>Total cost</td><td class="r">$4.58</td></tr>
-        <tr><td>Profit</td><td class="r">$44.42</td></tr>
-        <tr class="margin"><td>Profit margin</td><td class="r">90.7%</td></tr>
+        <tr class="total"><td>Total cost</td><td class="r">$6.98</td></tr>
+        <tr><td>Profit</td><td class="r">$42.02</td></tr>
+        <tr class="margin"><td>Profit margin</td><td class="r">85.7%</td></tr>
       </tbody>
     </table></div>
     <div class="tbl"><table>
       <thead><tr><th>Pro · $99</th><th class="r">Monthly</th></tr></thead>
       <tbody>
-        <tr><td>4,500 AI generations × $0.00258</td><td class="r">$11.59</td></tr>
+        <tr><td>4,500 AI generations × $0.00275</td><td class="r">$12.38</td></tr>
         <tr><td>1,200 product re-reads</td><td class="r">$0.17</td></tr>
         <tr><td>500 messages (worst case: all video)</td><td class="r">$1.00</td></tr>
         <tr><td>Hosting share</td><td class="r">$2.50</td></tr>
-        <tr class="total"><td>Total cost</td><td class="r">$15.26</td></tr>
-        <tr><td>Profit</td><td class="r">$83.74</td></tr>
-        <tr class="margin"><td>Profit margin</td><td class="r">84.6%</td></tr>
+        <tr class="total"><td>Total cost</td><td class="r">$16.05</td></tr>
+        <tr><td>Profit</td><td class="r">$82.95</td></tr>
+        <tr class="margin"><td>Profit margin</td><td class="r">83.8%</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -594,11 +594,11 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
     <table>
       <thead><tr><th>Other scenarios</th><th class="r">Starter</th><th class="r">Growth</th><th class="r">Pro</th></tr></thead>
       <tbody>
-        <tr><td>Worst-case month (above)</td><td class="r">91.0%</td><td class="r">90.7%</td><td class="r">84.6%</td></tr>
-        <tr><td>First month only: one-time catalog read at the product limit ($0.04 / $0.28 / $0.71)</td><td class="r">90.8%</td><td class="r">90.1%</td><td class="r">83.9%</td></tr>
-        <tr><td>If AI calls turn out 50% bigger than measured</td><td class="r">90.5%</td><td class="r">88.2%</td><td class="r">78.7%</td></tr>
-        <tr><td>After Shopify's 15% revenue share starts (see note)</td><td class="r">76.0%</td><td class="r">75.7%</td><td class="r">69.6%</td></tr>
-        <tr><td>7-day free trial, one time (see trial limits above)</td><td class="r">$0.23</td><td class="r">$0.35</td><td class="r">$0.62</td></tr>
+        <tr><td>Worst-case month (above)</td><td class="r">91.0%</td><td class="r">85.7%</td><td class="r">83.8%</td></tr>
+        <tr><td>First month only: one-time catalog read at the product limit ($0.04 / $0.28 / $0.71)</td><td class="r">90.8%</td><td class="r">85.2%</td><td class="r">83.1%</td></tr>
+        <tr><td>If AI calls turn out 50% bigger than measured</td><td class="r">90.5%</td><td class="r">80.8%</td><td class="r">77.5%</td></tr>
+        <tr><td>After Shopify's 15% revenue share starts (see note)</td><td class="r">76.0%</td><td class="r">70.7%</td><td class="r">68.8%</td></tr>
+        <tr><td>7-day free trial, one time (see trial limits above)</td><td class="r">$0.23</td><td class="r">$0.49</td><td class="r">$0.65</td></tr>
       </tbody>
     </table>
   </div>

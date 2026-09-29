@@ -150,7 +150,7 @@ class TestSettingsPayload:
 
         for client in _make_client(db_session):
             data = client.get(f"/api/settings?shop={TEST_SHOP_DOMAIN}").json()
-        assert data["ai_tier"] == "balanced" and data["ai_tier_weight"] == 4
+        assert data["ai_tier"] == "balanced" and data["ai_tier_weight"] == 2
         assert data["ai_tiers_available"] == PLANS["growth"]["ai_tiers"]
         assert data["ai_tiers"]["balanced"]["label"] == "Balanced"
         # Merchants never see vendor model names.
