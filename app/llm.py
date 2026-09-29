@@ -20,6 +20,7 @@ MODEL_COSTS = {
     "claude-haiku-4-5": {"input": 0.000001,   "output": 0.000005},
     "gpt-4.1":          {"input": 0.000002,   "output": 0.000008},
     "claude-sonnet-5":  {"input": 0.000002,   "output": 0.000010},
+    "claude-sonnet-5-5": {"input": 0.000002,  "output": 0.000010},
     # GPT-6 (2026) replaced gpt-4o-mini / gpt-4.1 in the plans; the old
     # prices stay for costing historical usage logs and evals.
     "gpt-6-luna":       {"input": 0.0000001,  "output": 0.0000005},
@@ -34,13 +35,18 @@ _OPENAI_REASONING_PREFIXES = ("gpt-6",)
 
 # Claude models that reject sampling parameters (temperature/top_p/top_k)
 # with a 400. Sonnet 5 is one of them; Haiku 4.5 still accepts temperature.
-_NO_SAMPLING_PARAMS = {"claude-sonnet-5"}
+_NO_SAMPLING_PARAMS = {"claude-sonnet-5", "claude-sonnet-5-5"}
 
-# Claude models that think adaptively when `thinking` is omitted. Hidden
-# thinking is billed as output and adds seconds of latency (measured in the
-# 2026-09-28 eval: Sonnet 5 rerank 7.3s p95), so our short structured calls
-# (gift picks, notes, profiles) disable it unless a caller opts in.
-_ADAPTIVE_BY_DEFAULT = {"claude-sonnet-5"}
+# Claude models that think adaptively when `thinking` is omitted, and the
+# setting that turns it off. Hidden thinking is billed as output and adds
+# seconds of latency (measured in the 2026-09-28 eval: Sonnet 5 rerank 7.3s
+# p95), so our short structured calls (gift picks, notes, profiles) turn it
+# off unless a caller opts in. Sonnet 5.5 rejects "disabled" (400); its lowest
+# setting is "between_tools", which without tools means no thinking.
+_THINKING_OFF = {
+    "claude-sonnet-5":   {"type": "disabled"},
+    "claude-sonnet-5-5": {"type": "between_tools"},
+}
 
 # Per-request timeout (seconds). The SDK defaults (10 minutes, retried) let one
 # stalled request freeze a caller; seen in the 2026-09-28 eval. Shopper-facing
@@ -149,8 +155,8 @@ async def _claude_chat(model, system, prompt, max_tokens, temperature, json_mode
     kwargs = {}
     if model not in _NO_SAMPLING_PARAMS:
         kwargs["temperature"] = temperature
-    if model in _ADAPTIVE_BY_DEFAULT and not thinking:
-        kwargs["thinking"] = {"type": "disabled"}
+    if model in _THINKING_OFF and not thinking:
+        kwargs["thinking"] = _THINKING_OFF[model]
 
     response = await _anthropic_client.messages.create(
         model=model,

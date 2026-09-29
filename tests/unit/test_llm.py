@@ -121,3 +121,27 @@ async def test_older_openai_models_unchanged():
 def test_gpt6_prices():
     assert llm.calc_cost("gpt-6-luna", 1_000_000, 1_000_000) == pytest.approx(0.60)
     assert llm.calc_cost("gpt-6-sol", 1_000_000, 1_000_000) == pytest.approx(12.0)
+
+
+@pytest.mark.asyncio
+async def test_sonnet55_turns_thinking_off_with_between_tools():
+    # Sonnet 5.5 rejects {"type": "disabled"} (400); "between_tools" is its
+    # lowest setting and, with no tools in the request, means no thinking.
+    create = AsyncMock(return_value=_anthropic_resp('{"ok": 1}'))
+    with patch.object(llm._anthropic_client.messages, "create", create):
+        await llm.chat("claude-sonnet-5-5", "sys", "hi", temperature=0.4, json_mode=True)
+    kwargs = create.await_args.kwargs
+    assert kwargs["thinking"] == {"type": "between_tools"}
+    assert "temperature" not in kwargs  # non-default sampling params → 400
+
+
+@pytest.mark.asyncio
+async def test_sonnet55_thinking_opt_in_is_adaptive():
+    create = AsyncMock(return_value=_anthropic_resp('{"ok": 1}'))
+    with patch.object(llm._anthropic_client.messages, "create", create):
+        await llm.chat("claude-sonnet-5-5", "sys", "hi", thinking=True)
+    assert "thinking" not in create.await_args.kwargs
+
+
+def test_sonnet55_price():
+    assert llm.calc_cost("claude-sonnet-5-5", 1_000_000, 1_000_000) == pytest.approx(12.0)
