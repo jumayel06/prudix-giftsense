@@ -19,6 +19,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import (
+    PLAN_DEFAULT_AI_TIER,
     CYCLE_DAYS,
     DATA_RETENTION_DAYS,
     GRACE_PERIOD_DAYS,
@@ -435,6 +436,8 @@ async def _handle_subscription_update(shop_domain: str, payload: dict, db: Async
             # trialled). If the callback runs afterwards, its replay guard sees
             # the same charge_id already live and does nothing.
             plan_cfg = PLANS.get(derived_tier, {})
+            if derived_tier in PLAN_DEFAULT_AI_TIER:
+                shop.selected_model = PLAN_DEFAULT_AI_TIER[derived_tier]  # AI tier, as the callback sets
             if not shop.trial_used and plan_cfg.get("trial_days", 0) > 0:
                 shop.plan_status = "trial_active"
                 shop.trial_used = True

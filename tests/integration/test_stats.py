@@ -59,8 +59,8 @@ async def test_active_shop_usage_is_sum_within_current_cycle(db_session):
     assert data["usage_pct"] == round(4 / limit * 100, 1)
     assert data["plan_name"] == "Growth"
     assert data["days_remaining"] == 25
-    assert data["selected_model"] == "claude-haiku-4-5"
-    assert data["model_weight"] == 2
+    assert data["ai_tier"] == "fast" and data["ai_tier_label"] == "Fast"
+    assert data["ai_tier_weight"] == 1
 
 
 @pytest.mark.asyncio

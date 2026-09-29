@@ -7,7 +7,6 @@ import {
 import { ImageIcon } from '@shopify/polaris-icons'
 import { shopifyFetch, fetchJson } from '../utils/shopifyFetch'
 import { parseApiError } from '../utils/apiError'
-import { modelLabel } from '../utils/modelLabels'
 
 function money(n) {
   return `$${Number(n).toFixed(2).replace(/\.00$/, '')}`
@@ -149,7 +148,7 @@ export default function PlaygroundPage() {
             {result && result.picks.length > 0 && (
               <>
                 <InlineStack gap="200">
-                  <Tag>{modelLabel(result.model)}</Tag>
+                  <Tag>{`AI: ${result.ai_tier_label}`}</Tag>
                   <Tag>{(result.latency_ms / 1000).toFixed(1)} s</Tag>
                   <Tag>{result.candidates_considered} products considered</Tag>
                   {result.mode === 'small_catalog' && <Tag>Small-catalog mode</Tag>}

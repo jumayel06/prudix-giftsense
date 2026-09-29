@@ -263,3 +263,29 @@ async def test_an_importing_sync_blocks_a_new_export(db_session):
     gql = AsyncMock()
     await cs.start_bulk_sync(db_session, shop, "tok", "reconcile", gql=gql)
     gql.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_new_catalog_model_rereads_gradually_while_old_profiles_keep_serving(db_session, monkeypatch):
+    from app import ai_models
+    shop = await add_shop(db_session)
+    await cs.upsert_products(db_session, shop, [cs.parse_product(node(i)) for i in range(1, 6)])
+    await db_session.commit()
+    await cs.analyze_pending(db_session, shop, FakeEmbedder(), FakeChat())
+
+    # Switch the catalog_analysis slot to another model.
+    monkeypatch.setattr(ai_models, "SLOTS", {**ai_models.SLOTS, "catalog_analysis": {
+        "model": "gpt-6-sol", "next": None, "rollout_pct": 0}})
+    assert await cs.count_pending(db_session, shop.id) == 0      # still searchable
+    assert await cs.count_upgrades(db_session, shop) == 5
+
+    # A new product is analyzed first; then only `upgrade_limit` upgrades per run.
+    await cs.upsert_products(db_session, shop, [cs.parse_product(node(9))])
+    await db_session.commit()
+    chat = FakeChat()
+    assert await cs.analyze_pending(db_session, shop, FakeEmbedder(), chat, upgrade_limit=2) == 3
+    assert chat.calls == 3 and await cs.count_upgrades(db_session, shop) == 3
+    r = (await rows(db_session, shop))["9"]
+    assert r.profile_version.endswith("+gpt-6-sol")
+    log = (await db_session.execute(select(UsageLog).order_by(UsageLog.created_at.desc()))).scalars().first()
+    assert log.model_used == "gpt-6-sol"

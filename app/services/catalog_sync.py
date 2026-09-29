@@ -30,7 +30,8 @@ from app.config import PLANS, TRIAL_MAX_PRODUCTS
 from app.llm import calc_cost, chat
 from app.services.gifting.catalog import CatalogProduct
 from app.services.gifting.embeddings import Embedder
-from app.services.gifting.enrichment import CATALOG_MODEL, PROMPT_VERSION, enrich_product
+from app.ai_models import catalog_model_for
+from app.services.gifting.enrichment import enrich_product, profile_version_for
 from app.services.gifting.profile import GiftProfile, apply_overrides, embedding_text
 from core.db.models import CatalogProductRow, CatalogSync, Shop, UsageLog
 from core.shopify_graphql import numeric_id_from_gid, product_gid, shopify_graphql_post
@@ -42,6 +43,9 @@ IN_PROGRESS = ("running", "importing")  # catalog_syncs.status while a sync isn'
 ANALYZE_CHUNK = 25          # products enriched + embedded per commit (progress bar granularity)
 ENRICH_CONCURRENCY = 5
 STALE_SYNC_AFTER = timedelta(hours=6)
+# Unchanged products re-read per sync after a prompt/model change (nightly
+# reconcile → a 5,000-product catalog moves over in a few nights).
+UPGRADES_PER_RUN = 1000
 
 PRODUCT_FIELDS = """
   id handle title descriptionHtml productType vendor tags status isGiftCard
@@ -173,19 +177,34 @@ async def delete_missing(db: AsyncSession, shop_id: uuid.UUID, keep_ids: set[str
     return len(stale)
 
 
-def _needs_analysis():
+def _content_pending():
+    """New or edited products (or a missing embedding): analyzed first, all of them."""
     return or_(
         CatalogProductRow.profile_hash.is_(None),
         CatalogProductRow.profile_hash != CatalogProductRow.content_hash,
-        CatalogProductRow.profile_version != PROMPT_VERSION,
         CatalogProductRow.embedding.is_(None),
     )
 
 
+def _upgrade_pending(version: str):
+    """Unchanged products whose profile came from an older prompt or model.
+    They keep serving searches with that profile until re-read."""
+    return or_(CatalogProductRow.profile_version.is_(None), CatalogProductRow.profile_version != version)
+
+
 async def count_pending(db: AsyncSession, shop_id: uuid.UUID) -> int:
+    """Products not usable by the gift finder yet (new/edited, not analyzed)."""
     return (await db.execute(
         select(func.count()).select_from(CatalogProductRow)
-        .where(CatalogProductRow.shop_id == shop_id, _needs_analysis())
+        .where(CatalogProductRow.shop_id == shop_id, _content_pending())
+    )).scalar_one()
+
+
+async def count_upgrades(db: AsyncSession, shop: Shop) -> int:
+    version = profile_version_for(catalog_model_for(shop))
+    return (await db.execute(
+        select(func.count()).select_from(CatalogProductRow)
+        .where(CatalogProductRow.shop_id == shop.id, ~_content_pending(), _upgrade_pending(version))
     )).scalar_one()
 
 
@@ -195,29 +214,41 @@ async def analyze_pending(
     embedder: Embedder,
     chat_fn=chat,
     sync: CatalogSync | None = None,
+    upgrade_limit: int = UPGRADES_PER_RUN,
 ) -> int:
-    """Enrich + embed every new or changed product, committing per chunk so the
-    dashboard's progress bar moves. Returns how many were analyzed. Enrichment
-    never raises (fallback profile); an embedding failure leaves the chunk
-    pending for the next run."""
-    done = 0
+    """Enrich + embed new or edited products (all), then re-read up to
+    `upgrade_limit` products whose profile predates the current prompt or
+    catalog_analysis model, so a model switch spreads over several syncs
+    while old profiles keep serving. Commits per chunk so the dashboard's
+    progress bar moves. Returns how many were analyzed. Enrichment never
+    raises (fallback profile); an embedding failure leaves the chunk pending."""
+    model = catalog_model_for(shop)
+    version = profile_version_for(model)
+    done = upgraded = 0
     sem = asyncio.Semaphore(ENRICH_CONCURRENCY)
     failed_ids: set[str] = set()
 
     async def _enrich(row: CatalogProductRow):
-        # A profile for unchanged content only needs its embedding redone.
-        if row.gift_profile and row.profile_hash == row.content_hash and row.profile_version == PROMPT_VERSION:
+        # A current profile for unchanged content only needs its embedding redone.
+        if row.gift_profile and row.profile_hash == row.content_hash and row.profile_version == version:
             return None
         async with sem:
-            return await enrich_product(row_to_product(row), chat_fn=chat_fn)
+            return await enrich_product(row_to_product(row), model=model, chat_fn=chat_fn)
 
     while True:
-        query = (select(CatalogProductRow)
-                 .where(CatalogProductRow.shop_id == shop.id, _needs_analysis())
-                 .order_by(CatalogProductRow.product_id).limit(ANALYZE_CHUNK))
+        base = select(CatalogProductRow).where(CatalogProductRow.shop_id == shop.id)
         if failed_ids:
-            query = query.where(CatalogProductRow.product_id.not_in(failed_ids))
-        rows = list((await db.execute(query)).scalars())
+            base = base.where(CatalogProductRow.product_id.not_in(failed_ids))
+        rows = list((await db.execute(
+            base.where(_content_pending()).order_by(CatalogProductRow.product_id).limit(ANALYZE_CHUNK)
+        )).scalars())
+        is_upgrade = False
+        if not rows and upgraded < upgrade_limit:
+            rows = list((await db.execute(
+                base.where(_upgrade_pending(version)).order_by(CatalogProductRow.product_id)
+                .limit(min(ANALYZE_CHUNK, upgrade_limit - upgraded))
+            )).scalars())
+            is_upgrade = True
         if not rows:
             break
 
@@ -228,7 +259,7 @@ async def analyze_pending(
                 continue
             row.gift_profile = asdict(res.profile)
             row.profile_hash = row.content_hash
-            row.profile_version = PROMPT_VERSION
+            row.profile_version = version
             row.profile_fallback = res.used_fallback
             row.enriched_at = datetime.now(timezone.utc)
             tokens_in += res.input_tokens
@@ -251,10 +282,12 @@ async def analyze_pending(
             # Catalog analysis is our cost, not the merchant's: 0 generations.
             db.add(UsageLog(id=uuid.uuid4(), shop_id=shop.id, action_type="catalog_analysis",
                             generations_consumed=0, tokens_input=tokens_in, tokens_output=tokens_out,
-                            model_used=CATALOG_MODEL, cost_usd=calc_cost(CATALOG_MODEL, tokens_in, tokens_out),
-                            prompt_version=PROMPT_VERSION))
+                            model_used=model, cost_usd=calc_cost(model, tokens_in, tokens_out),
+                            prompt_version=version))
         analyzed = len(rows) if vectors else 0
         done += analyzed
+        if is_upgrade:
+            upgraded += len(rows)
         if sync is not None:
             sync.enriched += analyzed
             sync.failed += len(rows) - analyzed

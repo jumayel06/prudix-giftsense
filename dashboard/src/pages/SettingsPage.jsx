@@ -6,20 +6,12 @@ import {
 } from '@shopify/polaris'
 import { shopifyFetch, fetchJson } from '../utils/shopifyFetch'
 import { parseApiError } from '../utils/apiError'
-import { modelLabel } from '../utils/modelLabels'
 import { showToast } from '../utils/toast'
-
-const MODEL_HINTS = {
-  'gpt-6-luna':       'Fastest, and uses the fewest generations.',
-  'claude-haiku-4-5': 'A solid all-rounder.',
-  'gpt-6-sol':        'The most accurate gift reasons.',
-  'claude-sonnet-5':  'Our strongest model for gift picks and notes.',
-}
 
 export default function SettingsPage() {
   const navigate = useNavigate()
   const [data, setData] = useState(null)
-  const [model, setModel] = useState(null)
+  const [aiTier, setAiTier] = useState(null)
   const [digestOptIn, setDigestOptIn] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -28,7 +20,7 @@ export default function SettingsPage() {
     fetchJson('/api/settings')
       .then(d => {
         setData(d)
-        setModel(d.selected_model)
+        setAiTier(d.ai_tier)
         setDigestOptIn(d.digest_email_opt_in)
       })
       .catch(() => setError('Could not load settings. Please refresh.'))
@@ -41,7 +33,7 @@ export default function SettingsPage() {
       const res = await shopifyFetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ selected_model: model, digest_email_opt_in: digestOptIn }),
+        body: JSON.stringify({ ai_tier: aiTier, digest_email_opt_in: digestOptIn }),
       })
       if (!res.ok) {
         let json = {}
@@ -49,7 +41,7 @@ export default function SettingsPage() {
         setError(parseApiError(json).message)
         return
       }
-      setData(d => ({ ...d, selected_model: model, digest_email_opt_in: digestOptIn }))
+      setData(d => ({ ...d, ai_tier: aiTier, digest_email_opt_in: digestOptIn }))
       showToast('Settings saved')
     } catch {
       setError('Could not save settings. Please try again.')
@@ -67,7 +59,7 @@ export default function SettingsPage() {
   }
 
   const hasWeeklyEmail = data.features.includes('weekly_email')
-  const dirty = model !== data.selected_model || digestOptIn !== data.digest_email_opt_in
+  const dirty = aiTier !== data.ai_tier || digestOptIn !== data.digest_email_opt_in
 
   return (
     <Page
@@ -110,25 +102,28 @@ export default function SettingsPage() {
         </Layout.AnnotatedSection>
 
         <Layout.AnnotatedSection
-          title="AI model"
-          description="Used for gift picks, gift notes and registry suggestions. Stronger models use more of your monthly generations per use."
+          title="AI"
+          description="Used for gift picks, gift notes and registry suggestions. Stronger options use more of your monthly generations per use."
         >
           <Card>
             <BlockStack gap="300">
-              {data.models_available.map(m => (
-                <RadioButton
-                  key={m}
-                  id={`model-${m}`}
-                  name="model"
-                  label={`${modelLabel(m)} · ${data.model_weights[m]} generation${data.model_weights[m] === 1 ? '' : 's'} per use`}
-                  helpText={MODEL_HINTS[m]}
-                  checked={model === m}
-                  onChange={() => setModel(m)}
-                />
-              ))}
+              {data.ai_tiers_available.map(t => {
+                const tier = data.ai_tiers[t]
+                return (
+                  <RadioButton
+                    key={t}
+                    id={`ai-tier-${t}`}
+                    name="ai-tier"
+                    label={`${tier.label} · ${tier.weight} generation${tier.weight === 1 ? '' : 's'} per use`}
+                    helpText={tier.description}
+                    checked={aiTier === t}
+                    onChange={() => setAiTier(t)}
+                  />
+                )
+              })}
               {data.plan_tier !== 'pro' && (
                 <Text as="p" tone="subdued">
-                  More models are available on higher plans.
+                  Stronger AI options are available on higher plans.
                 </Text>
               )}
             </BlockStack>

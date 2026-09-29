@@ -70,7 +70,7 @@ def make_shop(
     billing_cycle_start: datetime | None = None,
     trial_ends_at: datetime | None = None,
     trial_used: bool = False,
-    selected_model: str = "claude-haiku-4-5",
+    selected_model: str = "gpt-6-luna",
     review_prompt_shown: bool = False,
     store_timezone: str = "UTC",
     refresh_token_encrypted: str | None = None,

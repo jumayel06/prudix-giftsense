@@ -66,6 +66,7 @@ class RerankResult:
     used_fallback: bool = False
     input_tokens: int = 0
     output_tokens: int = 0
+    model: str = ""  # model that answered (a fallback if the chosen one was gone)
 
 
 def _money(x: float) -> str:
@@ -225,7 +226,8 @@ async def rerank(
     if raw is None:
         logger.warning("gift_rerank_unparseable", model=model)
         return RerankResult(picks=_templates(intake, candidates, set(), MAX_PICKS), used_fallback=True,
-                            input_tokens=resp.input_tokens, output_tokens=resp.output_tokens)
+                            input_tokens=resp.input_tokens, output_tokens=resp.output_tokens,
+                        model=getattr(resp, "model", "") or model)
 
     for item in raw if isinstance(raw, list) else []:
         if not isinstance(item, dict):
@@ -248,4 +250,5 @@ async def rerank(
     if len(picks) < MIN_PICKS:
         picks += _templates(intake, candidates, {p.product.product_id for p in picks}, MIN_PICKS - len(picks))
     return RerankResult(picks=picks, used_fallback=used_fallback,
-                        input_tokens=resp.input_tokens, output_tokens=resp.output_tokens)
+                        input_tokens=resp.input_tokens, output_tokens=resp.output_tokens,
+                        model=getattr(resp, "model", "") or model)

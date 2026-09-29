@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Page, Spinner, Banner } from '@shopify/polaris'
 import { shopifyFetch, fetchJson } from '../utils/shopifyFetch'
-import { modelLabel } from '../utils/modelLabels'
 
 // Adapted from Prudix Commerce's PlanPickerPage: monthly-only, and every
-// feature row / label / model weight comes from /api/plans (app/config.py),
+// feature row / label / AI tier weight comes from /api/plans (app/config.py),
 // so nothing here can drift from the backend.
 
 const PLAN_ACCENTS = { starter: '#64748b', growth: '#eab308', pro: '#6366f1' }
@@ -157,15 +156,15 @@ function PlanCard({ plan, catalog, recommended, trialUsed, currentTier, planStat
 
         <div style={{ marginBottom: '20px' }}>
           <p style={{ margin: '0 0 6px', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            AI models (generations per use)
+            AI options (generations per use)
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-            {plan.models_available.map(m => (
-              <span key={m} style={{
+            {plan.ai_tiers.map(t => (
+              <span key={t} style={{
                 fontSize: '11px', fontWeight: 600, color: accent, background: `${accent}12`,
                 border: `1px solid ${accent}30`, borderRadius: '6px', padding: '3px 7px',
               }}>
-                {modelLabel(m)} · {catalog.model_weights[m]}
+                {catalog.ai_tiers[t].label} · {catalog.ai_tiers[t].weight}
               </span>
             ))}
           </div>
@@ -296,7 +295,7 @@ export default function PlanPickerPage() {
       </div>
 
       <div style={{ marginTop: '24px', fontSize: '12px', color: '#64748b', lineHeight: 1.6 }}>
-        Each AI gift search, note or registry suggestion uses generations: 1 to 4 depending on the model you pick in Settings.
+        Each AI gift search, note or registry suggestion uses generations: 1 to 4 depending on the AI option you pick in Settings (Fast, Balanced or Premium).
         When a limit is reached, the gift finder and notes keep working in basic mode.
       </div>
     </Page>

@@ -2,56 +2,41 @@
 
 Route code imports `chat` from here; tests patch `app.<module>.chat` and return
 an `LLMResponse`. Never patch `openai` / `anthropic` directly.
+
+Request shaping (output-cap field, temperature, thinking/reasoning off) comes
+from each model's capability flags in app/ai_models.py, so adding a model is a
+registry change. A "model not found" error (the provider retired it before we
+updated the registry) is retried once on the model's replacement or fallback.
 """
 import json
 from dataclasses import dataclass
 
 import anthropic as _anthropic
+import openai as _openai
+import structlog
 from openai import AsyncOpenAI
 
+from app.ai_models import MODELS, price_per_token
 from core.config import settings
+
+logger = structlog.get_logger()
 
 _openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
 _anthropic_client = _anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
-# USD per token (list prices per million / 1e6).
-MODEL_COSTS = {
-    "gpt-4o-mini":      {"input": 0.00000015, "output": 0.00000060},
-    "claude-haiku-4-5": {"input": 0.000001,   "output": 0.000005},
-    "gpt-4.1":          {"input": 0.000002,   "output": 0.000008},
-    "claude-sonnet-5":  {"input": 0.000002,   "output": 0.000010},
-    "claude-sonnet-5-5": {"input": 0.000002,  "output": 0.000010},
-    # GPT-6 (2026) replaced gpt-4o-mini / gpt-4.1 in the plans; the old
-    # prices stay for costing historical usage logs and evals.
-    "gpt-6-luna":       {"input": 0.0000001,  "output": 0.0000005},
-    "gpt-6-sol":        {"input": 0.000002,   "output": 0.000010},
-}
+# USD per token, derived from the registry (kept for callers that read it).
+MODEL_COSTS = {m: dict(zip(("input", "output"), price_per_token(m))) for m in MODELS}
 
-# OpenAI reasoning models: they reason by default (billed as output, slower),
-# take `max_completion_tokens` instead of `max_tokens`, and accept temperature
-# only with reasoning_effort "none". We run them with "none" unless a caller
-# opts into thinking.
-_OPENAI_REASONING_PREFIXES = ("gpt-6",)
-
-# Claude models that reject sampling parameters (temperature/top_p/top_k)
-# with a 400. Sonnet 5 is one of them; Haiku 4.5 still accepts temperature.
-_NO_SAMPLING_PARAMS = {"claude-sonnet-5", "claude-sonnet-5-5"}
-
-# Claude models that think adaptively when `thinking` is omitted, and the
-# setting that turns it off. Hidden thinking is billed as output and adds
-# seconds of latency (measured in the 2026-09-28 eval: Sonnet 5 rerank 7.3s
-# p95), so our short structured calls (gift picks, notes, profiles) turn it
-# off unless a caller opts in. Sonnet 5.5 rejects "disabled" (400); its lowest
-# setting is "between_tools", which without tools means no thinking.
-_THINKING_OFF = {
-    "claude-sonnet-5":   {"type": "disabled"},
-    "claude-sonnet-5-5": {"type": "between_tools"},
-}
+# Capabilities for a model missing from the registry (shouldn't happen in app
+# code; keeps ad-hoc calls working).
+_DEFAULT_CAPS = {"max_tokens_param": "max_tokens", "temperature": "always", "thinking_off": {}, "thinking_on": {}}
 
 # Per-request timeout (seconds). The SDK defaults (10 minutes, retried) let one
 # stalled request freeze a caller; seen in the 2026-09-28 eval. Shopper-facing
 # callers pass much shorter values (gift search: rerank.RERANK_TIMEOUT_SECS).
 DEFAULT_TIMEOUT_SECS = 60.0
+
+_MODEL_GONE = (_anthropic.NotFoundError, _openai.NotFoundError)
 
 
 @dataclass
@@ -59,12 +44,23 @@ class LLMResponse:
     text: str
     input_tokens: int
     output_tokens: int
+    model: str = ""  # the model that actually answered (may be a fallback)
 
 
 def calc_cost(model: str, input_tokens: int, output_tokens: int) -> float:
-    # Unknown model: cost it like Sonnet 5 (our priciest) so it's never understated.
-    c = MODEL_COSTS.get(model, MODEL_COSTS["claude-sonnet-5"])
-    return round(input_tokens * c["input"] + output_tokens * c["output"], 8)
+    cin, cout = price_per_token(model)
+    return round(input_tokens * cin + output_tokens * cout, 8)
+
+
+def _caps(model: str) -> dict:
+    return (MODELS.get(model) or {}).get("caps", _DEFAULT_CAPS)
+
+
+def _provider(model: str) -> str:
+    spec = MODELS.get(model)
+    if spec:
+        return spec["provider"]
+    return "anthropic" if model.startswith("claude-") else "openai"
 
 
 async def chat(
@@ -77,27 +73,33 @@ async def chat(
     thinking: bool = False,
     timeout: float = DEFAULT_TIMEOUT_SECS,
 ) -> LLMResponse:
-    """`thinking=True` lets models that support it think adaptively (slower,
-    costlier, sometimes better); default off for our short structured tasks."""
-    if model.startswith("claude-"):
-        return await _claude_chat(model, system, prompt, max_tokens, temperature, json_mode, thinking, timeout)
-    return await _openai_chat(model, system, prompt, max_tokens, temperature, json_mode, timeout, thinking)
+    """`thinking=True` lets models that support it think (slower, costlier,
+    sometimes better); off by default for our short structured tasks."""
+    try:
+        return await _call(model, system, prompt, max_tokens, temperature, json_mode, thinking, timeout)
+    except _MODEL_GONE as e:
+        spec = MODELS.get(model) or {}
+        backup = spec.get("replacement") or spec.get("fallback")
+        if not backup:
+            raise
+        logger.error("llm_model_gone_fallback", model=model, fallback=backup, error=str(e)[:200])
+        return await _call(backup, system, prompt, max_tokens, temperature, json_mode, thinking, timeout)
 
 
-async def _openai_chat(model, system, prompt, max_tokens, temperature, json_mode,
-                       timeout=DEFAULT_TIMEOUT_SECS, thinking=False) -> LLMResponse:
-    kwargs = {}
+async def _call(model, system, prompt, max_tokens, temperature, json_mode, thinking, timeout) -> LLMResponse:
+    caps = _caps(model)
+    extra = dict(caps["thinking_on"] if thinking else caps["thinking_off"])
+    extra[caps["max_tokens_param"]] = max_tokens
+    if caps["temperature"] == "always" or (caps["temperature"] == "thinking_off" and not thinking):
+        extra["temperature"] = temperature
+    if _provider(model) == "anthropic":
+        return await _claude_chat(model, system, prompt, json_mode, timeout, extra)
+    return await _openai_chat(model, system, prompt, json_mode, timeout, extra)
+
+
+async def _openai_chat(model, system, prompt, json_mode, timeout, extra) -> LLMResponse:
     if json_mode:
-        kwargs["response_format"] = {"type": "json_object"}
-    if model.startswith(_OPENAI_REASONING_PREFIXES):
-        kwargs["max_completion_tokens"] = max_tokens
-        kwargs["reasoning_effort"] = "medium" if thinking else "none"
-        if not thinking:
-            kwargs["temperature"] = temperature
-    else:
-        kwargs["max_tokens"] = max_tokens
-        kwargs["temperature"] = temperature
-
+        extra["response_format"] = {"type": "json_object"}
     response = await _openai_client.chat.completions.create(
         model=model,
         messages=[
@@ -105,7 +107,7 @@ async def _openai_chat(model, system, prompt, max_tokens, temperature, json_mode
             {"role": "user",   "content": prompt},
         ],
         timeout=timeout,
-        **kwargs,
+        **extra,
     )
     usage = response.usage
     text = response.choices[0].message.content or ""
@@ -113,6 +115,7 @@ async def _openai_chat(model, system, prompt, max_tokens, temperature, json_mode
         text=extract_json(text) if json_mode else text,
         input_tokens=usage.prompt_tokens if usage else 0,
         output_tokens=usage.completion_tokens if usage else 0,
+        model=model,
     )
 
 
@@ -146,25 +149,17 @@ def _strip_markdown_fences(text: str) -> str:
     return text.strip()
 
 
-async def _claude_chat(model, system, prompt, max_tokens, temperature, json_mode, thinking=False,
-                       timeout=DEFAULT_TIMEOUT_SECS) -> LLMResponse:
+async def _claude_chat(model, system, prompt, json_mode, timeout, extra) -> LLMResponse:
     full_system = system
     if json_mode:
         full_system = system + "\n\nRespond with valid JSON only. Do not include markdown, code fences, or any text outside the JSON object."
-
-    kwargs = {}
-    if model not in _NO_SAMPLING_PARAMS:
-        kwargs["temperature"] = temperature
-    if model in _THINKING_OFF and not thinking:
-        kwargs["thinking"] = _THINKING_OFF[model]
 
     response = await _anthropic_client.messages.create(
         model=model,
         system=full_system,
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=max_tokens,
         timeout=timeout,
-        **kwargs,
+        **extra,
     )
     usage = response.usage
     # Skip non-text blocks (e.g. thinking) and join the text ones.
@@ -178,4 +173,5 @@ async def _claude_chat(model, system, prompt, max_tokens, temperature, json_mode
         text=text,
         input_tokens=usage.input_tokens if usage else 0,
         output_tokens=usage.output_tokens if usage else 0,
+        model=model,
     )

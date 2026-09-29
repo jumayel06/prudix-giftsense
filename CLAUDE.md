@@ -18,7 +18,8 @@ Auto-loaded by Claude Code at the start of every session. Keep this short — it
 ## Project shape
 
 - **`app/`** — FastAPI backend
-  - `app/config.py` — **single source of truth** for `PLANS`, `MODEL_WEIGHTS`, `PLAN_DEFAULT_MODELS`, trial limits. Monthly billing only.
+  - `app/config.py` — **single source of truth** for `PLANS` (incl. `ai_tiers`), `PLAN_DEFAULT_AI_TIER`, trial limits. Monthly billing only.
+  - `app/ai_models.py` — **the only place model IDs live**: `MODELS` registry, `SLOTS` (+ gradual `rollout_pct`), `AI_TIERS` (Fast/Balanced/Premium — merchants never see model names), `resolve_model`. Swap/retire a model here only (docstring has the procedure).
   - `app/plan_guard.py` — `require_feature`, `require_generation`, trial caps, daily cost cap
   - `app/llm.py` — single source for LLM calls; returns `LLMResponse`
   - `app/routes/` — `auth`, `billing`, `webhooks`, `settings` (more per feature)

@@ -26,6 +26,7 @@ class Recommendation:
     candidates_considered: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
+    model: str = ""
 
 
 async def recommend(
@@ -61,4 +62,5 @@ async def recommend(
         picks=result.picks, mode=mode, used_fallback=result.used_fallback,
         candidates_considered=len(candidates),
         input_tokens=result.input_tokens, output_tokens=result.output_tokens,
+        model=result.model or model,
     )

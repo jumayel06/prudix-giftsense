@@ -20,7 +20,14 @@
     "general-0138": false,
     "general-0304": true,
     "general-0316": false,
-    "general-0323": false
+    "general-0323": false,
+    "general-0128": true,
+    "general-0235": false,
+    "general-0238": true,
+    "general-0250": false,
+    "general-0272": true,
+    "general-0274": false,
+    "general-0275": false
   },
   "gn02": {
     "general-0021": false,
@@ -40,7 +47,9 @@
     "general-0303": false,
     "general-0035": false,
     "general-0122": false,
-    "general-0183": false
+    "general-0183": false,
+    "general-0251": false,
+    "general-0276": false
   },
   "gn03": {
     "general-0017": true,
@@ -57,7 +66,17 @@
     "general-0254": true,
     "general-0328": true,
     "general-0363": true,
-    "general-0372": false
+    "general-0372": false,
+    "general-0020": false,
+    "general-0026": false,
+    "general-0132": false,
+    "general-0133": false,
+    "general-0143": false,
+    "general-0221": false,
+    "general-0250": false,
+    "general-0311": false,
+    "general-0385": false,
+    "general-0398": true
   },
   "gn04": {
     "general-0009": true,
@@ -81,7 +100,12 @@
     "general-0285": false,
     "general-0316": false,
     "general-0356": false,
-    "general-0386": false
+    "general-0386": false,
+    "general-0080": false,
+    "general-0091": false,
+    "general-0250": false,
+    "general-0274": true,
+    "general-0275": true
   },
   "gn05": {
     "general-0019": false,
@@ -109,7 +133,14 @@
     "general-0270": false,
     "general-0304": true,
     "general-0324": true,
-    "general-0341": true
+    "general-0341": true,
+    "general-0077": false,
+    "general-0128": true,
+    "general-0147": false,
+    "general-0240": true,
+    "general-0250": false,
+    "general-0333": true,
+    "general-0367": false
   },
   "gn06": {
     "general-0005": false,
@@ -138,7 +169,14 @@
     "general-0220": false,
     "general-0246": false,
     "general-0281": false,
-    "general-0282": false
+    "general-0282": false,
+    "general-0025": false,
+    "general-0194": false,
+    "general-0218": false,
+    "general-0230": false,
+    "general-0276": false,
+    "general-0340": false,
+    "general-0369": false
   },
   "gn07": {
     "general-0005": false,
@@ -163,7 +201,13 @@
     "general-0115": false,
     "general-0199": true,
     "general-0281": false,
-    "general-0382": true
+    "general-0382": true,
+    "general-0031": false,
+    "general-0073": false,
+    "general-0182": false,
+    "general-0218": false,
+    "general-0282": false,
+    "general-0336": false
   },
   "gn08": {
     "general-0016": false,
@@ -180,7 +224,16 @@
     "general-0297": false,
     "general-0326": false,
     "general-0337": false,
-    "general-0367": false
+    "general-0367": false,
+    "general-0014": false,
+    "general-0066": false,
+    "general-0121": false,
+    "general-0182": true,
+    "general-0233": false,
+    "general-0244": false,
+    "general-0275": false,
+    "general-0335": false,
+    "general-0356": false
   },
   "gn09": {
     "general-0010": false,
@@ -205,7 +258,19 @@
     "general-0190": false,
     "general-0203": false,
     "general-0259": false,
-    "general-0353": true
+    "general-0353": true,
+    "general-0016": false,
+    "general-0128": true,
+    "general-0208": true,
+    "general-0224": false,
+    "general-0240": true,
+    "general-0244": false,
+    "general-0250": false,
+    "general-0262": true,
+    "general-0301": false,
+    "general-0323": true,
+    "general-0332": true,
+    "general-0350": false
   },
   "gn10": {
     "general-0086": true,
@@ -224,6 +289,12 @@
     "general-0378": true,
     "general-0387": true,
     "general-0035": true,
-    "general-0122": true
+    "general-0122": true,
+    "general-0015": false,
+    "general-0025": false,
+    "general-0036": false,
+    "general-0194": false,
+    "general-0218": false,
+    "general-0327": false
   }
 }

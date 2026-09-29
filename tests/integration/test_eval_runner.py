@@ -73,10 +73,12 @@ async def test_full_run_offline_then_rerun_uses_caches(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_run_stops_at_the_spending_cap_and_keeps_finished_work(tmp_path):
+async def test_run_stops_at_the_spending_cap_and_keeps_finished_work(tmp_path, monkeypatch):
     """A stop mid-catalog saves nothing (a partial catalog would later look
     complete); a stop mid-profiles keeps the profiles already written."""
     from evals.ledger import BudgetExceeded
+    # Price profiles like Sonnet 5 (~20× Luna) so the cap lands mid-profiles.
+    monkeypatch.setattr("evals.runner.resolve_model", lambda slot: "claude-sonnet-5")
     model = FakeModel()
     run = EvalRun(["candles"], ["claude-haiku-4-5"], Ledger(cap_usd=0.07), FakeEmbedder(), chat_fn=model,
                   data_dir=tmp_path / "data", results_dir=tmp_path / "results", concurrency=1, log=lambda *_: None)
@@ -91,7 +93,7 @@ async def test_run_stops_at_the_spending_cap_and_keeps_finished_work(tmp_path):
 @pytest.mark.asyncio
 async def test_stop_during_catalog_generation_saves_no_partial_catalog(tmp_path):
     from evals.ledger import BudgetExceeded
-    run = EvalRun(["candles"], ["claude-haiku-4-5"], Ledger(cap_usd=0.04), FakeEmbedder(), chat_fn=FakeModel(),
+    run = EvalRun(["candles"], ["claude-haiku-4-5"], Ledger(cap_usd=0.017), FakeEmbedder(), chat_fn=FakeModel(),
                   data_dir=tmp_path / "data", results_dir=tmp_path / "results", log=lambda *_: None)
     with pytest.raises(BudgetExceeded):
         await run.run(PERSONAS)

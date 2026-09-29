@@ -145,3 +145,26 @@ async def test_sonnet55_thinking_opt_in_is_adaptive():
 
 def test_sonnet55_price():
     assert llm.calc_cost("claude-sonnet-5-5", 1_000_000, 1_000_000) == pytest.approx(12.0)
+
+
+@pytest.mark.asyncio
+async def test_model_gone_retries_once_on_its_fallback():
+    # A provider retired the model before we updated app/ai_models.py.
+    import anthropic
+    gone = anthropic.NotFoundError("model not found", response=SimpleNamespace(status_code=404, headers={},
+                                   request=None), body=None)
+    create = AsyncMock(side_effect=gone)
+    oa = _openai_mock('{"ok": 1}')
+    with patch.object(llm._anthropic_client.messages, "create", create), \
+         patch.object(llm._openai_client.chat.completions, "create", oa):
+        resp = await llm.chat("claude-sonnet-5", "sys", "hi", json_mode=True)
+    assert resp.model == "gpt-6-sol" and resp.text == '{"ok": 1}'   # Sonnet 5's fallback
+    assert oa.await_args.kwargs["model"] == "gpt-6-sol"
+
+
+@pytest.mark.asyncio
+async def test_response_records_the_model_that_answered():
+    create = AsyncMock(return_value=_anthropic_resp("hi"))
+    with patch.object(llm._anthropic_client.messages, "create", create):
+        resp = await llm.chat("claude-sonnet-5", "sys", "hi")
+    assert resp.model == "claude-sonnet-5"

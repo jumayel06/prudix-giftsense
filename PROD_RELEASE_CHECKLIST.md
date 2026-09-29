@@ -41,7 +41,8 @@ Everything that must be flipped, set, rotated or verified before GiftSense goes 
 - [ ] Railway worker: confirm `kick_catalog_syncs` (every 5 min) and `reconcile_catalogs` (02:30 UTC) are running; worker needs `OPENAI_API_KEY` for embeddings
 - [ ] Run `alembic upgrade head` on prod (adds `catalog_products` + `catalog_syncs`, needs `vector` extension in `extensions` schema)
 
-- [ ] Prod `OPENAI_API_KEY` has access to `gpt-6-luna` and `gpt-6-sol` (plan defaults for Starter/Growth); run migration 20260928000002
+- [ ] Prod `OPENAI_API_KEY` has access to `gpt-6-luna` and `gpt-6-sol` (Fast/Balanced + catalog analysis); prod `ANTHROPIC_API_KEY` for Sonnet 5 (Premium) and the eval judge; run migrations through 20260928000003 (AI tiers)
+- [ ] App Store listing copy says AI tiers (Fast / Balanced / Premium), never model names, so model swaps never need a listing edit
 
 ## 🚀 Launch day
 - [ ] Install the **prod** app (Partner Dashboard → GiftSense → select store), not a `shopify app dev` session. Confirm `shop_provisioned_via_token_exchange` in logs, a `pending` row, and the plan picker.

@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.services.gifting.enrichment import PROMPT_VERSION as ENRICH_VERSION
 from core.db.models import CatalogProductRow, CatalogSync
 from core.db.session import get_db
 from tests.conftest import TEST_SHOP_DOMAIN, make_shop
@@ -26,7 +27,7 @@ def product(shop, pid, *, analyzed=True, title=None, **kw):
     return CatalogProductRow(
         id=uuid.uuid4(), shop_id=shop.id, product_id=pid, title=title or f"Throw {pid}",
         price_min=30, price_max=30, content_hash="h",
-        profile_hash="h" if analyzed else None, profile_version="enrich-v1" if analyzed else None,
+        profile_hash="h" if analyzed else None, profile_version=ENRICH_VERSION if analyzed else None,
         gift_profile={"giftable": 0.9, "recipients": ["friend"], "occasions": ["birthday"], "vibes": ["cozy"],
                       "interests": [], "age_band": "adult", "gift_pitch": "A soft throw.", "facts": []}
         if analyzed else None,

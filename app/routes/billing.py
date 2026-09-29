@@ -14,12 +14,12 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai_models import AI_TIERS, ai_tier_for
 from app.config import (
     CYCLE_DAYS,
     FEATURE_CATEGORIES,
     FEATURE_LABELS,
-    MODEL_WEIGHTS,
-    PLAN_DEFAULT_MODELS,
+    PLAN_DEFAULT_AI_TIER,
     PLANS,
     derive_tier_from_subscription_name,
     subscription_name,
@@ -124,7 +124,7 @@ async def list_plans():
                 "generation_limit": p["generation_limit"],
                 "trial_days": p["trial_days"],
                 "trial_generations": p["trial_generations"],
-                "models_available": p["models_available"],
+                "ai_tiers": p["ai_tiers"],
                 "features": p.get("features", []),
                 "max_products": p["max_products"],
                 "media_messages_per_month": p["media_messages_per_month"],
@@ -135,7 +135,8 @@ async def list_plans():
         # Display catalog for the dashboard, so it never hardcodes these.
         "feature_labels": FEATURE_LABELS,
         "feature_categories": FEATURE_CATEGORIES,
-        "model_weights": MODEL_WEIGHTS,
+        "ai_tiers": {t: {"label": s["label"], "description": s["description"], "weight": s["weight"]}
+                     for t, s in AI_TIERS.items()},
     }
 
 
@@ -367,10 +368,12 @@ async def billing_callback(
             shop_record.plan_tier = plan
             event_type = "activated"
 
-        # Model: on a first activation (or a model the new plan doesn't allow)
-        # use the plan default. On a plan change, keep the merchant's choice.
-        if previous_tier not in PLANS or shop_record.selected_model not in plan_cfg["models_available"]:
-            shop_record.selected_model = PLAN_DEFAULT_MODELS[plan]
+        # AI tier: on a first activation use the plan default. On a plan
+        # change keep the merchant's choice if the new plan includes it.
+        if previous_tier not in PLANS:
+            shop_record.selected_model = PLAN_DEFAULT_AI_TIER[plan]
+        else:
+            shop_record.selected_model = ai_tier_for(plan, shop_record.selected_model)
 
         db.add(BillingEvent(
             id=uuid.uuid4(),

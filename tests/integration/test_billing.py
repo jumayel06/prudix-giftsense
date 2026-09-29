@@ -308,7 +308,7 @@ class TestListPlans:
         assert growth["price_usd"] == PLANS["growth"]["price_usd"]
         assert growth["generation_limit"] == PLANS["growth"]["generation_limit"]
         assert growth["trial_days"] == 7
-        assert "gpt-6-sol" in growth["models_available"]
+        assert "balanced" in growth["ai_tiers"]
 
     def test_starter_plan_fields(self, db_session):
         for client in _make_client(db_session):
@@ -316,7 +316,7 @@ class TestListPlans:
         starter = next(p for p in resp.json()["plans"] if p["tier"] == "starter")
         assert starter["price_usd"] > 0
         assert starter["generation_limit"] > 0
-        assert "gpt-4o" not in starter["models_available"]  # starter can't use gpt-4o
+        assert starter["ai_tiers"] == ["fast"]
         assert starter["price_usd"] < 30  # starter must be cheapest tier
 
     def test_pro_plan_fields(self, db_session):
@@ -325,7 +325,7 @@ class TestListPlans:
         pro = next(p for p in resp.json()["plans"] if p["tier"] == "pro")
         assert pro["price_usd"] > 0
         assert pro["generation_limit"] > 500   # pro has more than growth
-        assert "gpt-6-sol" in pro["models_available"]
+        assert "premium" in pro["ai_tiers"]
 
 
 # ── /api/billing/create-charge — success path ─────────────────────────────────
@@ -973,12 +973,14 @@ class TestPlansCatalogForDashboard:
     MODEL_WEIGHTS/PLAN_FEATURES in the frontend and they drifted)."""
 
     def test_plans_response_includes_display_catalog(self, db_session):
-        from app.config import FEATURE_CATEGORIES, FEATURE_LABELS, MODEL_WEIGHTS
+        from app.ai_models import AI_TIERS
+        from app.config import FEATURE_CATEGORIES, FEATURE_LABELS
         for client in _make_client(db_session):
             data = client.get("/api/plans").json()
         assert data["feature_labels"] == FEATURE_LABELS
         assert data["feature_categories"] == FEATURE_CATEGORIES
-        assert data["model_weights"] == MODEL_WEIGHTS
+        assert {t: v["weight"] for t, v in data["ai_tiers"].items()} == {t: v["weight"] for t, v in AI_TIERS.items()}
+        assert "gpt" not in str(data).lower() and "claude" not in str(data).lower()
         growth = next(p for p in data["plans"] if p["tier"] == "growth")
         assert "arrive_by" in growth["features"]
         assert growth["max_products"] == PLANS["growth"]["max_products"]

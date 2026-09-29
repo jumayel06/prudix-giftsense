@@ -19,8 +19,13 @@ from app.services.gifting.profile import GiftProfile, fallback_profile, parse_pr
 
 logger = structlog.get_logger()
 
-CATALOG_MODEL = "claude-haiku-4-5"
-PROMPT_VERSION = "enrich-v1"
+# Stored on each product as f"{PROMPT_VERSION}+{model}" (profile_version_for),
+# so a prompt change or a new catalog_analysis model makes profiles re-read.
+PROMPT_VERSION = "enrich-v2"
+
+
+def profile_version_for(model: str) -> str:
+    return f"{PROMPT_VERSION}+{model}"
 
 ChatFn = Callable[..., Awaitable[LLMResponse]]
 
@@ -53,7 +58,7 @@ class EnrichmentResult:
 
 async def enrich_product(
     product: CatalogProduct,
-    model: str = CATALOG_MODEL,
+    model: str,
     chat_fn: ChatFn = chat,
 ) -> EnrichmentResult:
     """Build a validated gift profile for one product. Never raises: on an LLM

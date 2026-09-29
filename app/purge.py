@@ -51,7 +51,7 @@ async def purge_shop_data(shop_id: uuid.UUID, db: AsyncSession) -> None:
         shop.shop_owner_email = None
         shop.plan_tier = "none"
         shop.plan_status = "purged"
-        shop.selected_model = "claude-haiku-4-5"
+        shop.selected_model = "fast"  # AI tier
         shop.review_prompt_shown = False
 
     await db.commit()

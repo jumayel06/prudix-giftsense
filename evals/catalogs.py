@@ -16,9 +16,9 @@ from evals.ledger import Ledger
 
 ChatFn = Callable[..., Awaitable[LLMResponse]]
 
-GENERATOR_MODEL = "claude-haiku-4-5"
+GENERATOR_MODEL = "gpt-6-luna"  # was Haiku 4.5 until it was retired (2026-09-28)
 # Small chunks keep each request short: long generations dropped connections
-# (2026-09-28). ~10 products × ~250 output tokens on Haiku, with margin.
+# (2026-09-28). ~10 products × ~250 output tokens, with margin (Haiku-sized).
 CHUNK = 10
 EST_COST_PER_CHUNK = 0.016
 RETRIES = 3

@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom'
 import { Page, Layout, Card, BlockStack, InlineStack, Text, ProgressBar, Button, Banner, Badge } from '@shopify/polaris'
-import { modelLabel } from '../utils/modelLabels'
 
 // Home for the week-1 shell: plan + usage. The onboarding checklist (enable
 // the widget, catalog analysis, wrap setup) arrives with the gift finder.
@@ -24,7 +23,7 @@ function UsageCard({ stats }) {
         <ProgressBar progress={pct} tone={tone} size="small" />
         <Text as="p" tone="subdued">
           {used.toLocaleString()} of {limit.toLocaleString()} used{isTrial ? ' in your trial' : ' this month'}
-          {' · '}model: {modelLabel(stats.selected_model)} ({stats.model_weight} per use)
+          {' · '}AI: {stats.ai_tier_label} ({stats.ai_tier_weight} per use)
         </Text>
       </BlockStack>
     </Card>

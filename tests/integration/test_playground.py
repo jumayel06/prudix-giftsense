@@ -19,6 +19,7 @@ from app.services.gifting.profile import embedding_text
 from app.services.gifting.retrieval import Intake
 from app.services.catalog_sync import row_to_product
 from app.services.gifting.profile import GiftProfile
+from app.services.gifting.enrichment import PROMPT_VERSION as ENRICH_VERSION
 from core.db.models import CatalogProductRow, UsageLog
 from core.db.session import get_db
 from tests.conftest import TEST_SHOP_DOMAIN, make_shop
@@ -33,7 +34,7 @@ def row(shop, pid, *, title=None, price=30, analyzed=True, **kw):
             "facts": ["soy wax"]}
     r = CatalogProductRow(id=uuid.uuid4(), shop_id=shop.id, product_id=pid, title=title or f"Candle {pid}",
                           price_min=price, price_max=price, content_hash="h", profile_hash="h",
-                          profile_version="enrich-v1", gift_profile=prof if analyzed else None, **kw)
+                          profile_version=ENRICH_VERSION, gift_profile=prof if analyzed else None, **kw)
     if analyzed:
         r.embedding = EMB.embed_sync(embedding_text(row_to_product(r), GiftProfile(**prof)))
     return r
@@ -137,7 +138,7 @@ async def test_options_lists_the_intake_vocabulary(db_session):
 
 @pytest.mark.asyncio
 async def test_playground_returns_picks_and_logs_cost_without_generations(db_session, fake_models):
-    shop = make_shop(selected_model="claude-haiku-4-5")
+    shop = make_shop(selected_model="balanced")
     db_session.add(shop)
     await db_session.flush()
     db_session.add_all([row(shop, str(i)) for i in range(4)])
@@ -146,7 +147,7 @@ async def test_playground_returns_picks_and_logs_cost_without_generations(db_ses
     resp = call(db_session, "POST", "/api/catalog/playground", json={**BRIEF, "free_text": "loves reading"})
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data["picks"]) == 3 and data["model"] == "claude-haiku-4-5"
+    assert len(data["picks"]) == 3 and data["ai_tier"] == "balanced" and data["ai_tier_label"] == "Balanced"
     pick = data["picks"][0]
     assert pick["title"].startswith("Candle") and pick["reason"] and pick["source"] == "ai"
     assert pick["price_min"] == 30.0
@@ -180,7 +181,7 @@ async def test_playground_daily_cap(db_session, fake_models):
     db_session.add(shop)
     await db_session.flush()
     db_session.add_all([UsageLog(id=uuid.uuid4(), shop_id=shop.id, action_type="playground",
-                                 generations_consumed=0, model_used="claude-haiku-4-5")
+                                 generations_consumed=0, model_used="gpt-6-luna")
                         for _ in range(PLAYGROUND_DAILY_LIMIT)])
     await db_session.commit()
     resp = call(db_session, "POST", "/api/catalog/playground", json=BRIEF)
@@ -201,4 +202,4 @@ async def test_playground_uses_plan_default_when_selected_model_not_allowed(db_s
     await db_session.flush()
     db_session.add(row(shop, "1"))
     await db_session.commit()
-    assert call(db_session, "POST", "/api/catalog/playground", json=BRIEF).json()["model"] == "gpt-6-luna"
+    assert call(db_session, "POST", "/api/catalog/playground", json=BRIEF).json()["ai_tier"] == "fast"

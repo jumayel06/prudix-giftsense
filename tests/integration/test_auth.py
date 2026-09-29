@@ -162,7 +162,7 @@ class TestAuthCallback:
         assert s.data_purge_at is None
 
         # Defaults
-        assert s.selected_model == "claude-haiku-4-5"
+        assert s.selected_model == "fast"
         assert s.review_prompt_shown is False
 
     @pytest.mark.asyncio

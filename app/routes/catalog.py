@@ -19,7 +19,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
-from app.config import effective_model
+from app.ai_models import AI_TIERS, ai_tier_for, model_for_shop
 from app.jobs import enqueue
 from app.llm import calc_cost, chat
 from app.services import catalog_index
@@ -176,10 +176,6 @@ class PlaygroundBrief(BaseModel):
         return v
 
 
-def _model_for(shop: Shop) -> str:
-    return effective_model(shop.plan_tier, shop.selected_model)
-
-
 @router.post("/api/catalog/playground")
 async def playground_search(
     brief: PlaygroundBrief,
@@ -196,14 +192,14 @@ async def playground_search(
     if used_today >= PLAYGROUND_DAILY_LIMIT:
         raise HTTPException(429, f"You've run {PLAYGROUND_DAILY_LIMIT} test searches today. Try again tomorrow.")
 
-    model = _model_for(shop)
+    model = model_for_shop(shop)
     intake = Intake(**brief.model_dump())
     rec, latency_ms = await catalog_index.recommend_for_shop(db, shop.id, intake, OpenAIEmbedder(), model, chat_fn=chat)
 
     if rec.input_tokens or rec.output_tokens:
         db.add(UsageLog(id=uuid.uuid4(), shop_id=shop.id, action_type="playground", generations_consumed=0,
-                        tokens_input=rec.input_tokens, tokens_output=rec.output_tokens, model_used=model,
-                        cost_usd=calc_cost(model, rec.input_tokens, rec.output_tokens),
+                        tokens_input=rec.input_tokens, tokens_output=rec.output_tokens, model_used=rec.model or model,
+                        cost_usd=calc_cost(rec.model or model, rec.input_tokens, rec.output_tokens),
                         prompt_version=RERANK_PROMPT_VERSION, duration_ms=latency_ms))
         await db.commit()
 
@@ -213,7 +209,9 @@ async def playground_search(
             "url": p.product.url, "price_min": p.product.price_min, "price_max": p.product.price_max,
             "reason": p.reason, "source": p.source,
         } for p in rec.picks],
-        "model": model, "mode": rec.mode, "latency_ms": latency_ms, "used_fallback": rec.used_fallback,
+        # Merchants see the AI tier, never the model behind it.
+        "ai_tier": (tier := ai_tier_for(shop.plan_tier, shop.selected_model)),
+        "ai_tier_label": AI_TIERS[tier]["label"], "mode": rec.mode, "latency_ms": latency_ms, "used_fallback": rec.used_fallback,
         "candidates_considered": rec.candidates_considered,
     }
 

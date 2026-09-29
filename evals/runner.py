@@ -26,7 +26,8 @@ from pathlib import Path
 from app.llm import chat
 from app.services.gifting.catalog import CatalogProduct
 from app.services.gifting.embeddings import Embedder
-from app.services.gifting.enrichment import CATALOG_MODEL, PROMPT_VERSION, enrich_product
+from app.ai_models import resolve_model
+from app.services.gifting.enrichment import enrich_product, profile_version_for
 from app.services.gifting.pipeline import recommend
 from app.services.gifting.profile import GiftProfile, embedding_text, strip_html
 from app.services.gifting.retrieval import IndexedProduct, Intake, in_budget, query_text, retrieve
@@ -39,7 +40,7 @@ DATA = ROOT / "data"
 RESULTS = ROOT / "results"
 
 JUDGE_MODEL = "claude-sonnet-5"
-EST_ENRICH_USD = 0.004
+EST_ENRICH_USD = 0.001  # GPT-6 Luna ≈ $0.0003/product; kept conservative
 EST_SEARCH_USD = {"gpt-4o-mini": 0.001, "claude-haiku-4-5": 0.008, "gpt-4.1": 0.012, "claude-sonnet-5": 0.02,
                   "gpt-6-luna": 0.001, "gpt-6-sol": 0.012, "claude-sonnet-5-5": 0.02}
 EST_JUDGE_USD = 0.03
@@ -99,10 +100,12 @@ class EvalRun:
     async def profiles(self, store: str, products: list[dict]) -> dict[str, dict]:
         path = self.data / "profiles" / f"{store}.json"
         cache = _read(path, {})
+        model = resolve_model("catalog_analysis")
+        version = profile_version_for(model)
         # Redo stale-version and fallback profiles (a fallback usually means a
         # transient API error, which would silently lower eval quality).
         todo = [p for p in products
-                if cache.get(p["product_id"], {}).get("_version") != PROMPT_VERSION
+                if cache.get(p["product_id"], {}).get("_version") != version
                 or cache.get(p["product_id"], {}).get("_fallback")]
         if todo:
             self.log(f"[{store}] writing gift profiles for {len(todo)} products…")
@@ -110,9 +113,9 @@ class EvalRun:
         async def one(p):
             async with self.sem:
                 self.ledger.check(EST_ENRICH_USD)
-                r = await enrich_product(_product(p), chat_fn=self.chat_fn)
-                self.ledger.charge("profiles", CATALOG_MODEL, r.input_tokens, r.output_tokens)
-                cache[p["product_id"]] = {**asdict(r.profile), "_version": PROMPT_VERSION, "_fallback": r.used_fallback}
+                r = await enrich_product(_product(p), model=model, chat_fn=self.chat_fn)
+                self.ledger.charge("profiles", model, r.input_tokens, r.output_tokens)
+                cache[p["product_id"]] = {**asdict(r.profile), "_version": version, "_fallback": r.used_fallback}
 
         try:
             await asyncio.gather(*(one(p) for p in todo))

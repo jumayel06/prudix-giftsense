@@ -312,8 +312,8 @@ Metrics shown: concierge sessions, **completion rate**, **concierge→order conv
 |---|---|---|---|
 | Price (monthly) | $19 | $49 | $99 |
 | `features` | finder, catalog, placements, language, notes, gift groups, wrap, cards, gift receipt, basic analytics | + arrive-by, voice, full analytics + weekly email, hide badge | + video, recipient's choice, registries, priority support |
-| `models_available` | gpt-6-luna, claude-haiku-4-5 | + gpt-6-sol | + claude-sonnet-5 |
-| `PLAN_DEFAULT_MODELS` | gpt-6-luna | gpt-6-sol | claude-sonnet-5 |
+| `ai_tiers` | fast | + balanced | + premium |
+| `PLAN_DEFAULT_AI_TIER` | fast | balanced | premium |
 | `generation_limit` / month | 600 | 1,750 | 4,500 |
 | `trial_generations` (7 days) | 60 | 100 | 150 |
 | Products in the finder | 250 | 2,000 | 5,000 (trial: 100 on every plan) |
@@ -322,27 +322,31 @@ Metrics shown: concierge sessions, **completion rate**, **concierge→order conv
 
 Prices can be revised later without code changes. Monthly billing only (no annual plans). The trial is 7 days, once per store (`trial_used`, as in Commerce).
 
-### 8.2 Model weights and worst-case cost
+### 8.2 AI tiers, model registry and worst-case cost
 
-`MODEL_WEIGHTS`: gpt-6-luna **1**, claude-haiku-4-5 **2**, gpt-6-sol **4**, claude-sonnet-5 **4**. The 2026-09-28 eval of six models replaced gpt-4o-mini and gpt-4.1 with GPT-6 Luna and Sol (same weights); `RETIRED_MODELS` maps old selections and migration 20260928000002 moved stored ones.
+Merchants pick an **AI tier**, never a model: **Fast** (weight 1), **Balanced** (4), **Premium** (4). `app/ai_models.py` holds everything model-related (same design as Commerce's planned "graceful model-switch architecture"):
 
-| Model | Gift search (measured) | Note (800 in / 200 out, est.) | $ per generation (worst) |
+- `MODELS`: the registry. Provider, price, capability flags (`max_tokens_param`, `temperature`, `thinking_off`/`thinking_on`) that `app/llm.py` uses to shape requests, `status` (active / retired), `replacement`, `fallback`, `provider_retires_on`.
+- `SLOTS`: what each tier and background job runs: `ai_fast` → gpt-6-luna, `ai_balanced` → gpt-6-sol, `ai_premium` → claude-sonnet-5, `catalog_analysis` → gpt-6-luna. Each slot has `model`, `next`, `rollout_pct`.
+- `resolve_model(slot, shop_id, pins)`: admin pin (`Shop.model_pins`) wins; else a fixed per-shop bucket (`sha256(slot:shop_id) % 100 < rollout_pct`) picks `next`; retired models resolve to their replacement.
+- The tier's weight is fixed, so a model swap never changes what merchants are charged; a swap must keep each tier within its weight's cost.
+
+**Swapping a model:** add it to `MODELS` → set as the slot's `next` with `rollout_pct` 5 → 25 → 100 (0 = instant rollback) while watching quality and cost → promote to `model`, mark the old one `retired` with a `replacement`. No data migration. Safety nets: `app/llm.py` retries a provider "model not found" once on the model's replacement/fallback (logged as an error); `tests/unit/test_ai_models.py` fails CI when a model in use is within 60 days of its `provider_retires_on`; `usage_logs.model_used` records the model that actually answered. Catalog profiles are stamped `enrich-vN+<model>`: a new catalog model re-reads new/edited products first, then at most 1,000 unchanged products per sync, while old profiles keep serving searches.
+
+| AI tier (model, 2026-09-28) | Gift search (measured) | Note (800 in / 200 out, est.) | $ per generation (worst) |
 |---|---|---|---|
-| gpt-6-luna ($0.10/$0.50) | $0.0003 | $0.0002 | $0.0003 |
-| claude-haiku-4-5 ($1/$5) | $0.0037 | $0.0018 | $0.00185 |
-| gpt-6-sol ($2/$10) | $0.0055 | $0.0036 | $0.00138 |
-| claude-sonnet-5 ($2/$10) | $0.0103 | $0.0036 | $0.00258 |
+| Fast (gpt-6-luna, $0.10/$0.50) | $0.0003 | $0.0002 | $0.0003 |
+| Balanced (gpt-6-sol, $2/$10) | $0.0055 | $0.0036 | $0.00138 |
+| Premium (claude-sonnet-5, $2/$10) | $0.0103 | $0.0036 | $0.00258 |
 
-Eval results behind the choice (general store, 10 searches each, rerank-v3): Luna 3.25/5 good picks, 97% faithful reasons, 8% template reasons, p95 2.8s; Sol 3.23, 100%, 2%, 4.7s; Sonnet 5 3.50, 95%, 20%, 6.0s; Haiku 3.25, 89%, 30%, 5.1s; (retired) gpt-4o-mini 3.43, 96%, 29%, 4.6s; gpt-4.1 3.20, 92%, 28%, 3.6s. No model went over budget or invented a product.
-
-Each plan's worst case is its costliest allowed model: Haiku ($0.00185/generation) on Starter and Growth, Sonnet 5 ($0.00258) on Pro. Catalog enrichment doesn't use generations: it runs on Haiku 4.5 (measured $0.0017/product real-time, about half with the Batch API), capped by the plan's product and re-read limits.
+Eval results behind the choice (general store, 10 searches each, rerank-v3): Luna 3.25/5 good picks, 97% faithful reasons, 8% template reasons, p95 2.8s; Sol 3.23, 100%, 2%, 4.7s; Sonnet 5 3.50, 95%, 20%, 6.0s; Sonnet 5.5 3.10, 93%, 10%, 4.9s (kept in the registry, not rolled out); retired: Haiku 4.5 3.25, 89%, 30%, 5.1s; gpt-4o-mini 3.43, 96%, 29%, 4.6s; gpt-4.1 3.20, 92%, 28%, 3.6s. No model went over budget or invented a product. Catalog analysis on Luna: 400 products for $0.057 ($0.00014/product, ~12× cheaper than Haiku); searches on Luna-built profiles scored 3.15 good picks and 89% faithful (small sample, watch after launch).
 
 **Worst-case monthly cost at 100% of every limit** (hosting share $1.50 / $2.00 / $2.50):
-- Starter: $1.11 generations + $0.34 re-reads + $1.50 = **$2.95, a 84.5% margin**.
-- Growth: $3.24 + $0.85 + $0.10 voice + $2.00 = **$6.19, a 87.4% margin**.
-- Pro: $11.59 + $2.04 + $1.00 video + $2.50 = **$17.13, a 82.7% margin**.
+- Starter (Fast only): $0.18 generations + $0.03 re-reads + $1.50 = **$1.71, a 91.0% margin**.
+- Growth (worst: Balanced): $2.41 + $0.07 + $0.10 voice + $2.00 = **$4.58, a 90.7% margin**.
+- Pro (worst: Premium): $11.59 + $0.17 + $1.00 video + $2.50 = **$15.26, a 84.6% margin**.
 
-In the first month, the one-time catalog read at the product limit lowers these to 82% / 80% / 74%. With 15% Shopify revenue share (after the first $1M) they're about 68–72%. `MODEL_WEIGHTS` and limits get retuned from real `usage_logs` after launch.
+First month with the one-time catalog read at the product limit: 90.8% / 90.1% / 83.9%. With 15% Shopify revenue share (after the first $1M): about 70–76%.
 
 ### 8.3 Metering
 

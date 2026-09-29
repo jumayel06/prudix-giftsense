@@ -1,15 +1,17 @@
-"""Merchant settings: AI model choice, plan summary, weekly email opt-in.
+"""Merchant settings: AI tier choice, plan summary, weekly email opt-in.
 
 GET/PUT /api/settings copied from Prudix Commerce, trimmed to GiftSense
-fields. Model selection is validated server-side against the plan's
-models_available: the dashboard grays out locked models, but the API must
-refuse them too (tests/regression/test_model_plan_gating.py).
+fields. Merchants pick an AI tier (Fast / Balanced / Premium, app/ai_models.py),
+never a model. The choice is validated server-side against the plan's
+ai_tiers: the dashboard grays out locked tiers, but the API must refuse them
+too (tests/regression/test_model_plan_gating.py).
 """
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import MODEL_WEIGHTS, PLANS, effective_model
+from app.ai_models import AI_TIERS, ai_tier_for
+from app.config import PLANS
 from core.db.models import Shop
 from core.db.session import get_db
 from core.shopify_deps import get_current_shop
@@ -23,12 +25,12 @@ async def get_settings(
 ):
     plan_tier = shop_record.plan_tier if shop_record.plan_tier in PLANS else "starter"
     plan = PLANS[plan_tier]
-    selected_model = effective_model(plan_tier, shop_record.selected_model)
+    ai_tier = ai_tier_for(plan_tier, shop_record.selected_model)
     return {
-        "selected_model": selected_model,
-        "model_weight": MODEL_WEIGHTS.get(selected_model, 1),
-        "models_available": plan["models_available"],
-        "model_weights": {m: MODEL_WEIGHTS[m] for m in plan["models_available"]},
+        "ai_tier": ai_tier,
+        "ai_tier_weight": AI_TIERS[ai_tier]["weight"],
+        "ai_tiers_available": plan["ai_tiers"],
+        "ai_tiers": _ai_tier_catalog(),
         "features": plan["features"],
         "plan_tier": plan_tier,
         "plan_status": shop_record.plan_status,
@@ -51,8 +53,13 @@ async def get_settings(
     }
 
 
+def _ai_tier_catalog() -> dict:
+    return {t: {"label": s["label"], "description": s["description"], "weight": s["weight"]}
+            for t, s in AI_TIERS.items()}
+
+
 class SaveSettingsRequest(BaseModel):
-    selected_model: str | None = None
+    ai_tier: str | None = None
     digest_email_opt_in: bool | None = None
 
 
@@ -62,15 +69,15 @@ async def save_settings(
     shop_record: Shop = Depends(get_current_shop),
     db: AsyncSession = Depends(get_db),
 ):
-    if payload.selected_model:
+    if payload.ai_tier:
         plan_tier = shop_record.plan_tier if shop_record.plan_tier in PLANS else "starter"
         plan = PLANS[plan_tier]
-        if payload.selected_model not in plan["models_available"]:
+        if payload.ai_tier not in plan["ai_tiers"]:
             raise HTTPException(status_code=403, detail={
-                "code": "model_not_available",
-                "message": f"This model is not available on your {plan['name']} plan. Upgrade to access it.",
+                "code": "ai_tier_not_available",
+                "message": f"This AI option is not available on your {plan['name']} plan. Upgrade to access it.",
             })
-        shop_record.selected_model = payload.selected_model
+        shop_record.selected_model = payload.ai_tier  # column stores the AI tier
 
     if payload.digest_email_opt_in is not None:
         shop_record.digest_email_opt_in = payload.digest_email_opt_in
