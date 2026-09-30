@@ -53,6 +53,31 @@ function PickCard({ pick, rank }) {
   )
 }
 
+// Test searches left today, and this month's generations (shared with the
+// storefront). Counts only; never costs.
+function UsageCounter({ usage }) {
+  const perSearch = usage.generations_per_search
+  const searchesLeft = Math.floor(usage.generations_left / perSearch)
+  return (
+    <BlockStack gap="100">
+      <InlineStack align="space-between">
+        <Text as="span" variant="bodySm" tone="subdued">Test searches left today</Text>
+        <Text as="span" variant="bodySm" fontWeight="semibold">{usage.tries_left_today} of {usage.daily_limit}</Text>
+      </InlineStack>
+      <InlineStack align="space-between">
+        <Text as="span" variant="bodySm" tone="subdued">Generations left this month</Text>
+        <Text as="span" variant="bodySm" fontWeight="semibold">
+          {usage.generations_left.toLocaleString()} of {usage.generation_limit.toLocaleString()}
+        </Text>
+      </InlineStack>
+      <Text as="p" variant="bodySm" tone="subdued">
+        Each test search uses {perSearch} generation{perSearch === 1 ? '' : 's'} (about {searchesLeft.toLocaleString()} searches left this month, shared with your storefront).
+        {usage.tries_left_today === 0 && ' You can run more test searches tomorrow.'}
+      </Text>
+    </BlockStack>
+  )
+}
+
 export default function PlaygroundPage() {
   const navigate = useNavigate()
   const [opts, setOpts] = useState(null)
@@ -60,9 +85,12 @@ export default function PlaygroundPage() {
   const [result, setResult] = useState(null)
   const [running, setRunning] = useState(false)
   const [error, setError] = useState(null)
+  const [usage, setUsage] = useState(null)
 
   useEffect(() => {
-    fetchJson('/api/catalog/playground/options').then(setOpts).catch(() => setError('Could not load the form. Please refresh.'))
+    fetchJson('/api/catalog/playground/options')
+      .then(o => { setOpts(o); setUsage(o.usage) })
+      .catch(() => setError('Could not load the form. Please refresh.'))
   }, [])
 
   const set = key => value => setBrief(b => ({ ...b, [key]: value }))
@@ -81,6 +109,7 @@ export default function PlaygroundPage() {
       try { json = await res.json() } catch { /* ignore */ }
       if (!res.ok) { setError(parseApiError(json).message); return }
       setResult(json)
+      if (json.usage) setUsage(json.usage)
     } catch {
       setError('Search failed. Please try again.')
     } finally {
@@ -122,7 +151,9 @@ export default function PlaygroundPage() {
                 maxLength={200} showCharacterCount multiline={2} autoComplete="off"
                 placeholder="e.g. loves hiking and strong coffee"
               />
-              <Button variant="primary" onClick={run} loading={running} fullWidth>Find gifts</Button>
+              <Button variant="primary" onClick={run} loading={running} fullWidth
+                disabled={usage?.tries_left_today === 0}>Find gifts</Button>
+              {usage && <UsageCounter usage={usage} />}
             </BlockStack>
           </Card>
         </Layout.Section>

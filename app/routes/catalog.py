@@ -23,7 +23,7 @@ from sqlalchemy.orm import defer
 from app.ai_models import AI_TIERS, ai_tier_for, model_for_shop, model_label
 from app.jobs import enqueue
 from app.llm import chat
-from app.plan_guard import catalog_budget_for, get_cycle_cost_usd
+from app.plan_guard import catalog_budget_for, generation_limit_for, get_cycle_cost_usd, get_generations_used
 from app.services import metering
 from app.services.catalog_sync import (
     ACTIVE_STATUSES, IN_PROGRESS, count_held, count_pending, product_limit, rereads_limit, rereads_remaining,
@@ -175,9 +175,31 @@ async def catalog_resync(shop: Shop = Depends(get_current_shop), db: AsyncSessio
     return {"queued": True}
 
 
+async def _playground_used_today(db: AsyncSession, shop: Shop) -> int:
+    since = datetime.now(timezone.utc) - timedelta(days=1)
+    return (await db.execute(             # reservations only (settle/refund rows don't count)
+        select(func.count()).select_from(UsageLog).where(
+            UsageLog.shop_id == shop.id, UsageLog.action_type == "playground",
+            UsageLog.generations_consumed > 0, UsageLog.created_at >= since)
+    )).scalar_one()
+
+
+async def _playground_usage(db: AsyncSession, shop: Shop) -> dict:
+    """Counters for the Try it page: test searches left today, and this
+    month's generations (shared with the storefront). No costs, ever."""
+    limit = generation_limit_for(shop)
+    return {
+        "tries_left_today": max(0, PLAYGROUND_DAILY_LIMIT - await _playground_used_today(db, shop)),
+        "daily_limit": PLAYGROUND_DAILY_LIMIT,
+        "generations_left": max(0, limit - await get_generations_used(shop, db)),
+        "generation_limit": limit,
+        "generations_per_search": AI_TIERS[ai_tier_for(shop.plan_tier, shop.selected_model)]["weight"],
+    }
+
+
 @router.get("/api/catalog/playground/options")
-async def playground_options(shop: Shop = Depends(get_current_shop)):
-    return intake_options()
+async def playground_options(shop: Shop = Depends(get_current_shop), db: AsyncSession = Depends(get_db)):
+    return {**intake_options(), "usage": await _playground_usage(db, shop)}
 
 
 @router.post("/api/catalog/playground")
@@ -188,12 +210,7 @@ async def playground_search(
 ):
     if shop.plan_status not in ACTIVE_STATUSES:
         raise HTTPException(403, "Choose a plan to try the gift finder.")
-    since = datetime.now(timezone.utc) - timedelta(days=1)
-    used_today = (await db.execute(       # reservations only (settle/refund rows don't count)
-        select(func.count()).select_from(UsageLog).where(
-            UsageLog.shop_id == shop.id, UsageLog.action_type == "playground",
-            UsageLog.generations_consumed > 0, UsageLog.created_at >= since)
-    )).scalar_one()
+    used_today = await _playground_used_today(db, shop)
     if used_today >= PLAYGROUND_DAILY_LIMIT:
         raise HTTPException(429, f"You've run {PLAYGROUND_DAILY_LIMIT} test searches today. Try again tomorrow.")
 
@@ -220,6 +237,7 @@ async def playground_search(
         # Any monthly limit (generations or the internal cost budget) looks the
         # same to merchants: never expose which, or any cost figure.
         "ai_limit_reached": result.limited not in (None, "inactive"),
+        "usage": await _playground_usage(db, shop),
     }
 
 

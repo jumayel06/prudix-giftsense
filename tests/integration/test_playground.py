@@ -209,3 +209,18 @@ async def test_playground_uses_plan_default_when_selected_model_not_allowed(db_s
     db_session.add(row(shop, "1"))
     await db_session.commit()
     assert call(db_session, "POST", "/api/catalog/playground", json=BRIEF).json()["ai_tier"] == "standard"
+
+
+@pytest.mark.asyncio
+async def test_try_it_shows_what_is_left_today_and_this_month(db_session, fake_models):
+    from app.routes.catalog import PLAYGROUND_DAILY_LIMIT
+    shop = make_shop(selected_model="advanced")            # growth: 1,750 generations, Advanced = 2 each
+    db_session.add(shop)
+    await db_session.flush()
+    db_session.add_all([row(shop, str(i)) for i in range(4)])
+    await db_session.commit()
+    before = call(db_session, "GET", "/api/catalog/playground/options").json()["usage"]
+    assert before == {"tries_left_today": PLAYGROUND_DAILY_LIMIT, "daily_limit": PLAYGROUND_DAILY_LIMIT,
+                      "generations_left": 1750, "generation_limit": 1750, "generations_per_search": 2}
+    after = call(db_session, "POST", "/api/catalog/playground", json=BRIEF).json()["usage"]
+    assert after["tries_left_today"] == PLAYGROUND_DAILY_LIMIT - 1 and after["generations_left"] == 1748
