@@ -18,7 +18,7 @@ engine = create_async_engine(
     # request borrows a backend only for its query and hands it straight back, so
     # concurrency is bounded by Supavisor, not by us.
     poolclass=NullPool,
-    echo=settings.app_env == "development",
+    echo=settings.sql_echo,
     # Supavisor (transaction mode, port 6543) hands each transaction a
     # potentially DIFFERENT Postgres backend, so any cached prepared statement
     # can reference one that doesn't exist on the current backend — surfacing as

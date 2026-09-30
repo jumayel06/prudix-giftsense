@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     # than silently run prod as development (exposing /docs + /debug). Set in
     # Railway (production) / .env (development) / CI (test).
     app_env: str
+    # Print every SQL query (noisy; buries webhook/job logs). Opt in with SQL_ECHO=true.
+    sql_echo: bool = False
 
     # Force Shopify billing charges into TEST mode even on prod (APP_ENV=production).
     # Lets us exercise the real prod app's billing flow without a real charge —
