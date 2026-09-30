@@ -11,6 +11,7 @@
 
   var CFG_KEY = 'giftsense:config';
   var CFG_TTL = 6 * 3600 * 1000;
+  var CFG_OFF_TTL = 5 * 60 * 1000;
   var SID_KEY = 'giftsense:sid';
   var SID_TTL = 7 * 24 * 3600 * 1000;
 
@@ -45,12 +46,23 @@
     return id;
   }
 
+  // Only real answers are cached. A failed request (backend restarting, proxy
+  // hiccup) hides the launcher on this page only and is retried on the next,
+  // instead of hiding it for the whole session. "Disabled" (plan inactive) is
+  // re-checked after a few minutes so a newly chosen plan shows up quickly.
   function loadConfig(api) {
     var cached = readJson('sessionStorage', CFG_KEY);
-    if (cached && cached.t > Date.now() - CFG_TTL) return Promise.resolve(cached.data);
+    var ttl = cached && cached.data && cached.data.enabled ? CFG_TTL : CFG_OFF_TTL;
+    if (cached && cached.t > Date.now() - ttl) return Promise.resolve(cached.data);
     return fetch(api + '/config', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
-      .then(function (r) { return r.ok ? r.json() : { enabled: false }; })
-      .then(function (data) { writeJson('sessionStorage', CFG_KEY, { t: Date.now(), data: data }); return data; });
+      .then(function (r) {
+        if (!r.ok) return { enabled: false };
+        return r.json().then(function (data) {
+          writeJson('sessionStorage', CFG_KEY, { t: Date.now(), data: data });
+          return data;
+        });
+      })
+      .catch(function () { return { enabled: false }; });
   }
 
   var uiPromise = null;
