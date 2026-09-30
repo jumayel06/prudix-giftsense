@@ -46,7 +46,7 @@ Auto-loaded by Claude Code at the start of every session. Keep this short — it
 ```bash
 # Local dev — each in its own terminal
 cloudflared tunnel run prudix-commerce-dev       # shared tunnel: giftsense-dev.prudix.app → :8001
-shopify app dev --config dev                     # Shopify CLI (backend on :8001 via start_backend.sh)
+shopify app dev --config dev --tunnel-url https://giftsense-dev.prudix.app:8001   # CLI proxy on :8001 → backend; WITHOUT --tunnel-url dev-store webhooks go to a throwaway quick tunnel and silently fail
 .venv/bin/arq app.workers.main.WorkerSettings --watch app   # ARQ worker + crons (Redis DB /1); --watch reloads on code changes (it does NOT reload otherwise)
 
 .venv/bin/pytest tests/ -x --tb=short -q         # full suite (must stay green)

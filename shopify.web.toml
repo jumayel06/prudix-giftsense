@@ -1,12 +1,15 @@
 type = "frontend"
 webhook_subscription_check = true
 
-# Top-level keys (the Shopify CLI schema has no [dev] table; Commerce's
-# `[dev] port` is silently ignored and the CLI picks a random port).
-# `port` must match the Cloudflare tunnel ingress (giftsense-dev.prudix.app →
-# localhost:8001). `webhooks_path` is where the CLI's startup self-check posts
-# a test app/uninstalled webhook; the CLI default is /api/webhooks.
-port = 8001
+# No `port` here on purpose. Run `shopify app dev --config dev --tunnel-url
+# https://giftsense-dev.prudix.app:8001`: the CLI's proxy then listens on 8001
+# (the named tunnel's target) and forwards to this backend on a port it picks
+# ($PORT in start_backend.sh). Without --tunnel-url the CLI starts its own
+# trycloudflare quick tunnel and the dev session sends the dev store's
+# webhooks there; when that tunnel dies (sleep, network change) every
+# products/* and orders/* webhook silently fails (2026-09-30).
+# `webhooks_path` is where the CLI's startup self-check posts a test
+# app/uninstalled webhook; the CLI default is /api/webhooks.
 webhooks_path = "/webhooks"
 
 [commands]

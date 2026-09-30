@@ -3,8 +3,9 @@
 # URLs are STABLE via a named Cloudflare Tunnel. GiftSense shares Commerce's
 # tunnel: `cloudflared tunnel run prudix-commerce-dev`, whose
 # ~/.cloudflared/config.yml routes commerce-dev.prudix.app → localhost:8000 and
-# giftsense-dev.prudix.app → localhost:8001. The GiftSense backend runs on
-# port 8001 so both apps can run at once. URLs never change across sessions →
+# giftsense-dev.prudix.app → localhost:8001. Start the CLI with
+# `--tunnel-url https://giftsense-dev.prudix.app:8001` so its proxy owns 8001
+# (see shopify.web.toml); both apps can run at once. URLs never change across sessions →
 # toml stays put → `automatically_update_urls_on_dev = false`.
 #
 # Keep [access_scopes] in sync with core/shopify_auth.py:SCOPES and
