@@ -100,3 +100,13 @@ async def test_customers_redact_deletes_gift_orders_and_linked_sessions(db_sessi
     await redact_customer(shop.id, payload, db_session)
     assert [r.order_id for r in (await db_session.execute(select(GiftOrder))).scalars()] == ["7777"]
     assert (await db_session.execute(select(GiftSession))).scalars().all() == []
+
+
+@pytest.mark.asyncio
+async def test_direct_mode_wrap_is_kept_for_the_orders_page(db_session, job_pool):
+    db_session.add(make_shop())
+    await db_session.commit()
+    post(db_session, "orders/create", order([line(props={"_giftsense_gift": "order"})],
+                                            attrs={"_giftsense_mode": "direct", "Gift wrap": "Gold"}))
+    row = (await db_session.execute(select(GiftOrder))).scalar_one()
+    assert row.groups == [{"id": "order", "label": None, "wrap": "Gold", "message": None}]

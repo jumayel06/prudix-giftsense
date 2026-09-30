@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { flushSync } from 'react-dom'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
-import { AppProvider, Frame, Navigation, SkeletonPage, SkeletonBodyText } from '@shopify/polaris'
+import { AppProvider, Frame, Navigation, SkeletonPage, SkeletonBodyText, Badge } from '@shopify/polaris'
 import { TitleBar } from '@shopify/app-bridge-react'
-import { HomeIcon, CreditCardIcon, SettingsIcon, ChatIcon, ProductIcon, WandIcon, StoreIcon, ChartVerticalIcon } from '@shopify/polaris-icons'
+import {
+  HomeIcon, CreditCardIcon, SettingsIcon, ChatIcon, ProductIcon, WandIcon, StoreIcon, ChartVerticalIcon,
+  NoteIcon, PackageIcon, OrderIcon,
+} from '@shopify/polaris-icons'
 import enTranslations from '@shopify/polaris/locales/en.json'
 import '@shopify/polaris/build/esm/styles.css'
 
-import { shopifyFetch } from './utils/shopifyFetch'
+import { shopifyFetch, fetchJson } from './utils/shopifyFetch'
 import HomePage from './pages/HomePage'
 import CatalogPage from './pages/CatalogPage'
 import PlaygroundPage from './pages/PlaygroundPage'
@@ -17,7 +20,11 @@ import SupportPage from './pages/SupportPage'
 import ComingSoonPage from './pages/ComingSoonPage'
 import StorefrontPage from './pages/StorefrontPage'
 import AnalyticsPage from './pages/AnalyticsPage'
+import GiftNotesPage from './pages/GiftNotesPage'
+import GiftWrapPage from './pages/GiftWrapPage'
+import GiftOrdersPage from './pages/GiftOrdersPage'
 import { UPCOMING } from './utils/upcoming'
+import { navBadge } from './utils/planBadge'
 
 const APP_NAME = 'Prudix GiftSense'
 
@@ -46,21 +53,31 @@ function PrudixLogo() {
   )
 }
 
-function SidebarNav({ planStatus, onMobileClose }) {
+function SidebarNav({ planStatus, planTier, onMobileClose }) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  const [plans, setPlans] = useState(null)
+
+  useEffect(() => { fetchJson('/api/plans').then(d => setPlans(d.plans)).catch(() => setPlans(null)) }, [])
 
   // Hide nav while the merchant is on the plan picker (no plan yet).
   if (planStatus === 'pending') return null
 
   // Close the mobile sheet on navigation (instead of a setState-in-effect).
-  const item = (label, path, icon) => ({
-    label, icon, selected: pathname === path,
+  const badge = (feature, soon) => {
+    const b = navBadge({ plans, planTier, feature, soon })
+    if (!b) return undefined
+    if (typeof b === 'string') return b
+    return <Badge tone="info" size="small">{b.soon ? `${b.plan} · Soon` : b.plan}</Badge>
+  }
+  // `feature` (a PLANS feature key) adds a plan badge when the merchant's plan lacks it.
+  const item = (label, path, icon, feature) => ({
+    label, icon, selected: pathname === path, badge: badge(feature, false),
     onClick: () => { onMobileClose(); navigate(path) },
   })
   // Planned sections (utils/upcoming.js): shown with a "Soon" badge until they ship.
   const soon = section => UPCOMING.filter(u => u.section === section)
-    .map(u => ({ ...item(u.label, u.path, u.icon), badge: 'Soon' }))
+    .map(u => ({ ...item(u.label, u.path, u.icon), badge: badge(u.items[0]?.feature, true) }))
 
   return (
     <div className="prudix-sidebar-wrapper">
@@ -75,8 +92,11 @@ function SidebarNav({ planStatus, onMobileClose }) {
             title="Gift finder"
             items={[item('Catalog', '/catalog', ProductIcon), item('Try it', '/playground', WandIcon), item('Storefront', '/storefront', StoreIcon)]}
           />
-          <Navigation.Section title="Gifting" items={soon('gifting')} />
-          <Navigation.Section title="Orders" items={soon('orders')} />
+          <Navigation.Section
+            title="Gifting"
+            items={[item('Gift notes', '/notes', NoteIcon, 'ai_notes'), item('Gift wrap', '/wrap', PackageIcon, 'gift_wrap'), ...soon('gifting')]}
+          />
+          <Navigation.Section title="Orders" items={[item('Gift orders', '/orders', OrderIcon, 'gift_cards_print')]} />
           <Navigation.Section title="Insights" items={[item('Analytics', '/analytics', ChartVerticalIcon)]} />
           <Navigation.Section
             title="Account"
@@ -119,7 +139,7 @@ function AppFooter() {
 }
 
 const TITLES = {
-  '/': APP_NAME, '/catalog': 'Catalog', '/playground': 'Try the gift finder', '/plans': 'Plans', '/settings': 'Settings', '/support': 'Support', '/storefront': 'Storefront', '/analytics': 'Analytics',
+  '/': APP_NAME, '/catalog': 'Catalog', '/playground': 'Try the gift finder', '/plans': 'Plans', '/settings': 'Settings', '/support': 'Support', '/storefront': 'Storefront', '/analytics': 'Analytics', '/notes': 'Gift notes', '/wrap': 'Gift wrap', '/orders': 'Gift orders',
   ...Object.fromEntries(UPCOMING.map(u => [u.path, u.title])),
 }
 
@@ -187,7 +207,7 @@ function AppShell() {
     <Frame
       navigation={planStatus === 'pending'
         ? undefined
-        : <SidebarNav planStatus={planStatus} onMobileClose={dismissMobileNav} />}
+        : <SidebarNav planStatus={planStatus} planTier={stats?.plan_tier} onMobileClose={dismissMobileNav} />}
       showMobileNavigation={showMobileNav}
       onNavigationDismiss={dismissMobileNav}
     >
@@ -220,6 +240,9 @@ function AppShell() {
             <Route path="/catalog" element={<CatalogPage />} />
             <Route path="/storefront" element={<StorefrontPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/notes" element={<GiftNotesPage />} />
+            <Route path="/wrap" element={<GiftWrapPage />} />
+            <Route path="/orders" element={<GiftOrdersPage />} />
             <Route path="/playground" element={<PlaygroundPage />} />
             <Route path="/plans" element={<PlanPickerPage />} />
             <Route path="/settings" element={<SettingsPage />} />

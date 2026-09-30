@@ -635,6 +635,15 @@ async def _count_order(db: AsyncSession, shop: Shop, payload: dict) -> None:
             await db.rollback()
 
 
+
+def _stored_groups(parsed) -> list[dict]:
+    """Group summary for gift_orders (no notes). A direct-mode order has no
+    groups, so its wrap is kept as one "order" group for the Gift orders page."""
+    groups = [{k: g.get(k) for k in ("id", "label", "wrap", "message")} for g in parsed.groups]
+    if not groups and parsed.wrap:
+        groups = [{"id": "order", "label": None, "wrap": parsed.wrap, "message": None}]
+    return groups
+
 async def _handle_order_created(shop_domain: str, payload: dict, db: AsyncSession) -> None:
     shop = (await db.execute(select(Shop).where(Shop.shop_domain == shop_domain))).scalar_one_or_none()
     if shop is None or shop.plan_status in ("uninstalled", "purged"):
@@ -663,7 +672,7 @@ async def _handle_order_created(shop_domain: str, payload: dict, db: AsyncSessio
         shop_id=shop.id, order_id=parsed.order_id, order_name=parsed.order_name, sid=parsed.sid,
         delivery_mode=parsed.delivery_mode, gift_lines=parsed.gift_lines, gift_revenue=parsed.gift_revenue,
         order_total=parsed.order_total, currency=parsed.currency, note_source=source,
-        groups=[{k: g.get(k) for k in ("id", "label", "wrap", "message")} for g in parsed.groups],
+        groups=_stored_groups(parsed),
     ))
     try:
         await db.commit()

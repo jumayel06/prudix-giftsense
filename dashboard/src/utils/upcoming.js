@@ -6,7 +6,7 @@
  */
 import {
   CalendarIcon, MicrophoneIcon, ReplaceIcon,
-  ListBulletedIcon, OrderIcon,
+  ListBulletedIcon,
 } from '@shopify/polaris-icons'
 
 export const UPCOMING = [
@@ -36,15 +36,6 @@ export const UPCOMING = [
     title: 'Gift registries',
     intro: 'Customers build a wish list from your store and share it; every share brings new shoppers.',
     items: [{ feature: 'registries', text: 'Registries with AI suggestions and purchase tracking' }],
-  },
-  {
-    path: '/orders', label: 'Gift orders', section: 'orders', icon: OrderIcon,
-    title: 'Gift orders',
-    intro: 'Every gift order in one place, ready to pack.',
-    items: [
-      { feature: 'gift_cards_print', text: 'Print gift cards and tags for each gift' },
-      { feature: 'gift_receipt', text: 'Price-free gift receipts' },
-    ],
   },
 ]
 
