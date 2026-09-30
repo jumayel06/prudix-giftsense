@@ -5,20 +5,11 @@
  * never hardcoded here. Remove an entry when its real page ships.
  */
 import {
-  NoteIcon, CalendarIcon, MicrophoneIcon, ReplaceIcon,
+  CalendarIcon, MicrophoneIcon, ReplaceIcon,
   ListBulletedIcon, OrderIcon,
 } from '@shopify/polaris-icons'
 
 export const UPCOMING = [
-  {
-    path: '/notes', label: 'Gift notes', section: 'gifting', icon: NoteIcon,
-    title: 'AI gift notes',
-    intro: 'Shoppers write a personal note with a little AI help, and it prints on a gift card.',
-    items: [
-      { feature: 'ai_notes', text: 'AI drafts in a tone the shopper picks, with your banned words respected' },
-      { feature: 'gift_groups', text: 'Several gifts in one order, each with its own recipient and note' },
-    ],
-  },
   {
     path: '/delivery', label: 'Arrive-by dates', section: 'gifting', icon: CalendarIcon,
     title: 'Arrive-by dates',
