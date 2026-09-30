@@ -51,7 +51,7 @@ function Limit({ label, value }) {
   )
 }
 
-function PlanCard({ plan, catalog, recommended, trialUsed, currentTier, planStatus, trialDaysRemaining, onSelect, loading }) {
+function PlanCard({ plan, catalog, recommended, trialUsed, currentTier, planStatus, onSelect, loading }) {
   const accent = PLAN_ACCENTS[plan.tier] || '#64748b'
   const isLoading = loading === plan.tier
   const isCurrent = plan.tier === currentTier
@@ -111,6 +111,11 @@ function PlanCard({ plan, catalog, recommended, trialUsed, currentTier, planStat
           <span style={{ fontSize: '13px', color: '#374151', fontWeight: 600 }}>
             {plan.generation_limit.toLocaleString()} AI generations/mo
           </span>
+          {isTrialActive && (
+            <span style={{ fontSize: '11px', fontWeight: 700, color: '#16a34a', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '2px 8px' }}>
+              {plan.trial_generations} in trial
+            </span>
+          )}
           {!trialUsed && !isCurrent && plan.trial_days > 0 && (
             <span style={{ fontSize: '11px', fontWeight: 700, color: '#16a34a', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '2px 8px' }}>
               Try free
@@ -118,13 +123,9 @@ function PlanCard({ plan, catalog, recommended, trialUsed, currentTier, planStat
           )}
         </div>
 
-        {isTrialActive ? (
-          <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#64748b' }}>
-            Your trial includes <strong>{plan.trial_generations}</strong> AI generations.
-            Click <em>Start paying now</em> to unlock the full {plan.generation_limit.toLocaleString()} today.
-            {trialDaysRemaining > 0 && <> Or wait {trialDaysRemaining} day{trialDaysRemaining === 1 ? '' : 's'} and it converts automatically.</>}
-          </p>
-        ) : !trialUsed && !isCurrent && plan.trial_days > 0 ? (
+        {/* The trial explanation is a page banner (PlanPickerPage), so this card
+            stays the same height as the others. */}
+        {!trialUsed && !isCurrent && plan.trial_days > 0 ? (
           <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#64748b' }}>
             {plan.trial_days}-day free trial with <strong>{plan.trial_generations}</strong> AI generations. No charge until day {plan.trial_days + 1}.
           </p>
@@ -252,6 +253,9 @@ export default function PlanPickerPage() {
     await doSelect(tier)
   }
 
+  const trialPlan = catalog?.plans.find(p => p.tier === currentTier)
+  const daysLeft = stats?.trial_days_remaining ?? 0
+
   if (!catalog) {
     return (
       <Page title="Choose a plan">
@@ -283,6 +287,18 @@ export default function PlanPickerPage() {
         </div>
       )}
 
+      {planStatus === 'trial_active' && trialPlan && (
+        <div style={{ marginBottom: '20px' }}>
+          <Banner tone="info" title={`You're on the ${trialPlan.name} free trial`}>
+            <p>
+              Your trial includes {trialPlan.trial_generations} AI generations. Click Start paying now to unlock
+              all {trialPlan.generation_limit.toLocaleString()} today
+              {daysLeft > 0 ? `, or wait ${daysLeft} day${daysLeft === 1 ? '' : 's'} and it converts automatically.` : '.'}
+            </p>
+          </Banner>
+        </div>
+      )}
+
       <div className="prudix-plan-cards" style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
         {catalog.plans.map(plan => (
           <PlanCard
@@ -293,7 +309,6 @@ export default function PlanPickerPage() {
             trialUsed={trialUsed}
             currentTier={currentTier}
             planStatus={planStatus}
-            trialDaysRemaining={stats?.trial_days_remaining ?? null}
             onSelect={handleSelect}
             loading={loading}
           />
