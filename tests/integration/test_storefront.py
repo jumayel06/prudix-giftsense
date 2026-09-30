@@ -234,3 +234,41 @@ async def test_instant_and_ai_calls_have_separate_session_limits(db_session, mod
 async def test_unknown_phase_is_rejected(db_session, models):
     await seeded_shop(db_session)
     assert call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "phase": "later"}).status_code == 422
+
+
+# ── Gift sessions (one row per widget session: last brief, final picks) ──────
+
+@pytest.mark.asyncio
+async def test_ai_search_records_the_gift_session(db_session, models):
+    from core.db.models import GiftSession
+    shop = await seeded_shop(db_session, n=6)
+    call(db_session, "POST", "/api/storefront/search", json=BRIEF)
+    call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "vibes": ["funny"], "exclude_ids": ["0"]})
+    rows = (await db_session.execute(select(GiftSession).where(GiftSession.shop_id == shop.id))).scalars().all()
+    assert len(rows) == 1
+    s = rows[0]
+    assert str(s.sid) == SID and s.searches == 2
+    assert s.intake["vibes"] == ["funny"] and s.intake["recipient"] == "friend"
+    assert len(s.last_picks) == 3
+
+
+@pytest.mark.asyncio
+async def test_instant_phase_does_not_record_a_session(db_session, models):
+    from core.db.models import GiftSession
+    await seeded_shop(db_session)
+    call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "phase": "instant"})
+    assert (await db_session.execute(select(GiftSession))).scalars().all() == []
+
+
+@pytest.mark.asyncio
+async def test_sessions_are_per_shop(db_session, models):
+    from core.db.models import GiftSession
+    other = make_shop(domain="other.myshopify.com")
+    db_session.add(other)
+    await db_session.flush()
+    db_session.add(GiftSession(shop_id=other.id, sid=uuid.UUID(SID), intake={}, last_picks=[], searches=5))
+    await db_session.commit()
+    shop = await seeded_shop(db_session)
+    call(db_session, "POST", "/api/storefront/search", json=BRIEF)
+    mine = (await db_session.execute(select(GiftSession).where(GiftSession.shop_id == shop.id))).scalar_one()
+    assert mine.searches == 1

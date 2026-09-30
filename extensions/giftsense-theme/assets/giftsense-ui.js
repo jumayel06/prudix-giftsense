@@ -29,7 +29,82 @@
     } catch (e) { return ctx.currency + ' ' + Number(n).toFixed(2); }
   }
 
-  function safeHref(url) { return typeof url === 'string' && url.charAt(0) === '/' && url.charAt(1) !== '/' ? url : null; }
+  // Storefront root, including a language/market prefix such as "/fr/".
+  function root() {
+    var r = window.Shopify && window.Shopify.routes && window.Shopify.routes.root;
+    return typeof r === 'string' && r.charAt(0) === '/' ? r : '/';
+  }
+
+  // Only storefront-relative paths from our API are followed, prefixed with the root.
+  function safeHref(url) {
+    if (typeof url !== 'string' || url.charAt(0) !== '/' || url.charAt(1) === '/') return null;
+    return root() + url.slice(1);
+  }
+
+  function handleOf(url) {
+    var m = typeof url === 'string' && url.match(/^\/products\/([\w-]+)$/);
+    return m ? m[1] : null;
+  }
+
+  // ── add to cart ───────────────────────────────────────────────────────────
+  // Variants come from the theme's own /products/<handle>.js. One variant →
+  // add it here; several (sizes, colors) → send the shopper to the product
+  // page. Hidden `_giftsense_*` line properties and cart attribute let the
+  // order be attributed to the gift finder (never customer data).
+  function cartButton(pick, slot) {
+    var handle = handleOf(pick.url);
+    if (!handle) return;
+    fetch(root() + 'products/' + handle + '.js', { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (product) {
+        if (!product || !product.variants || !slot.isConnected) return;
+        var available = product.variants.filter(function (v) { return v.available; });
+        if (!available.length) {
+          var sold = el('button', 'gs-secondary gs-small', 'Sold out');
+          sold.type = 'button';
+          sold.disabled = true;
+          slot.appendChild(sold);
+          return;
+        }
+        if (product.variants.length > 1) {
+          var choose = el('a', 'gs-secondary gs-small', 'Choose options');
+          choose.href = safeHref(pick.url);
+          slot.appendChild(choose);
+          return;
+        }
+        var add = el('button', 'gs-primary gs-small', 'Add to cart');
+        add.type = 'button';
+        add.addEventListener('click', function () { addToCart(available[0].id, add, slot); });
+        slot.appendChild(add);
+      })
+      .catch(function () { /* the card link still works */ });
+  }
+
+  function addToCart(variantId, button, slot) {
+    button.disabled = true;
+    button.textContent = 'Adding\u2026';
+    var json = { 'Content-Type': 'application/json', Accept: 'application/json' };
+    fetch(root() + 'cart/add.js', {
+      method: 'POST', credentials: 'same-origin', headers: json,
+      body: JSON.stringify({ items: [{ id: variantId, quantity: 1,
+        properties: { _giftsense_sid: ctx.sid, _giftsense_gift: '1' } }] })
+    }).then(function (r) {
+      if (!r.ok) throw new Error('add');
+      return fetch(root() + 'cart/update.js', {
+        method: 'POST', credentials: 'same-origin', headers: json,
+        body: JSON.stringify({ attributes: { _giftsense_sid: ctx.sid } })
+      });
+    }).then(function () {
+      button.textContent = 'Added \u2713';
+      var view = el('a', 'gs-link', 'View cart');
+      view.href = root() + 'cart';
+      slot.appendChild(view);
+      document.dispatchEvent(new CustomEvent('giftsense:added-to-cart', { detail: { variantId: variantId } }));
+    }).catch(function () {
+      button.disabled = false;
+      button.textContent = 'Try again';
+    });
+  }
 
   function sized(url, width) {
     if (typeof url !== 'string' || url.indexOf('https://') !== 0) return null;
@@ -279,23 +354,32 @@
     picks.forEach(function (p) {
       if (!pending) state.shown.push(p.product_id);   // only final picks are excluded next time
       var href = safeHref(p.url);
-      var card = el(href ? 'a' : 'div', 'gs-card');
-      if (href) card.href = href;
+      var card = el('div', 'gs-card');
+      var link = el(href ? 'a' : 'div', 'gs-card-link');
+      if (href) link.href = href;
       var src = sized(p.image_url, 240);
       if (src) {
         var img = el('img', 'gs-img');
         img.src = src;
         img.alt = '';
         img.loading = 'lazy';
-        card.appendChild(img);
+        link.appendChild(img);
       } else {
-        card.appendChild(el('div', 'gs-img'));
+        link.appendChild(el('div', 'gs-img'));
       }
+      card.appendChild(link);
       var text = el('div', 'gs-text');
-      text.appendChild(el('span', 'gs-name', p.title));
+      var name = el(href ? 'a' : 'span', 'gs-name', p.title);
+      if (href) name.href = href;
+      text.appendChild(name);
       text.appendChild(el('span', 'gs-price', p.price_min === p.price_max
         ? money(p.price_min) : money(p.price_min) + ' \u2013 ' + money(p.price_max)));
       text.appendChild(el('span', 'gs-reason' + (pending ? ' gs-reason--pending' : ''), p.reason));
+      if (!pending) {
+        var slot = el('div', 'gs-cart');
+        text.appendChild(slot);
+        cartButton(p, slot);
+      }
       card.appendChild(text);
       els.body.appendChild(card);
     });
@@ -303,7 +387,7 @@
     renderFoot();
     // Move focus only on the first render, never when the AI picks swap in.
     if (!replacing) {
-      var first = els.body.querySelector('.gs-card');
+      var first = els.body.querySelector('.gs-card a');
       if (first && first.focus) first.focus();
     }
   }

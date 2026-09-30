@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import Field
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import PLANS
@@ -31,7 +32,7 @@ from app.services.gifting.brief import GiftBrief, intake_options
 from app.services.gifting.embeddings import OpenAIEmbedder
 from app.services.gifting.retrieval import Intake
 from app.services.proxy_auth import verify_proxy_signature
-from core.db.models import Shop
+from core.db.models import GiftSession, Shop
 from core.db.session import get_db
 
 router = APIRouter(prefix="/api/storefront")
@@ -76,6 +77,23 @@ class SearchRequest(GiftBrief):
     phase: Literal["instant", "ai"] = "ai"
 
 
+async def _record_session(db: AsyncSession, shop: Shop, body: "SearchRequest", pick_ids: list[str]) -> None:
+    """Upsert the widget session's last brief and final picks (AI phase only)."""
+    intake = body.model_dump(mode="json", exclude={"sid", "phase", "exclude_ids"})
+    session = (await db.execute(
+        select(GiftSession).where(GiftSession.shop_id == shop.id, GiftSession.sid == body.sid)
+    )).scalar_one_or_none()
+    if session is None:
+        session = GiftSession(shop_id=shop.id, sid=body.sid, searches=0)
+        db.add(session)
+    session.intake, session.last_picks = intake, pick_ids
+    session.searches = (session.searches or 0) + 1
+    try:
+        await db.commit()
+    except IntegrityError:   # the same sid's first two searches raced; the other one won
+        await db.rollback()
+
+
 SLOW_DOWN = "You've searched a lot in a short time. Please try again in a little while."
 
 
@@ -104,6 +122,7 @@ async def gift_search(body: SearchRequest, request: Request, shop: Shop = Depend
         picks = rec.picks
     else:
         picks = (await metering.run_gift_search(db, shop, intake, OpenAIEmbedder(), chat_fn=chat)).recommendation.picks
+        await _record_session(db, shop, body, [p.product.product_id for p in picks])
     return _no_store({
         "phase": body.phase,
         "picks": [{
