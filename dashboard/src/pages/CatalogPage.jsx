@@ -24,7 +24,10 @@ function timeOf(iso) {
 function SyncCard({ status, onResync, resyncing }) {
   const sync = status.sync
   const busy = sync && IN_PROGRESS.includes(sync.status)
-  const pct = busy && sync.total ? Math.round((100 * sync.enriched) / sync.total) : null
+  // A re-sync only re-analyzes changed products, so progress is "products ready
+  // for gift matching" (moves as each one is analyzed), not sync.enriched.
+  const pct = sync?.status === 'importing' && status.products
+    ? Math.max(5, Math.round((100 * status.analyzed) / status.products)) : null
   const slowStart = !!sync?.slow_start
   const coolingDown = !busy && !!status.next_manual_sync_at
 
@@ -44,11 +47,16 @@ function SyncCard({ status, onResync, resyncing }) {
         {busy && (
           <BlockStack gap="200">
             <Text as="p">
-              {sync.status === 'queued' && 'Waiting to start…'}
-              {sync.status === 'running' && 'Reading your products from Shopify…'}
-              {sync.status === 'importing' && `Analyzing your catalog… ${sync.enriched} of ${sync.total}`}
+              {sync.status === 'queued' && 'Step 1 of 2: Waiting to start…'}
+              {sync.status === 'running' && 'Step 1 of 2: Shopify is preparing your product list…'}
+              {sync.status === 'importing' && `Step 2 of 2: Analyzing products… ${status.analyzed} of ${status.products} ready`}
             </Text>
-            <ProgressBar progress={pct ?? 5} size="small" />
+            <ProgressBar progress={pct ?? 10} size="small" />
+            {sync.status !== 'importing' && (
+              <Text as="p" variant="bodySm" tone="subdued">
+                Usually under a minute; large catalogs can take a few minutes. Only new or changed products are re-analyzed.
+              </Text>
+            )}
             {slowStart && (
               <Banner tone="warning">
                 <p>This is taking longer than usual to start. It will run as soon as our background service picks it up; if it's still waiting in 30 minutes, contact support.</p>
