@@ -312,3 +312,14 @@ async def test_instant_refine_is_allowed_but_not_counted(db_session, models):
     assert call(db_session, "POST", "/api/storefront/search",
                 json={**BRIEF, "refine": True, "phase": "instant"}).status_code == 200
     assert (await db_session.execute(select(GiftSession))).scalar_one().refines == 0
+
+
+@pytest.mark.asyncio
+async def test_config_carries_gift_note_settings(db_session):
+    shop = await seeded_shop(db_session)
+    shop.gift_settings = {"notes": {"tone": "elegant", "max_chars": 180, "banned_words": ["cheap"]}}
+    await db_session.commit()
+    notes = call(db_session, "GET", "/api/storefront/config").json()["notes"]
+    assert notes["tone"] == "elegant" and notes["max_chars"] == 180
+    assert {t["value"] for t in notes["tones"]} == {"warm", "elegant", "playful", "formal"}
+    assert "banned_words" not in notes          # merchant-private

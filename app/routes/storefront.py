@@ -29,7 +29,7 @@ from app.config import PLANS
 from app.llm import chat, moderate
 from app.plan_guard import may_generate
 from app.services import catalog_index, metering, rate_limit
-from app.services.gift_settings import Tone, note_settings
+from app.services.gift_settings import NOTE_TONES, Tone, note_settings
 from app.services.gifting import vocab
 from app.services.gifting.brief import GiftBrief, intake_options
 from app.services.gifting.embeddings import OpenAIEmbedder
@@ -64,10 +64,14 @@ async def widget_config(shop: Shop = Depends(storefront_shop)):
     if not may_generate(shop):
         return _no_store({"enabled": False})
     features = PLANS.get(shop.plan_tier, PLANS["starter"])["features"]
+    notes = note_settings(shop)
     return _no_store({
         "enabled": True,
         "show_badge": "hide_branding" not in features,
         "intake": intake_options(),
+        # Banned words stay server-side; the draft endpoint enforces them.
+        "notes": {"tone": notes["tone"], "max_chars": notes["max_chars"],
+                  "tones": [{"value": k, "label": v} for k, v in NOTE_TONES.items()]},
     })
 
 
