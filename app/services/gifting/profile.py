@@ -138,4 +138,6 @@ def apply_overrides(prof: GiftProfile, overrides: dict | None) -> GiftProfile:
             changes[key] = vocab.clean_list(_str_list(overrides[key]), allowed)
     if "age_band" in overrides and overrides["age_band"] in vocab.AGE_BANDS:
         changes["age_band"] = overrides["age_band"]
+    if overrides.get("gift_pitch"):
+        changes["gift_pitch"] = _short(overrides["gift_pitch"], MAX_PITCH_CHARS)
     return replace(prof, **changes)

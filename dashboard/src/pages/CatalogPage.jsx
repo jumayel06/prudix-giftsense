@@ -8,6 +8,7 @@ import { ImageIcon } from '@shopify/polaris-icons'
 import { shopifyFetch, fetchJson } from '../utils/shopifyFetch'
 import { parseApiError } from '../utils/apiError'
 import { showToast } from '../utils/toast'
+import EditProfileModal from '../components/EditProfileModal'
 
 const POLL_MS = 5000
 const IN_PROGRESS = ['queued', 'running', 'importing']
@@ -98,7 +99,7 @@ function SyncCard({ status, onResync, resyncing }) {
 
 const CLAMP_2 = { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
 
-function ProductRow({ p, toggling, onToggle }) {
+function ProductRow({ p, toggling, onToggle, onEdit }) {
   const prof = p.profile || {}
   const hasProfile = p.analyzed || p.update_pending
   const price = p.price_min === p.price_max ? money(p.price_min) : `${money(p.price_min)}–${money(p.price_max)}`
@@ -117,12 +118,16 @@ function ProductRow({ p, toggling, onToggle }) {
                   {p.excluded && <Badge size="small">Excluded</Badge>}
                   {!hasProfile && !p.excluded && <Badge tone="attention" size="small">Analyzing</Badge>}
                   {p.update_pending && <Badge tone="info" size="small">Update pending</Badge>}
+                  {p.overridden && !p.excluded && <Badge tone="success" size="small">Edited</Badge>}
                   {p.profile_fallback && <Badge tone="warning" size="small">Basic profile</Badge>}
                 </InlineStack>
               </BlockStack>
-              <Button variant="plain" loading={toggling} onClick={() => onToggle(p)}>
-                {p.excluded ? 'Include' : 'Exclude'}
-              </Button>
+              <InlineStack gap="300" wrap={false}>
+                {hasProfile && !p.excluded && <Button variant="plain" onClick={() => onEdit(p)}>Edit</Button>}
+                <Button variant="plain" loading={toggling} onClick={() => onToggle(p)}>
+                  {p.excluded ? 'Include' : 'Exclude'}
+                </Button>
+              </InlineStack>
             </InlineStack>
             {hasProfile && !p.excluded && (
               <>
@@ -155,6 +160,8 @@ export default function CatalogPage() {
   const [error, setError] = useState(null)
   const [resyncing, setResyncing] = useState(false)
   const [toggling, setToggling] = useState(null)
+  const [editing, setEditing] = useState(null)
+  const [options, setOptions] = useState(null)
   const searchTimer = useRef(null)
 
   const loadStatus = useCallback(() =>
@@ -206,6 +213,19 @@ export default function CatalogPage() {
     } finally {
       setResyncing(false)
     }
+  }
+
+  async function openEditor(p) {
+    if (!options) {
+      try { setOptions(await fetchJson('/api/catalog/playground/options')) } catch { showToast('Could not load options.', { isError: true }); return }
+    }
+    setEditing(p)
+  }
+
+  function onProfileSaved(updated) {
+    setList(l => ({ ...l, products: l.products.map(x => (x.product_id === updated.product_id ? updated : x)) }))
+    setEditing(null)
+    showToast(updated.overridden ? 'Gift profile saved' : 'Reset to AI suggestion')
   }
 
   async function toggleExcluded(p) {
@@ -267,7 +287,7 @@ export default function CatalogPage() {
               <div>
                 {!list && <div style={{ padding: 'var(--p-space-400)' }}><SkeletonBodyText lines={6} /></div>}
                 {(list?.products || []).map(p => (
-                  <ProductRow key={p.product_id} p={p} toggling={toggling === p.product_id} onToggle={toggleExcluded} />
+                  <ProductRow key={p.product_id} p={p} toggling={toggling === p.product_id} onToggle={toggleExcluded} onEdit={openEditor} />
                 ))}
               </div>
             )}
@@ -283,6 +303,9 @@ export default function CatalogPage() {
           </Card>
         </Layout.Section>
       </Layout>
+      {editing && options && (
+        <EditProfileModal product={editing} options={options} onClose={() => setEditing(null)} onSaved={onProfileSaved} />
+      )}
     </Page>
   )
 }

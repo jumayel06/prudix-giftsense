@@ -99,3 +99,11 @@ def test_merchant_overrides_win():
     assert merged.recipients == ["parent"]
     assert merged.vibes == []
     assert merged.age_band == "adult"  # untouched
+
+
+def test_merchant_can_override_the_pitch():
+    from app.services.gifting.profile import GiftProfile, apply_overrides
+    prof = apply_overrides(GiftProfile(gift_pitch="AI words"), {"gift_pitch": "  Our   words  "})
+    assert prof.gift_pitch == "Our words"
+    long = apply_overrides(GiftProfile(gift_pitch="x"), {"gift_pitch": "y" * 500})
+    assert len(long.gift_pitch) == 200

@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock
 
 import pytest
+from sqlalchemy import select
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -172,3 +173,63 @@ async def test_long_queued_sync_is_flagged_slow(db_session):
                                started_at=datetime.now(timezone.utc) - timedelta(minutes=5)))
     await db_session.commit()
     assert call(db_session, "GET", "/api/catalog/status").json()["sync"]["slow_start"] is True
+
+
+# ── Merchant edits to a product's gift profile ───────────────────────────────
+
+@pytest.fixture
+def embedder():
+    from app.services.gifting.embeddings import FakeEmbedder
+    from unittest.mock import patch as _patch
+    with _patch("app.routes.catalog.OpenAIEmbedder", return_value=FakeEmbedder()):
+        yield
+
+
+@pytest.mark.asyncio
+async def test_merchant_overrides_change_the_profile_and_re_embed(db_session, embedder):
+    shop = await seed(db_session)
+    db_session.add(product(shop, "1"))
+    await db_session.commit()
+    before = (await db_session.execute(select(CatalogProductRow))).scalar_one().embedding
+
+    resp = call(db_session, "PATCH", "/api/catalog/products/1", json={"overrides": {
+        "recipients": ["parent", "grandparent"], "vibes": ["sentimental"], "gift_pitch": "A keepsake for Mom."}})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["overridden"] is True
+    assert data["profile"]["recipients"] == ["parent", "grandparent"] and data["profile"]["vibes"] == ["sentimental"]
+    assert data["profile"]["occasions"] == ["birthday"]          # untouched fields keep the AI's value
+    assert data["profile"]["gift_pitch"] == "A keepsake for Mom."
+    assert data["ai_profile"]["vibes"] == ["cozy"]                # shown for "reset"
+
+    row = (await db_session.execute(select(CatalogProductRow))).scalar_one()
+    await db_session.refresh(row)
+    assert row.merchant_overrides["vibes"] == ["sentimental"] and row.embedding != before
+
+
+@pytest.mark.asyncio
+async def test_reset_overrides(db_session, embedder):
+    shop = await seed(db_session)
+    db_session.add(product(shop, "1", merchant_overrides={"vibes": ["funny"]}))
+    await db_session.commit()
+    data = call(db_session, "PATCH", "/api/catalog/products/1", json={"overrides": None}).json()
+    assert data["overridden"] is False and data["profile"]["vibes"] == ["cozy"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("bad", [{"vibes": ["wild"]}, {"recipients": ["alien"]}, {"occasions": ["x"]},
+                                 {"age_band": "ancient"}, {"gift_pitch": "x" * 201}, {"price": 1}])
+async def test_overrides_are_validated(db_session, embedder, bad):
+    shop = await seed(db_session)
+    db_session.add(product(shop, "1"))
+    await db_session.commit()
+    assert call(db_session, "PATCH", "/api/catalog/products/1", json={"overrides": bad}).status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_exclude_still_works_alone(db_session, embedder):
+    shop = await seed(db_session)
+    db_session.add(product(shop, "1", merchant_overrides={"vibes": ["funny"]}))
+    await db_session.commit()
+    data = call(db_session, "PATCH", "/api/catalog/products/1", json={"excluded": True}).json()
+    assert data["excluded"] is True and data["overridden"] is True   # overrides untouched

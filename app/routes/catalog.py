@@ -5,15 +5,17 @@
     POST  /api/catalog/resync              queue a fresh export
     GET   /api/catalog/playground/options  intake vocabulary for the test form
     POST  /api/catalog/playground          run the gift finder on this shop's catalog
-    PATCH /api/catalog/products/{id}       exclude / include a product
+    PATCH /api/catalog/products/{id}       exclude / include; edit the gift profile
 
 Literal routes are declared before the parameterized one.
 """
 import uuid
+from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
@@ -22,13 +24,16 @@ from app.ai_models import AI_TIERS, ai_tier_for, model_for_shop, model_label
 from app.jobs import enqueue
 from app.llm import calc_cost, chat
 from app.services import catalog_index
-from app.services.gifting.embeddings import OpenAIEmbedder
-from app.services.gifting.rerank import PROMPT_VERSION as RERANK_PROMPT_VERSION
-from app.services.gifting.brief import GiftBrief, intake_options
-from app.services.gifting.retrieval import Intake
 from app.services.catalog_sync import (
     ACTIVE_STATUSES, IN_PROGRESS, count_held, count_pending, product_limit, rereads_limit, rereads_remaining,
+    row_to_product,
 )
+from app.services.gifting import vocab
+from app.services.gifting.brief import GiftBrief, intake_options
+from app.services.gifting.embeddings import OpenAIEmbedder
+from app.services.gifting.profile import MAX_PITCH_CHARS, GiftProfile, apply_overrides, embedding_text
+from app.services.gifting.rerank import PROMPT_VERSION as RERANK_PROMPT_VERSION
+from app.services.gifting.retrieval import Intake
 from core.db.models import CatalogProductRow, CatalogSync, Shop, UsageLog
 from core.db.session import get_db
 from core.shopify_deps import get_current_shop
@@ -59,8 +64,12 @@ def _sync_json(s: CatalogSync | None) -> dict | None:
     }
 
 
+_PROFILE_KEYS = ("giftable", "recipients", "occasions", "vibes", "age_band", "gift_pitch")
+
+
 def _product_json(r: CatalogProductRow) -> dict:
     prof = r.gift_profile or {}
+    effective = asdict(apply_overrides(GiftProfile(**prof), r.merchant_overrides)) if prof else {}
     return {
         "product_id": r.product_id, "title": r.title, "image_url": r.image_url, "url": r.url,
         "product_type": r.product_type, "price_min": float(r.price_min), "price_max": float(r.price_max),
@@ -69,8 +78,10 @@ def _product_json(r: CatalogProductRow) -> dict:
         # Edited since its last AI read but still searchable with the old profile.
         "update_pending": r.gift_profile is not None and r.profile_hash != r.content_hash,
         "profile_fallback": r.profile_fallback,
-        "profile": {k: prof.get(k) for k in ("giftable", "recipients", "occasions", "vibes", "age_band", "gift_pitch")}
-        if prof else None,
+        # What search uses (merchant edits applied) and what the AI wrote (for "reset").
+        "profile": {k: effective.get(k) for k in _PROFILE_KEYS} if prof else None,
+        "ai_profile": {k: prof.get(k) for k in _PROFILE_KEYS} if prof else None,
+        "overridden": bool(r.merchant_overrides),
     }
 
 
@@ -206,8 +217,30 @@ async def playground_search(
     }
 
 
+class ProfileOverrides(BaseModel):
+    """Merchant edits; omitted fields keep the AI's value."""
+    model_config = ConfigDict(extra="forbid")
+    recipients: Optional[list[str]] = None
+    occasions: Optional[list[str]] = None
+    vibes: Optional[list[str]] = Field(default=None, max_length=5)
+    age_band: Optional[str] = None
+    gift_pitch: Optional[str] = Field(default=None, max_length=MAX_PITCH_CHARS)
+
+    @model_validator(mode="after")
+    def _in_vocab(self):
+        for key, allowed in (("recipients", vocab.RECIPIENTS), ("occasions", vocab.OCCASIONS), ("vibes", vocab.VIBES)):
+            values = getattr(self, key)
+            if values is not None and any(v not in allowed for v in values):
+                raise ValueError(f"unknown {key}")
+        if self.age_band is not None and self.age_band not in vocab.AGE_BANDS:
+            raise ValueError("unknown age band")
+        return self
+
+
 class ProductPatch(BaseModel):
-    excluded: bool
+    excluded: Optional[bool] = None
+    # Present = replace the merchant's edits; null = reset to the AI's profile.
+    overrides: Optional[ProfileOverrides] = None
 
 
 @router.patch("/api/catalog/products/{product_id}")
@@ -223,6 +256,13 @@ async def catalog_update_product(
     )).scalar_one_or_none()
     if row is None:
         raise HTTPException(404, "Product not found.")
-    row.excluded = body.excluded
+    if body.excluded is not None:
+        row.excluded = body.excluded
+    if "overrides" in body.model_fields_set:
+        row.merchant_overrides = body.overrides.model_dump(exclude_none=True) if body.overrides else None
+        if row.gift_profile:
+            # Search matches on the embedding, so re-embed now (no AI call, not a re-read).
+            prof = apply_overrides(GiftProfile(**row.gift_profile), row.merchant_overrides)
+            [row.embedding] = await OpenAIEmbedder().embed([embedding_text(row_to_product(row), prof)])
     await db.commit()
     return _product_json(row)
