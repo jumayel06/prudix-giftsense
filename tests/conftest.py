@@ -242,3 +242,36 @@ def rate_store(monkeypatch):
     store = FakeRateStore()
     monkeypatch.setattr(rl, "_store", store)
     return store
+
+
+# ── Locks (app/services/locks.py) ─────────────────────────────────────────────
+
+class FakeLocks:
+    """In-memory stand-in for the Redis locks (tests never touch real Redis)."""
+
+    def __init__(self):
+        self.held: dict[str, str] = {}
+        self.n = 0
+
+    async def acquire(self, key, ttl_secs):
+        if key in self.held:
+            return None
+        self.n += 1
+        self.held[key] = f"t{self.n}"
+        return self.held[key]
+
+    async def extend(self, key, token, ttl_secs):
+        return None
+
+    async def release(self, key, token):
+        if self.held.get(key) == token:
+            del self.held[key]
+
+
+@pytest.fixture(autouse=True)
+def fake_locks(monkeypatch):
+    import app.services.locks as locks
+    fake = FakeLocks()
+    for name in ("acquire", "extend", "release"):
+        monkeypatch.setattr(locks, name, getattr(fake, name))
+    return fake

@@ -329,3 +329,37 @@ async def test_reread_budget_resets_each_billing_cycle(db_session, monkeypatch):
     shop.catalog_rereads_cycle_start = shop.billing_cycle_start - timedelta(days=30)   # last cycle
     await db_session.commit()
     assert cs.rereads_remaining(shop) == 1 and shop.catalog_rereads_used == 0
+
+
+# ── one analysis per shop at a time ──────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_a_second_analysis_steps_aside_while_one_runs(db_session, fake_locks):
+    """A burst of product webhooks must not analyze the same products several
+    times (22 products → 106 AI calls on dev, 2026-09-30)."""
+    shop = await add_shop(db_session)
+    await cs.upsert_products(db_session, shop, [cs.parse_product(node(1))])
+    await db_session.commit()
+    fake_locks.held[f"catalog-analyze:{shop.id}"] = "someone-else"
+    chat = FakeChat()
+    assert await cs.analyze_pending(db_session, shop, FakeEmbedder(), chat) is None
+    assert chat.calls == 0 and await cs.count_pending(db_session, shop.id) == 1
+
+    del fake_locks.held[f"catalog-analyze:{shop.id}"]
+    assert await cs.analyze_pending(db_session, shop, FakeEmbedder(), chat) == 1
+    assert fake_locks.held == {}                       # released afterwards
+
+
+@pytest.mark.asyncio
+async def test_busy_product_job_schedules_one_catch_up(db_session, fake_locks, job_pool):
+    from unittest.mock import patch
+    from app.workers.catalog import catalog_sync_product
+    shop = await add_shop(db_session)
+    fake_locks.held[f"catalog-analyze:{shop.id}"] = "someone-else"
+    with patch("app.workers.catalog.AsyncSessionLocal") as sess, \
+            patch("app.workers.catalog.get_valid_access_token", new=AsyncMock(return_value="tok")), \
+            patch("app.workers.catalog.catalog_sync.sync_product", new=AsyncMock(return_value="analysis_busy")):
+        sess.return_value.__aenter__.return_value = db_session
+        sess.return_value.__aexit__.return_value = False
+        await catalog_sync_product({}, shop.shop_domain, "1")
+    assert job_pool.names() == ["catalog_analyze_shop"]

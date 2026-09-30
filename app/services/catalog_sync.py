@@ -34,6 +34,7 @@ from app.services.gifting.embeddings import Embedder
 from app.ai_models import catalog_model_for
 from app.services.gifting.enrichment import enrich_product, profile_version_for
 from app.services.gifting.profile import GiftProfile, apply_overrides, embedding_text
+from app.services import locks
 from app.services.wrap import WRAP_TAG
 from core.db.models import CatalogProductRow, CatalogSync, Shop, UsageLog
 from core.shopify_graphql import numeric_id_from_gid, product_gid, shopify_graphql_post
@@ -51,6 +52,7 @@ STALE_SYNC_AFTER = timedelta(hours=6)
 # Unchanged products re-read per sync after a prompt/model change (nightly
 # reconcile → a 5,000-product catalog moves over in a few nights).
 UPGRADES_PER_RUN = 1000
+ANALYZE_LOCK_SECS = 15 * 60   # refreshed after every chunk
 
 PRODUCT_FIELDS = """
   id handle title descriptionHtml productType vendor tags status isGiftCard
@@ -261,7 +263,7 @@ async def analyze_pending(
     chat_fn=chat,
     sync: CatalogSync | None = None,
     upgrade_limit: int = UPGRADES_PER_RUN,
-) -> int:
+) -> int | None:
     """Enrich + embed new or edited products, then re-read up to
     `upgrade_limit` products whose profile predates the current prompt or
     catalog_analysis model, so a model switch spreads over several syncs
@@ -272,7 +274,23 @@ async def analyze_pending(
     Edited products (re-reads) count against the plan's monthly
     product_rereads_per_month; past it they keep their previous profile and
     stay searchable (price/stock still update free). New products and our own
-    prompt/model upgrades never count."""
+    prompt/model upgrades never count.
+
+    Returns None when another analysis of this shop is already running (it
+    keeps picking up pending products until none are left); callers that just
+    changed a product schedule a catch-up (catalog_analyze_shop)."""
+    key = f"catalog-analyze:{shop.id}"
+    token = await locks.acquire(key, ANALYZE_LOCK_SECS)
+    if token is None:
+        return None
+    try:
+        return await _analyze_pending(db, shop, embedder, chat_fn, sync, upgrade_limit,
+                                      keepalive=lambda: locks.extend(key, token, ANALYZE_LOCK_SECS))
+    finally:
+        await locks.release(key, token)
+
+
+async def _analyze_pending(db, shop, embedder, chat_fn, sync, upgrade_limit, keepalive) -> int:
     model = catalog_model_for(shop)
     version = profile_version_for(model)
     done = upgraded = 0
@@ -321,6 +339,7 @@ async def analyze_pending(
             rows = allowed
         if not rows:
             break
+        await keepalive()
 
         results = await asyncio.gather(*(_enrich(r) for r in rows))
         tokens_in = tokens_out = 0
@@ -498,7 +517,8 @@ async def sync_product(
     chat_fn=chat,
     gql: GraphQLFn = shopify_graphql_post,
 ) -> str:
-    """Refresh one product from Shopify. Returns "upserted" | "removed" | "error"."""
+    """Refresh one product from Shopify. Returns "upserted" | "removed" | "error",
+    or "analysis_busy" (saved; another run is analyzing this shop)."""
     resp = await gql(shop.shop_domain, token, PRODUCT_QUERY, {"id": product_gid(product_id)})
     if resp.status_code != 200:
         return "error"
@@ -509,7 +529,8 @@ async def sync_product(
         return "removed"
     await upsert_products(db, shop, [parsed])
     await db.commit()
-    await analyze_pending(db, shop, embedder, chat_fn)
+    if await analyze_pending(db, shop, embedder, chat_fn) is None:
+        return "analysis_busy"          # another run is analyzing this shop
     return "upserted"
 
 

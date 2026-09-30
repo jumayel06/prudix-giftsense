@@ -22,7 +22,8 @@ from app.jobs import enqueue
 from app.purge import purge_shop_data
 from app.workers.orders import annotate_gift_order, sync_wrap
 from app.workers.catalog import (
-    catalog_finish_bulk, catalog_start_sync, catalog_sync_product, kick_catalog_syncs, reconcile_catalogs,
+    catalog_analyze_shop, catalog_finish_bulk, catalog_start_sync, catalog_sync_product, kick_catalog_syncs,
+    reconcile_catalogs,
 )
 from core.config import settings
 from core.db.models import BillingEvent, GiftEvent, ProcessedWebhook, Shop
@@ -336,6 +337,7 @@ class WorkerSettings:
         func(catalog_start_sync, timeout=120),
         func(catalog_finish_bulk, timeout=3600, max_tries=1),
         func(catalog_sync_product, timeout=300, keep_result=0),
+        func(catalog_analyze_shop, timeout=3600, keep_result=0),
         func(annotate_gift_order, timeout=60),
         func(sync_wrap, timeout=120),
     ]

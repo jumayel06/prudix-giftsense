@@ -1,0 +1,990 @@
+[
+ {
+  "n": 1,
+  "title": "Merino Wool Crewneck Sweater",
+  "description_html": "<p><strong>The only sweater you'll reach for every day.</strong></p>\n<p>Made from 100% extra-fine 18.5-micron merino wool, this crewneck sits at the intersection of performance and style. Merino regulates body temperature naturally — warm when it's cold, breathable when it's not — making it the ideal layer from morning commute to evening dinner.</p>\n<p><strong>Why merino over cotton or synthetic blends?</strong> Merino fibres bend rather than scratch, so there's zero itch against bare skin. It also resists odour naturally, meaning you can wear it multiple days between washes without it showing.</p>\n<ul>\n  <li>100% extra-fine merino (18.5 microns) — softer than cashmere blends at a fraction of the price</li>\n  <li>Relaxed crewneck silhouette — works tucked or untucked, layered or solo</li>\n  <li>Reinforced shoulder seams — retains shape wash after wash</li>\n  <li>Colours: Charcoal, Ivory, Forest Green, Slate Blue</li>\n  <li>Machine washable on wool cycle — no dry-cleaning required</li>\n</ul>\n<p><em>Fits true to size. Order your usual size for a relaxed fit, or size down for a closer silhouette.</em></p>",
+  "vendor": "Unbound Merino",
+  "product_type": "Sweaters",
+  "tags": [
+   "merino",
+   "wool",
+   "knitwear",
+   "unisex",
+   "bestseller",
+   "layering"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "S",
+     "M",
+     "L",
+     "XL"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "S",
+    "price": "129.00",
+    "sku": "MERINO-S"
+   },
+   {
+    "option1": "M",
+    "price": "129.00",
+    "sku": "MERINO-M"
+   },
+   {
+    "option1": "L",
+    "price": "129.00",
+    "sku": "MERINO-L"
+   },
+   {
+    "option1": "XL",
+    "price": "129.00",
+    "sku": "MERINO-XL"
+   }
+  ],
+  "image_alt": "Merino wool crewneck sweater in charcoal grey worn by model"
+ },
+ {
+  "n": 2,
+  "title": "Classic Oxford Dress Shirt",
+  "description_html": "<p><strong>The shirt that works harder than you do.</strong></p>\n<p>Cut from a 120s two-ply Oxford weave cotton, this shirt transitions from boardroom to bar without missing a beat. The semi-spread collar holds its shape without stays, the back box pleat adds movement, and the slightly tapered body means it looks intentional whether tucked or untucked.</p>\n<p><strong>What makes a great Oxford shirt:</strong> Thread count alone doesn't determine quality — weave structure does. Two-ply Oxford weave creates a fabric that breathes, holds its colour through dozens of washes, and develops character over time rather than pilling.</p>\n<ul>\n  <li>100% two-ply cotton Oxford weave — 120s thread count, woven in Portugal</li>\n  <li>Semi-spread collar with hidden collar-stand construction (no stays needed)</li>\n  <li>Single-button adjustable cuffs — roll to 3/4 length without falling</li>\n  <li>Box pleat at back yoke for full arm movement</li>\n  <li>Mother-of-pearl buttons — resistant to cracking in machine wash</li>\n  <li>Available in White, Classic Blue, Pale Pink</li>\n</ul>\n<p><strong>Care:</strong> Machine wash cold, tumble dry low, remove immediately — it will need minimal ironing.</p>",
+  "vendor": "Proper Cloth",
+  "product_type": "Shirts",
+  "tags": [
+   "oxford",
+   "shirt",
+   "dress-shirt",
+   "men",
+   "formal",
+   "work",
+   "bestseller"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "S",
+     "M",
+     "L",
+     "XL"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "S",
+    "price": "89.00",
+    "sku": "OXFORD-S"
+   },
+   {
+    "option1": "M",
+    "price": "89.00",
+    "sku": "OXFORD-M"
+   },
+   {
+    "option1": "L",
+    "price": "89.00",
+    "sku": "OXFORD-L"
+   },
+   {
+    "option1": "XL",
+    "price": "89.00",
+    "sku": "OXFORD-XL"
+   }
+  ],
+  "image_alt": "Classic white Oxford dress shirt on model, collar open"
+ },
+ {
+  "n": 3,
+  "title": "High-Waist Compression Leggings",
+  "description_html": "<p><strong>From HIIT to brunch — leggings that hold up to both.</strong></p>\n<p>Built from a 4-way stretch nylon-spandex fabric with 30 UPF sun protection, these high-waist leggings are engineered for performance and styled to wear beyond the gym. The 8cm waistband stays flat and fold-free through any movement, and the deep side pockets actually fit a full-size phone.</p>\n<ul>\n  <li>79% nylon, 21% spandex — 4-way stretch moves with you without sagging</li>\n  <li>High-rise 8cm waistband: non-rolling, supportive without compression discomfort</li>\n  <li>Deep side pockets (hold iPhone 15 Pro Max flat, no bulge)</li>\n  <li>Squat-proof fabric: light-coloured styles include built-in liner</li>\n  <li>UPF 30 protection — safe for outdoor running and yoga</li>\n  <li>Flat-lock seams: no chafing on long runs or cycling</li>\n  <li>Available in Black, Navy, Sage Green, Dusty Rose</li>\n</ul>\n<p><em>Fits true to size. If between sizes, size up for comfort during high-impact workouts.</em></p>",
+  "vendor": "Vuori",
+  "product_type": "Activewear",
+  "tags": [
+   "leggings",
+   "activewear",
+   "yoga",
+   "running",
+   "women",
+   "bestseller",
+   "gym"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "XS",
+     "S",
+     "M",
+     "L"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "XS",
+    "price": "98.00",
+    "sku": "LEGGINGS-XS"
+   },
+   {
+    "option1": "S",
+    "price": "98.00",
+    "sku": "LEGGINGS-S"
+   },
+   {
+    "option1": "M",
+    "price": "98.00",
+    "sku": "LEGGINGS-M"
+   },
+   {
+    "option1": "L",
+    "price": "98.00",
+    "sku": "LEGGINGS-L"
+   }
+  ],
+  "image_alt": "High-waist black compression leggings worn by model in yoga pose"
+ },
+ {
+  "n": 4,
+  "title": "Premium Down Puffer Jacket",
+  "description_html": "<p><strong>Warmth without the bulk — engineered for real winters.</strong></p>\n<p>Filled with 750-fill-power Responsible Down Standard (RDS) certified goose down, this jacket delivers serious warmth at a fraction of the weight of traditional winter coats. The DWR (Durable Water Repellent) outer shell sheds light rain and snow, while the baffled construction prevents cold spots at the seams.</p>\n<p><strong>Fill power matters more than fill weight:</strong> 750-fill-power down is lofter, lighter, and compresses smaller than budget down fills. This jacket packs into its own chest pocket — carry-on size, 580g total weight.</p>\n<ul>\n  <li>750-fill-power RDS-certified goose down — traceable, humane sourcing</li>\n  <li>DWR-treated 20D ripstop nylon shell — sheds rain, won't wet-out</li>\n  <li>Baffled construction: no cold spots at seam joins</li>\n  <li>YKK zippers throughout — smooth, snag-free for years</li>\n  <li>Packable: stuffs into chest zip pocket, 580g total</li>\n  <li>Rated to -10°C / 14°F as a standalone layer</li>\n  <li>Colours: Midnight Black, Olive, Burgundy, Frost Grey</li>\n</ul>",
+  "vendor": "Arc'teryx",
+  "product_type": "Jackets",
+  "tags": [
+   "jacket",
+   "puffer",
+   "down",
+   "winter",
+   "outerwear",
+   "packable",
+   "bestseller"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "S",
+     "M",
+     "L",
+     "XL"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "S",
+    "price": "299.00",
+    "sku": "PUFFER-S"
+   },
+   {
+    "option1": "M",
+    "price": "299.00",
+    "sku": "PUFFER-M"
+   },
+   {
+    "option1": "L",
+    "price": "299.00",
+    "sku": "PUFFER-L"
+   },
+   {
+    "option1": "XL",
+    "price": "299.00",
+    "sku": "PUFFER-XL"
+   }
+  ],
+  "image_alt": "Premium down puffer jacket in midnight black worn by model outdoors"
+ },
+ {
+  "n": 5,
+  "title": "Slim Stretch Denim Jeans",
+  "description_html": "<p><strong>Denim that actually moves with you.</strong></p>\n<p>These slim-fit jeans use a 3% elastane weft yarn woven through Cone Denim's American-milled selvedge fabric. The result is a jean that holds a clean, tailored silhouette without the stiffness of raw denim — they stretch enough for full-range squats and cycling, snap back without sagging.</p>\n<p><strong>Selvedge vs. standard denim:</strong> Selvedge is woven on narrow shuttle looms, creating a tighter, denser weave that fades more naturally and holds its shape longer. Most denim today is woven on high-speed machines — selvedge takes 6× longer per yard and shows over time.</p>\n<ul>\n  <li>97% Cone Denim selvedge cotton, 3% elastane — USA milled</li>\n  <li>Slim cut through thigh and leg, not skinny — full range of motion</li>\n  <li>Mid-rise 10.5\" rise — sits at natural waist, no gap at back</li>\n  <li>5-pocket construction with reinforced coin pocket rivets</li>\n  <li>Copper rivets and tack buttons — last the lifetime of the denim</li>\n  <li>Available in Indigo (raw), Washed Blue, Faded Black</li>\n</ul>\n<p><em>Sizes are waist in inches. Inseam is 32\" — hemming service available at checkout.</em></p>",
+  "vendor": "AG Jeans",
+  "product_type": "Jeans",
+  "tags": [
+   "jeans",
+   "denim",
+   "slim",
+   "stretch",
+   "selvedge",
+   "men"
+  ],
+  "options": [
+   {
+    "name": "Waist",
+    "values": [
+     "W30",
+     "W32",
+     "W34",
+     "W36"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "W30",
+    "price": "149.00",
+    "sku": "DENIM-30"
+   },
+   {
+    "option1": "W32",
+    "price": "149.00",
+    "sku": "DENIM-32"
+   },
+   {
+    "option1": "W34",
+    "price": "149.00",
+    "sku": "DENIM-34"
+   },
+   {
+    "option1": "W36",
+    "price": "149.00",
+    "sku": "DENIM-36"
+   }
+  ],
+  "image_alt": "Slim stretch denim jeans in indigo blue worn by model"
+ },
+ {
+  "n": 6,
+  "title": "Floral Wrap Midi Dress",
+  "description_html": "<p><strong>One dress. Every occasion.</strong></p>\n<p>The wrap silhouette is the most universally flattering cut in fashion — it cinches at the waist, drapes over the hip, and adjusts to your exact body by tying at the front. This midi length version in a digital-print floral on 100% LENZING™ EcoVero™ viscose is the piece that travels from garden party to work dinner without a second outfit.</p>\n<ul>\n  <li>100% LENZING™ EcoVero™ viscose — certified sustainable wood-fibre fabric, flows like silk</li>\n  <li>Adjustable wrap front: ties at natural waist for a bespoke fit on every body</li>\n  <li>Midi length (ankle to mid-calf depending on height) — formal enough for events, casual enough for lunch</li>\n  <li>V-neckline flatters all necklines</li>\n  <li>Two hidden hip pockets — holds phone and keys</li>\n  <li>Digital floral print: fade-resistant reactive dye, stays vibrant after 50+ washes</li>\n</ul>\n<p><strong>Styling note:</strong> Pairs with block-heel sandals and a linen blazer for the office, or white sneakers and a denim jacket for weekends.</p>",
+  "vendor": "Faithfull the Brand",
+  "product_type": "Dresses",
+  "tags": [
+   "dress",
+   "floral",
+   "wrap",
+   "midi",
+   "women",
+   "summer",
+   "occasion",
+   "bestseller"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "XS",
+     "S",
+     "M",
+     "L"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "XS",
+    "price": "119.00",
+    "sku": "DRESS-XS"
+   },
+   {
+    "option1": "S",
+    "price": "119.00",
+    "sku": "DRESS-S"
+   },
+   {
+    "option1": "M",
+    "price": "119.00",
+    "sku": "DRESS-M"
+   },
+   {
+    "option1": "L",
+    "price": "119.00",
+    "sku": "DRESS-L"
+   }
+  ],
+  "image_alt": "Floral wrap midi dress in bloom print worn by model outdoors"
+ },
+ {
+  "n": 7,
+  "title": "Low-Top Leather Sneakers",
+  "description_html": "<p><strong>The sneaker that goes with everything — and gets better with age.</strong></p>\n<p>Constructed on a hand-lasted last over a full-grain vegetable-tanned leather upper, these low-tops were designed for the long game. Vegetable tanning uses oak bark rather than chromium — slower and more expensive, but produces leather that breathes, develops a patina, and lasts 10+ years with basic care.</p>\n<ul>\n  <li>Full-grain vegetable-tanned leather upper — no corrected-grain or bonded leather shortcuts</li>\n  <li>Cupsole construction: vulcanised rubber outsole bonded to a cushioned EVA midsole</li>\n  <li>Leather-lined interior: breathes and moulds to your foot shape over time</li>\n  <li>Unisex sizing (EU sizing chart at base of page)</li>\n  <li>Colourways: White/White, White/Gum, Black/Black</li>\n  <li>Ages into a natural patina — each pair develops uniquely</li>\n</ul>\n<p><strong>Care:</strong> Condition with leather balm every 2–3 months. Use a suede brush on creased toes to restore texture.</p>",
+  "vendor": "Common Projects",
+  "product_type": "Sneakers",
+  "tags": [
+   "sneakers",
+   "leather",
+   "shoes",
+   "minimalist",
+   "unisex",
+   "white",
+   "bestseller"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "UK 7",
+     "UK 8",
+     "UK 9",
+     "UK 10",
+     "UK 11"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "UK 7",
+    "price": "199.00",
+    "sku": "SNKR-7"
+   },
+   {
+    "option1": "UK 8",
+    "price": "199.00",
+    "sku": "SNKR-8"
+   },
+   {
+    "option1": "UK 9",
+    "price": "199.00",
+    "sku": "SNKR-9"
+   },
+   {
+    "option1": "UK 10",
+    "price": "199.00",
+    "sku": "SNKR-10"
+   },
+   {
+    "option1": "UK 11",
+    "price": "199.00",
+    "sku": "SNKR-11"
+   }
+  ],
+  "image_alt": "White leather low-top sneakers on clean white surface"
+ },
+ {
+  "n": 8,
+  "title": "Cashmere Ribbed Beanie",
+  "description_html": "<p><strong>The hat you'll fight over in winter.</strong></p>\n<p>Knit from Grade A Inner Mongolian cashmere in a 2×2 rib pattern, this beanie is the best cold-weather accessory you'll ever own. Cashmere is 8× warmer than sheep's wool by weight — which is why this beanie weighs 68g and outperforms most full-length wool scarves.</p>\n<ul>\n  <li>100% Grade A 2-ply cashmere — sourced from Inner Mongolia's Alashan region</li>\n  <li>2×2 rib pattern: stretches to fit all head sizes, springs back to shape</li>\n  <li>Slight slouch construction — sits back on the head rather than over the ears if preferred</li>\n  <li>Colours: Black, Camel, Ivory, Burgundy, Sage Green</li>\n  <li>Unisex — one size fits most</li>\n  <li>Hand wash cold, dry flat — will last 10+ years with proper care</li>\n</ul>\n<p><em>Our most-gifted item — includes a ribbon box and gift card option at checkout.</em></p>",
+  "vendor": "Quince",
+  "product_type": "Hats",
+  "tags": [
+   "beanie",
+   "cashmere",
+   "hat",
+   "winter",
+   "gift",
+   "unisex",
+   "accessories",
+   "bestseller"
+  ],
+  "options": [
+   {
+    "name": "Colour",
+    "values": [
+     "Black",
+     "Camel",
+     "Ivory",
+     "Burgundy"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "Black",
+    "price": "49.00",
+    "sku": "BEANIE-BLK"
+   },
+   {
+    "option1": "Camel",
+    "price": "49.00",
+    "sku": "BEANIE-CAM"
+   },
+   {
+    "option1": "Ivory",
+    "price": "49.00",
+    "sku": "BEANIE-IVY"
+   },
+   {
+    "option1": "Burgundy",
+    "price": "49.00",
+    "sku": "BEANIE-BUR"
+   }
+  ],
+  "image_alt": "Cashmere ribbed beanie in camel worn by model, slight slouch"
+ },
+ {
+  "n": 9,
+  "title": "Oversized Pullover Hoodie",
+  "description_html": "<p>A heavyweight 400gsm French terry cotton hoodie with a relaxed oversized fit. Double-lined hood, kangaroo pocket, and ribbed cuffs and hem keep their shape after repeated washing. A wardrobe anchor for cooler months.</p><ul><li>400gsm 100% ring-spun cotton French terry</li><li>Garment-dyed for a slightly worn, vintage feel</li><li>Relaxed fit — size down if you prefer a closer silhouette</li><li>Available in Washed Black, Vintage Grey, Stone</li></ul>",
+  "vendor": "American Giant",
+  "product_type": "Hoodies",
+  "tags": [
+   "hoodie",
+   "sweatshirt",
+   "oversized",
+   "cotton",
+   "casual"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "S",
+     "M",
+     "L",
+     "XL"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "S",
+    "price": "89.00",
+    "sku": "HOODIE-S"
+   },
+   {
+    "option1": "M",
+    "price": "89.00",
+    "sku": "HOODIE-M"
+   },
+   {
+    "option1": "L",
+    "price": "89.00",
+    "sku": "HOODIE-L"
+   },
+   {
+    "option1": "XL",
+    "price": "89.00",
+    "sku": "HOODIE-XL"
+   }
+  ],
+  "image_alt": "Oversized pullover hoodie in washed black"
+ },
+ {
+  "n": 10,
+  "title": "Linen Drawstring Shorts",
+  "description_html": "<p>Lightweight 100% linen shorts with an elastic-and-drawstring waistband and two deep side pockets. The natural linen weave gets softer with every wash and keeps you cooler than cotton or synthetic blends in summer heat.</p><ul><li>100% stonewashed linen — pre-washed for softness</li><li>8\" inseam — covers the thigh without restricting movement</li><li>Two side pockets and one back welt pocket</li><li>Available in Sand, Navy, Terracotta</li></ul>",
+  "vendor": "Onia",
+  "product_type": "Shorts",
+  "tags": [
+   "shorts",
+   "linen",
+   "summer",
+   "men",
+   "women",
+   "casual"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "S",
+     "M",
+     "L",
+     "XL"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "S",
+    "price": "65.00",
+    "sku": "SHORTS-S"
+   },
+   {
+    "option1": "M",
+    "price": "65.00",
+    "sku": "SHORTS-M"
+   },
+   {
+    "option1": "L",
+    "price": "65.00",
+    "sku": "SHORTS-L"
+   },
+   {
+    "option1": "XL",
+    "price": "65.00",
+    "sku": "SHORTS-XL"
+   }
+  ],
+  "image_alt": "Linen drawstring shorts in sand colour flat lay"
+ },
+ {
+  "n": 11,
+  "title": "Ribbed Cropped Tank Top",
+  "description_html": "<p>A versatile ribbed crop tank in a 95/5 cotton-elastane blend that holds its shape through workouts and wear. The wide-strap silhouette works solo as a workout top or layered under an oversized blazer for going out.</p><ul><li>95% cotton, 5% elastane ribbed jersey</li><li>Cropped length hits 2\" above hip bone on a 5'6\" model</li><li>Wide straps — no bra strap visible for most styles</li><li>Available in Black, White, Clay, Sage</li></ul>",
+  "vendor": "",
+  "product_type": "Tops",
+  "tags": [
+   "tank",
+   "crop",
+   "ribbed",
+   "women",
+   "activewear",
+   "casual"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "XS",
+     "S",
+     "M",
+     "L"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "XS",
+    "price": "29.00",
+    "sku": "TANK-XS"
+   },
+   {
+    "option1": "S",
+    "price": "29.00",
+    "sku": "TANK-S"
+   },
+   {
+    "option1": "M",
+    "price": "29.00",
+    "sku": "TANK-M"
+   },
+   {
+    "option1": "L",
+    "price": "29.00",
+    "sku": "TANK-L"
+   }
+  ],
+  "image_alt": "Ribbed cropped tank top in clay colour on hanger"
+ },
+ {
+  "n": 12,
+  "title": "Belted Trench Coat",
+  "description_html": "<p>A classic double-breasted trench in a water-resistant 65/35 cotton-polyester gabardine. The removable belt cinches at the waist, and the storm flap and gun patch are functional rather than decorative. Fits over a suit jacket or heavy knitwear.</p><ul><li>65% cotton, 35% polyester gabardine — water-resistant finish</li><li>Removable belt with D-ring buckle</li><li>Functional epaulettes and storm flap</li><li>Fits over a suit jacket</li><li>Available in Camel, Beige, Black</li></ul>",
+  "vendor": "Banana Republic",
+  "product_type": "Coats",
+  "tags": [
+   "trench",
+   "coat",
+   "outerwear",
+   "classic",
+   "spring",
+   "autumn"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "XS",
+     "S",
+     "M",
+     "L"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "XS",
+    "price": "229.00",
+    "sku": "TRENCH-XS"
+   },
+   {
+    "option1": "S",
+    "price": "229.00",
+    "sku": "TRENCH-S"
+   },
+   {
+    "option1": "M",
+    "price": "229.00",
+    "sku": "TRENCH-M"
+   },
+   {
+    "option1": "L",
+    "price": "229.00",
+    "sku": "TRENCH-L"
+   }
+  ],
+  "image_alt": "Classic belted trench coat in camel worn by model on street"
+ },
+ {
+  "n": 13,
+  "title": "Waxed Canvas Tote Bag",
+  "description_html": "<p>Heavy-duty 18oz waxed canvas tote with reinforced cotton webbing handles and a raw-edge interior. The wax finish repels light rain and develops a natural weathered patina over years of use. Deep enough for a 15\" laptop, gym kit, or a week of groceries.</p><ul><li>18oz waxed canvas — water-resistant, gets better with age</li><li>Reinforced 1\" cotton webbing handles — tested to 30kg load</li><li>Interior zip pocket for keys and phone</li><li>Riveted handle joins — no stitching to blow out</li><li>Available in Natural, Black, Olive</li></ul>",
+  "vendor": "",
+  "product_type": "Bags",
+  "tags": [
+   "tote",
+   "bag",
+   "canvas",
+   "everyday",
+   "work",
+   "gym"
+  ],
+  "options": [
+   {
+    "name": "Colour",
+    "values": [
+     "Natural",
+     "Black"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "Natural",
+    "price": "38.00",
+    "sku": "TOTE-NAT"
+   },
+   {
+    "option1": "Black",
+    "price": "38.00",
+    "sku": "TOTE-BLK"
+   }
+  ],
+  "image_alt": "Waxed canvas tote bag in natural colourway with leather patch"
+ },
+ {
+  "n": 14,
+  "title": "Printed Silk Square Scarf",
+  "description_html": "<p>A 90×90cm square scarf in 12mm satin-weave silk with a hand-rolled hem. Wear as a headscarf, neck scarf, tied to a bag, or as a bandeau top. The geometric print is produced using water-based reactive inks that won't crack or fade.</p><ul><li>100% 12mm silk — lightweight and breathable</li><li>Hand-rolled hem — the mark of quality silk craftsmanship</li><li>90×90cm square — versatile size for head, neck, or wrist</li><li>Reactive-ink print: colour-fast through 50+ hand washes</li></ul>",
+  "vendor": "",
+  "product_type": "Accessories",
+  "tags": [
+   "scarf",
+   "silk",
+   "accessories",
+   "gift",
+   "women"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "One Size"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "One Size",
+    "price": "55.00",
+    "sku": "SCARF-01"
+   }
+  ],
+  "image_alt": "Printed silk square scarf in geometric pattern laid flat"
+ },
+ {
+  "n": 15,
+  "title": "Basic Cotton Tee",
+  "description_html": "",
+  "vendor": "",
+  "product_type": "T-Shirts",
+  "tags": [
+   "tshirt"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "S",
+     "M",
+     "L",
+     "XL"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "S",
+    "price": "19.00",
+    "sku": "BTEE-S"
+   },
+   {
+    "option1": "M",
+    "price": "19.00",
+    "sku": "BTEE-M"
+   },
+   {
+    "option1": "L",
+    "price": "19.00",
+    "sku": "BTEE-L"
+   },
+   {
+    "option1": "XL",
+    "price": "19.00",
+    "sku": "BTEE-XL"
+   }
+  ],
+  "image_alt": "Basic Cotton Tee"
+ },
+ {
+  "n": 16,
+  "title": "Sport Running Shorts",
+  "description_html": "<p>Running shorts. Lightweight. Side pockets. Good for gym.</p>",
+  "vendor": "",
+  "product_type": "Activewear",
+  "tags": [
+   "shorts",
+   "sport"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "S",
+     "M",
+     "L",
+     "XL"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "S",
+    "price": "25.00",
+    "sku": "SPORT-S"
+   },
+   {
+    "option1": "M",
+    "price": "25.00",
+    "sku": "SPORT-M"
+   },
+   {
+    "option1": "L",
+    "price": "25.00",
+    "sku": "SPORT-L"
+   },
+   {
+    "option1": "XL",
+    "price": "25.00",
+    "sku": "SPORT-XL"
+   }
+  ],
+  "image_alt": "Sport Running Shorts"
+ },
+ {
+  "n": 17,
+  "title": "Full-Zip Fleece Hoodie",
+  "description_html": "<p>Material: Polyester fleece. Closure: Full zip. Pockets: 2 side pockets. Hood: Yes. Colors: Black, Grey.</p>",
+  "vendor": "",
+  "product_type": "Hoodies",
+  "tags": [
+   "hoodie",
+   "fleece",
+   "zip"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "S",
+     "M",
+     "L",
+     "XL"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "S",
+    "price": "55.00",
+    "sku": "ZHOODIE-S"
+   },
+   {
+    "option1": "M",
+    "price": "55.00",
+    "sku": "ZHOODIE-M"
+   },
+   {
+    "option1": "L",
+    "price": "55.00",
+    "sku": "ZHOODIE-L"
+   },
+   {
+    "option1": "XL",
+    "price": "55.00",
+    "sku": "ZHOODIE-XL"
+   }
+  ],
+  "image_alt": "Full-Zip Fleece Hoodie"
+ },
+ {
+  "n": 18,
+  "title": "Platform Block Heel Sandals",
+  "description_html": "<p>Platform sandals. Great for summer. Order now.</p>",
+  "vendor": "",
+  "product_type": "Shoes",
+  "tags": [
+   "sandals",
+   "shoes",
+   "summer"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "UK 5",
+     "UK 6",
+     "UK 7"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "UK 5",
+    "price": "79.00",
+    "sku": "SANDAL-5"
+   },
+   {
+    "option1": "UK 6",
+    "price": "79.00",
+    "sku": "SANDAL-6"
+   },
+   {
+    "option1": "UK 7",
+    "price": "79.00",
+    "sku": "SANDAL-7"
+   }
+  ],
+  "image_alt": "Platform Block Heel Sandals"
+ },
+ {
+  "n": 19,
+  "title": "Vintage Washed Denim Jacket",
+  "description_html": "<p>Denim jacket. Vintage wash. Fits well.</p>",
+  "vendor": "",
+  "product_type": "Jackets",
+  "tags": [
+   "denim",
+   "jacket"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "S",
+     "M",
+     "L",
+     "XL"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "S",
+    "price": "89.00",
+    "sku": "DJKT-S"
+   },
+   {
+    "option1": "M",
+    "price": "89.00",
+    "sku": "DJKT-M"
+   },
+   {
+    "option1": "L",
+    "price": "89.00",
+    "sku": "DJKT-L"
+   },
+   {
+    "option1": "XL",
+    "price": "89.00",
+    "sku": "DJKT-XL"
+   }
+  ],
+  "image_alt": "Vintage Washed Denim Jacket"
+ },
+ {
+  "n": 20,
+  "title": "Logo Snapback Cap",
+  "description_html": "<p>Nice cap. Buy it.</p>",
+  "vendor": "",
+  "product_type": "Hats",
+  "tags": [
+   "cap",
+   "hat"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "One Size"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "One Size",
+    "price": "28.00",
+    "sku": "CAP-01"
+   }
+  ],
+  "image_alt": "Logo Snapback Cap"
+ },
+ {
+  "n": 21,
+  "title": "Bamboo Cushioned Crew Socks 3-Pack",
+  "description_html": "",
+  "vendor": "",
+  "product_type": "Socks",
+  "tags": [
+   "socks",
+   "bamboo"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "One Size"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "One Size",
+    "price": "18.00",
+    "sku": "SOCKS-01"
+   }
+  ],
+  "image_alt": "Bamboo Cushioned Crew Socks 3-Pack"
+ },
+ {
+  "n": 22,
+  "title": "Polar Fleece Quarter-Zip Pullover",
+  "description_html": "<p>Fleece pullover. Quarter zip. Warm. Good for outdoors.</p>",
+  "vendor": "",
+  "product_type": "Sweatshirts",
+  "tags": [
+   "fleece",
+   "pullover",
+   "quarter-zip"
+  ],
+  "options": [
+   {
+    "name": "Size",
+    "values": [
+     "S",
+     "M",
+     "L",
+     "XL"
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "option1": "S",
+    "price": "69.00",
+    "sku": "FLEECE-S"
+   },
+   {
+    "option1": "M",
+    "price": "69.00",
+    "sku": "FLEECE-M"
+   },
+   {
+    "option1": "L",
+    "price": "69.00",
+    "sku": "FLEECE-L"
+   },
+   {
+    "option1": "XL",
+    "price": "69.00",
+    "sku": "FLEECE-XL"
+   }
+  ],
+  "image_alt": "Polar Fleece Quarter-Zip Pullover"
+ }
+]

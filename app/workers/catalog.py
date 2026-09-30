@@ -17,6 +17,7 @@ from datetime import datetime, timedelta, timezone
 import structlog
 from sqlalchemy import select
 
+from app.jobs import enqueue
 from app.llm import chat
 from app.services import catalog_sync
 from app.services.gifting.embeddings import OpenAIEmbedder
@@ -59,13 +60,35 @@ async def catalog_finish_bulk(ctx: dict, shop_domain: str, bulk_operation_id: st
         await catalog_sync.finish_bulk_sync(db, shop, token, bulk_operation_id, _embedder(), chat)
 
 
+CATCH_UP_DELAY_SECS = 60
+
+
 async def catalog_sync_product(ctx: dict, shop_domain: str, product_id: str) -> None:
     async with AsyncSessionLocal() as db:
         shop = await _active_shop(db, shop_domain=shop_domain)
         if shop is None:
             return
         token = await get_valid_access_token(shop, db)
-        await catalog_sync.sync_product(db, shop, token, product_id, _embedder(), chat)
+        result = await catalog_sync.sync_product(db, shop, token, product_id, _embedder(), chat)
+        if result == "analysis_busy":
+            await _schedule_catch_up(shop)
+
+
+async def catalog_analyze_shop(ctx: dict, shop_domain: str) -> None:
+    """Catch-up analysis after a product changed while another run held the
+    shop's analysis lock (the running one may already have covered it)."""
+    async with AsyncSessionLocal() as db:
+        shop = await _active_shop(db, shop_domain=shop_domain)
+        if shop is None:
+            return
+        if await catalog_sync.analyze_pending(db, shop, _embedder(), chat) is None:
+            await _schedule_catch_up(shop)
+
+
+async def _schedule_catch_up(shop: Shop) -> None:
+    # One pending catch-up per shop (ARQ refuses a duplicate _job_id).
+    await enqueue("catalog_analyze_shop", shop.shop_domain,
+                  _job_id=f"catalog-analyze:{shop.id}", _defer_by=CATCH_UP_DELAY_SECS)
 
 
 async def _active_shop_ids(db) -> list[tuple]:
