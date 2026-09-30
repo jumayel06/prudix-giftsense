@@ -5,7 +5,12 @@ name = "GiftSense gift cards"
 handle = "giftsense-print"
 type = "ui_extension"
 
-# Order details → Print menu → "GiftSense gift cards": one card per gift.
+# Order details → Print → "GiftSense gift cards" (cards and/or gift receipt).
 [[extensions.targeting]]
 module = "./src/PrintAction.jsx"
 target = "admin.order-details.print-action.render"
+
+# Orders list → select orders → Print → same, for up to 50 orders.
+[[extensions.targeting]]
+module = "./src/PrintAction.jsx"
+target = "admin.order-index.selection-print-action.render"
