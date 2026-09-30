@@ -84,7 +84,8 @@ export default function EditProfileModal({ product, options, onClose, onSaved })
           <Toggles label="Occasions" options={options.occasions} value={occasions} onChange={setOccasions} />
           <Toggles label={`Vibes (up to ${MAX_VIBES})`} options={options.vibes} value={vibes} onChange={setVibes} max={MAX_VIBES} />
           <TextField
-            label="Gift pitch" helpText="One sentence on why it makes a good gift. Shown to the AI, not directly to shoppers."
+            label="Gift pitch"
+            helpText="Our AI wrote this from your listing: one sentence on why it makes a good gift. The gift finder uses it to match this product to what shoppers ask for. Shoppers never see it, so edit it freely if it misses the point."
             value={pitch} onChange={setPitch} multiline={2} maxLength={MAX_PITCH} showCharacterCount autoComplete="off"
           />
           {invalid && <Text as="p" tone="critical">Pick at least one recipient and one occasion.</Text>}
