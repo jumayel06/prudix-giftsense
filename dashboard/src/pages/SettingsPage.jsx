@@ -107,18 +107,25 @@ export default function SettingsPage() {
         >
           <Card>
             <BlockStack gap="300">
-              {data.ai_tiers_available.map(t => {
+              {Object.keys(data.ai_tiers).map(t => {
                 const tier = data.ai_tiers[t]
+                const locked = !data.ai_tiers_available.includes(t)
                 return (
                   <RadioButton
                     key={t}
                     id={`ai-tier-${t}`}
                     name="ai-tier"
-                    label={tier.label}
+                    disabled={locked}
+                    label={
+                      <InlineStack gap="200" blockAlign="center">
+                        <span>{tier.label}</span>
+                        {locked && tier.plan && <Badge tone="info" size="small">{`Available on ${tier.plan}`}</Badge>}
+                      </InlineStack>
+                    }
                     helpText={
                       <BlockStack gap="050">
                         <span>{tier.description}</span>
-                        {data.ai_tier_models?.[t] && (
+                        {!locked && data.ai_tier_models?.[t] && (
                           <Text as="span" variant="bodySm" tone="subdued">
                             Currently runs on {data.ai_tier_models[t]}.
                           </Text>
@@ -132,8 +139,10 @@ export default function SettingsPage() {
               })}
               <Text as="p" variant="bodySm" tone="subdued">
                 We move each option to better AI models as they're released, at no extra cost to you.
-                {data.plan_tier !== 'pro' && ' Stronger options are available on higher plans.'}
               </Text>
+              {data.ai_tiers_available.length < Object.keys(data.ai_tiers).length && (
+                <InlineStack><Button onClick={() => navigate('/plans')}>See plans</Button></InlineStack>
+              )}
             </BlockStack>
           </Card>
         </Layout.AnnotatedSection>

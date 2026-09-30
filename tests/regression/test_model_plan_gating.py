@@ -158,3 +158,16 @@ class TestSettingsPayload:
         assert data["ai_tier_models"] == {"standard": "GPT-6 Luna", "advanced": "GPT-6 Sol"}
         assert "gpt-6" not in str(data) and "claude-" not in str(data)
         assert data["features"] == PLANS["growth"]["features"]
+
+
+@pytest.mark.asyncio
+async def test_settings_lists_every_tier_with_the_plan_that_unlocks_it(db_session):
+    """Growth sees Premium as locked ("Available on Pro"), not hidden."""
+    db_session.add(make_shop(plan_tier="growth", plan_status="active", selected_model="advanced"))
+    await db_session.commit()
+    for client in _make_client(db_session):
+        data = client.get(f"/api/settings?shop={TEST_SHOP_DOMAIN}").json()
+    assert set(data["ai_tiers"]) == {"standard", "advanced", "premium"}
+    assert data["ai_tiers_available"] == ["standard", "advanced"]
+    assert {t: v["plan"] for t, v in data["ai_tiers"].items()} == {
+        "standard": "Starter", "advanced": "Growth", "premium": "Pro"}

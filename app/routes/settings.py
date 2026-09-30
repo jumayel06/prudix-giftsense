@@ -62,7 +62,10 @@ async def get_settings(
 
 
 def _ai_tier_catalog() -> dict:
-    return {t: {"label": s["label"], "description": s["description"], "weight": s["weight"]}
+    # `plan`: the lowest plan that includes the tier, so Settings can show locked
+    # tiers ("Available on Pro") instead of hiding them.
+    return {t: {"label": s["label"], "description": s["description"], "weight": s["weight"],
+                "plan": next((p["name"] for p in PLANS.values() if t in p["ai_tiers"]), None)}
             for t, s in AI_TIERS.items()}
 
 
