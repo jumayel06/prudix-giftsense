@@ -105,7 +105,8 @@ async def catalog_status(shop: Shop = Depends(get_current_shop), db: AsyncSessio
         "limit": product_limit(shop), "is_trial": shop.plan_status == "trial_active",
         "rereads_used": rereads_limit(shop) - remaining, "rereads_limit": rereads_limit(shop), "held": held,
         # This cycle's catalog analysis budget is used up (margin guarantee):
-        # new/edited products wait for the next cycle.
+        # new/edited products wait for the next cycle. A flag only: budgets and
+        # costs are never shown to merchants.
         "analysis_paused": await get_cycle_cost_usd(shop, db, catalog=True) >= catalog_budget_for(shop),
         "next_manual_sync_at": next_manual.isoformat() if next_manual else None,
         "sync": _sync_json(latest),
@@ -216,7 +217,9 @@ async def playground_search(
         "mode": rec.mode, "latency_ms": latency_ms, "used_fallback": rec.used_fallback,
         "candidates_considered": rec.candidates_considered,
         "charged": result.charged,
-        "limited": result.limited,           # why AI wasn't used (e.g. generation_limit)
+        # Any monthly limit (generations or the internal cost budget) looks the
+        # same to merchants: never expose which, or any cost figure.
+        "ai_limit_reached": result.limited not in (None, "inactive"),
     }
 
 

@@ -156,7 +156,8 @@ async def test_playground_returns_picks_and_is_metered_like_a_search(db_session,
     logs = (await db_session.execute(select(UsageLog).order_by(UsageLog.created_at))).scalars().all()
     assert {l.action_type for l in logs} == {"playground"}
     assert sum(l.generations_consumed for l in logs) == 2 and sum(float(l.cost_usd) for l in logs) > 0
-    assert data["charged"] is True and data["limited"] is None
+    assert data["charged"] is True and data["ai_limit_reached"] is False
+    assert not any(k in data for k in ("limited", "cost_usd", "budget"))
 
 
 @pytest.mark.asyncio
