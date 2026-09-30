@@ -29,7 +29,7 @@ from app.ai_models import model_for_shop
 from app.config import PLANS
 from app.llm import chat, moderate
 from app.plan_guard import may_generate
-from app.services import catalog_index, metering, rate_limit
+from app.services import catalog_index, metering, rate_limit, wrap
 from app.services.gift_settings import NOTE_TONES, Tone, note_settings
 from app.services.gifting import vocab
 from app.services.gifting.brief import GiftBrief, intake_options
@@ -73,6 +73,8 @@ async def widget_config(shop: Shop = Depends(storefront_shop)):
         # Banned words stay server-side; the draft endpoint enforces them.
         "notes": {"tone": notes["tone"], "max_chars": notes["max_chars"],
                   "tones": [{"value": k, "label": v} for k, v in NOTE_TONES.items()]},
+        # Offered in the gift panel, never pre-selected, price always shown.
+        "wrap": wrap.storefront_styles(shop) if "gift_wrap" in features else [],
     })
 
 
@@ -236,7 +238,7 @@ async def note_draft(body: NoteDraftRequest, request: Request, shop: Shop = Depe
 # ── Analytics beacon ─────────────────────────────────────────────────────────
 
 EVENT_TYPES = {"widget_open", "intake_complete", "pick_click", "pick_atc", "refine",
-               "panel_open", "note_drafted", "panel_submit"}
+               "panel_open", "note_drafted", "panel_submit", "wrap_added"}
 EVENTS_PER_SID_PER_HOUR = 300
 
 

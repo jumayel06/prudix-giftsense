@@ -47,7 +47,7 @@ api_version = "2026-07"
 # write_order_edits: recipient's choice (Pro)
 # write_merchant_managed_fulfillment_orders: arrive-by holds (Growth+)
 # read_themes: detect whether the app embed is switched on
-scopes = "read_products,write_products,read_orders,write_orders,write_order_edits,write_merchant_managed_fulfillment_orders,read_themes"
+scopes = "read_products,write_products,read_orders,write_orders,write_order_edits,write_merchant_managed_fulfillment_orders,read_themes,write_publications"
 optional_scopes = [ ]
 # Managed install / token exchange (NOT legacy OAuth redirect). The backend
 # provisions the shop row via session-token exchange on first authenticated load

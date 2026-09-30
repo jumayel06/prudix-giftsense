@@ -34,6 +34,7 @@ from app.services.gifting.embeddings import Embedder
 from app.ai_models import catalog_model_for
 from app.services.gifting.enrichment import enrich_product, profile_version_for
 from app.services.gifting.profile import GiftProfile, apply_overrides, embedding_text
+from app.services.wrap import WRAP_TAG
 from core.db.models import CatalogProductRow, CatalogSync, Shop, UsageLog
 from core.shopify_graphql import numeric_id_from_gid, product_gid, shopify_graphql_post
 
@@ -91,6 +92,8 @@ def parse_product(node: dict | None) -> dict | None:
     on password-protected (not yet launched) stores even for published
     products, which silently emptied the dev store's catalog (2026-09-29)."""
     if not node or node.get("status") != "ACTIVE" or node.get("isGiftCard") or not node.get("publishedAt"):
+        return None
+    if WRAP_TAG in (node.get("tags") or []):          # our own hidden Gift wrap product
         return None
     prices = node.get("priceRangeV2") or {}
     price_min = float(((prices.get("minVariantPrice") or {}).get("amount")) or 0)

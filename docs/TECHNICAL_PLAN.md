@@ -243,7 +243,7 @@ Identical variants assigned to different people become separate cart lines (diff
 
 ### 6.4 Wrap
 
-- The merchant sets 2–3 styles (name, price, image). The app creates **one hidden "Gift wrap" product** (`productCreate` + `productVariantsBulkCreate`), with one variant per style, inventory untracked, and `seo.hidden=1`. *Verify whether publishing it needs `write_publications`; otherwise onboarding asks the merchant to publish it with one click.*
+- The merchant sets 2–3 styles (name, price, image). The app creates **one hidden "Gift wrap" product** (`productSet`, status `UNLISTED`, tag `giftsense-wrap`), with one variant per style, inventory untracked, no shipping, and `seo.hidden=1`. It is published to the Online Store with `publishablePublish` so carts accept it, which needs `write_publications` (decided 2026-09-29). Built by the `sync_wrap` worker job after each styles save (`app/services/wrap.py`).
 - One wrap line per gift group, linked by `_giftsense_wrap_for`. Cart guards: removing a group's last item removes its wrap.
 - **Never pre-selected; price always shown.** App Store rule 1.1.9 requires explicit shopper consent for extra charges.
 
@@ -359,7 +359,7 @@ First month with the one-time catalog read at the product limit: 90.8% / 85.2% /
 ## 9. Shopify integration details
 
 **Scopes (keep minimal; every change forces re-auth):**
-`read_products, write_products` (catalog, wrap product) · `read_orders, write_orders` (order metafields and tags) · `write_order_edits` (recipient's choice) · `write_merchant_managed_fulfillment_orders` (arrive-by holds) · `read_themes` (detect whether the app embed is enabled, same as Commerce). *Maybe* `write_publications` (wrap product). **No customer scopes.** None of these is on the App Store's restricted-scope list (3.2.x), checked 2026-09-27.
+`read_products, write_products` (catalog, wrap product) · `read_orders, write_orders` (order metafields and tags) · `write_order_edits` (recipient's choice) · `write_merchant_managed_fulfillment_orders` (arrive-by holds) · `read_themes` (detect whether the app embed is enabled, same as Commerce). `write_publications` (publish the hidden wrap product). **No customer scopes.** None of these is on the App Store's restricted-scope list (3.2.x), checked 2026-09-27.
 
 **Protected customer data:** subscribing to `orders/create` requires PCD **Level 1** approval (Commerce already went through this). We **never read or store** customer name, email, phone, or address, which keeps us out of Level 2. Registries store only `logged_in_customer_id`. Level 1 duties: data minimization, merchant disclosure, retention periods, encryption at rest and in transit.
 

@@ -44,6 +44,7 @@ class ParsedGiftOrder:
     groups: list[dict] = field(default_factory=list)
     arrive_by: str | None = None
     gift_receipt: bool = False
+    wrap: str | None = None                # direct-mode wrap style
 
 
 def _pairs(items) -> dict:
@@ -117,6 +118,7 @@ def parse_gift_order(payload: dict) -> ParsedGiftOrder | None:
         groups=groups,
         arrive_by=(attrs.get("Arrive by") or None),
         gift_receipt=(attrs.get("Gift receipt") or "").lower() in ("yes", "true", "1"),
+        wrap=(attrs.get("Gift wrap") or "").strip()[:40] or None,
     )
 
 
@@ -139,7 +141,7 @@ def note_source(final: str | None, draft: str | None) -> str | None:
 
 def metafield_value(p: ParsedGiftOrder) -> dict:
     return {"version": 1, "mode": p.delivery_mode, "note": p.note, "groups": p.groups,
-            "arrive_by": p.arrive_by, "gift_receipt": p.gift_receipt}
+            "arrive_by": p.arrive_by, "gift_receipt": p.gift_receipt, "wrap": p.wrap}
 
 
 # ── Shopify writes (run in the worker) ───────────────────────────────────────

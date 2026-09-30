@@ -634,6 +634,8 @@
     els.body.appendChild(labelWrap);
 
     els.body.appendChild(noteSection(g, pick.product_id));
+    var wrapChoice = wrapSection(g);
+    if (wrapChoice) els.body.appendChild(wrapChoice);
 
     var row = el('div', 'gs-actions');
     var addBtn = el('button', 'gs-primary', 'Add gift to cart');
@@ -653,6 +655,29 @@
     if (firstChip) firstChip.focus();
   }
 
+  // Gift wrap: merchant styles from /config. "No wrap" is the default (never
+  // pre-select a paid add-on) and every style shows its price.
+  function wrapSection(g) {
+    var styles = ctx.config.wrap || [];
+    if (!styles.length) return null;
+    g.wrap = null;
+    var box = el('fieldset', 'gs-group');
+    box.appendChild(el('legend', 'gs-label', 'Gift wrap (optional)'));
+    var row = el('div', 'gs-chips');
+    [null].concat(styles).forEach(function (w) {
+      var b = el('button', 'gs-chip gs-small-chip', w ? w.name + ' · ' + (w.price ? '+' + money(w.price) : 'Free') : 'No wrap');
+      b.type = 'button';
+      b.setAttribute('aria-pressed', w === null ? 'true' : 'false');
+      b.addEventListener('click', function () {
+        g.wrap = w;
+        row.querySelectorAll('.gs-chip').forEach(function (c) { c.setAttribute('aria-pressed', c === b ? 'true' : 'false'); });
+      });
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+    return box;
+  }
+
   function addGift(pick, variantId, g, button) {
     var json = { 'Content-Type': 'application/json', Accept: 'application/json' };
     var label = (g.label || '').trim().slice(0, 40) || 'Gift';
@@ -666,6 +691,14 @@
       if (!Array.isArray(groups)) groups = [];
       var props = { _giftsense_sid: ctx.sid };
       var update = { _giftsense_sid: ctx.sid, _giftsense_mode: g.mode };
+      var items = [{ id: variantId, quantity: 1, properties: props }];
+      // One wrap line per gift group (direct mode: one for the whole order),
+      // linked by _giftsense_wrap_for. A group that already has wrap keeps it.
+      var addWrap = function (groupId, wrapLabel, already) {
+        if (!g.wrap || already) return;
+        items.push({ id: g.wrap.variant_id, quantity: 1,
+          properties: { _giftsense_wrap_for: groupId, 'Wrap for': wrapLabel } });
+      };
       if (g.mode === 'self') {
         var group = groups.filter(function (x) { return (x.label || '').toLowerCase() === label.toLowerCase(); })[0];
         if (!group) {
@@ -673,16 +706,21 @@
           groups.push(group);
         }
         if (note) group.note = note;
+        addWrap(group.id, label, group.wrap);
+        if (g.wrap && !group.wrap) group.wrap = g.wrap.name;
         props['Gift for'] = label;
         props._giftsense_gift = group.id;
         update._giftsense_gifts = JSON.stringify(groups);
       } else {
         props._giftsense_gift = 'order';
         if (note) update['Gift note'] = note;
+        addWrap('order', 'Your gift', attrs['Gift wrap']);
+        if (g.wrap && !attrs['Gift wrap']) update['Gift wrap'] = g.wrap.name;
       }
+      if (items.length > 1) track('wrap_added', pick.product_id);
       return fetch(root() + 'cart/add.js', {
         method: 'POST', credentials: 'same-origin', headers: json,
-        body: JSON.stringify({ items: [{ id: variantId, quantity: 1, properties: props }] })
+        body: JSON.stringify({ items: items })
       }).then(function (r) {
         if (!r.ok) throw new Error('add');
         return fetch(root() + 'cart/update.js', {

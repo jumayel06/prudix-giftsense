@@ -33,7 +33,8 @@ Everything that must be flipped, set, rotated or verified before GiftSense goes 
 - [ ] `BILLING_TEST_MODE` — `true` only while testing prod billing; see submission gate below
 
 ### Config alignment
-- [ ] Scopes identical in `shopify.app.prod.toml`, `shopify.app.dev.toml` and `core/shopify_auth.py:SCOPES`
+- [ ] Scopes identical in `shopify.app.prod.toml`, `shopify.app.dev.toml` and `core/shopify_auth.py:SCOPES` (enforced by `tests/unit/test_scopes.py`)
+- [ ] `write_publications` (added 2026-09-29 for the hidden wrap product): justify it in the listing's scope explanation; deploy prod toml before any merchant installs so nobody has to re-authorize
 - [ ] Webhook topics in the toml match handler branches in `app/routes/webhooks.py` 1:1
 - [ ] `shopify app deploy --config prod` (registers webhooks, App Proxy, extensions)
 - [ ] `/docs` and `/debug` return 404 in production

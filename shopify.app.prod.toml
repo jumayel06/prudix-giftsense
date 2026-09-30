@@ -36,7 +36,7 @@ api_version = "2026-07"
   uri = "/webhooks/gdpr/shop/redact"
 
 [access_scopes]
-scopes = "read_products,write_products,read_orders,write_orders,write_order_edits,write_merchant_managed_fulfillment_orders,read_themes"
+scopes = "read_products,write_products,read_orders,write_orders,write_order_edits,write_merchant_managed_fulfillment_orders,read_themes,write_publications"
 optional_scopes = [ ]
 # Managed install / token exchange — see dev toml. Must stay false.
 use_legacy_install_flow = false

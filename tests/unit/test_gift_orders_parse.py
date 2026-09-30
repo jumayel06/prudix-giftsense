@@ -72,3 +72,11 @@ def test_customer_data_is_never_read():
 ])
 def test_note_source(final, draft, expected):
     assert go.note_source(final, draft) == expected
+
+
+def test_direct_mode_wrap_is_recorded_and_wrap_lines_are_not_gift_lines():
+    p = go.parse_gift_order(order([line(props={"_giftsense_gift": "1"}),
+                                   line(price="5.00", props={"_giftsense_wrap_for": "direct", "Wrap for": "Gift"})],
+                                  attrs={"Gift wrap": "Gold", "_giftsense_mode": "direct"}))
+    assert p.wrap == "Gold" and p.gift_lines == 1 and p.gift_revenue == 30.0
+    assert go.metafield_value(p)["wrap"] == "Gold"

@@ -5,7 +5,7 @@
  * never hardcoded here. Remove an entry when its real page ships.
  */
 import {
-  NoteIcon, PackageIcon, CalendarIcon, MicrophoneIcon, ReplaceIcon,
+  NoteIcon, CalendarIcon, MicrophoneIcon, ReplaceIcon,
   ListBulletedIcon, OrderIcon,
 } from '@shopify/polaris-icons'
 
@@ -18,12 +18,6 @@ export const UPCOMING = [
       { feature: 'ai_notes', text: 'AI drafts in a tone the shopper picks, with your banned words respected' },
       { feature: 'gift_groups', text: 'Several gifts in one order, each with its own recipient and note' },
     ],
-  },
-  {
-    path: '/wrap', label: 'Gift wrap', section: 'gifting', icon: PackageIcon,
-    title: 'Gift wrap',
-    intro: 'Offer your own wrap styles as an add-on, never pre-selected.',
-    items: [{ feature: 'gift_wrap', text: 'Wrap styles with your prices and photos' }],
   },
   {
     path: '/delivery', label: 'Arrive-by dates', section: 'gifting', icon: CalendarIcon,
