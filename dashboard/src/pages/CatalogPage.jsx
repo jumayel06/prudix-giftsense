@@ -106,55 +106,71 @@ function SyncCard({ status, onResync, resyncing }) {
 }
 
 const CLAMP_2 = { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
+const MAX_CHIPS = 3
 
-function ProductRow({ p, toggling, onToggle, onEdit }) {
+// One badge per row, most important first.
+function statusBadge(p, hasProfile) {
+  if (p.excluded) return <Badge>Excluded</Badge>
+  if (!p.available) return <Badge tone="critical">Out of stock</Badge>
+  if (!hasProfile) return <Badge tone="attention">Analyzing…</Badge>
+  if (p.update_pending) return <Badge tone="info">Update pending</Badge>
+  if (p.overridden) return <Badge tone="success">Edited by you</Badge>
+  if (p.profile_fallback) return <Badge tone="warning">Basic profile</Badge>
+  return null
+}
+
+function LabeledList({ label, values, labels }) {
+  if (!values || values.length === 0) return null
+  const shown = values.slice(0, MAX_CHIPS).map(v => labels[v] || v)
+  const more = values.length - shown.length
+  return (
+    <Text as="p" variant="bodyMd">
+      <Text as="span" tone="subdued">{label}: </Text>
+      {shown.join(', ')}{more > 0 ? ` +${more} more` : ''}
+    </Text>
+  )
+}
+
+function ProductRow({ p, labels, toggling, onToggle, onEdit }) {
   const prof = p.profile || {}
   const hasProfile = p.analyzed || p.update_pending
   const price = p.price_min === p.price_max ? money(p.price_min) : `${money(p.price_min)}–${money(p.price_max)}`
+  const showProfile = hasProfile && !p.excluded
   return (
-    <div style={{ padding: 'var(--p-space-300) var(--p-space-400)', borderTop: 'var(--p-border-width-025) solid var(--p-color-border-secondary)', opacity: p.excluded ? 0.6 : 1 }}>
-      <InlineStack gap="300" blockAlign="start" wrap={false}>
-        <Thumbnail source={p.image_url || ImageIcon} alt={p.title} size="small" />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <BlockStack gap="150">
-            <InlineStack align="space-between" blockAlign="start" gap="200" wrap={false}>
-              <BlockStack gap="050">
-                <Text as="span" fontWeight="semibold" truncate>{p.title}</Text>
-                <InlineStack gap="150" blockAlign="center">
-                  <Text as="span" variant="bodySm" tone="subdued">{[p.product_type, price].filter(Boolean).join(' · ')}</Text>
-                  {!p.available && <Badge tone="critical" size="small">Out of stock</Badge>}
-                  {p.excluded && <Badge size="small">Excluded</Badge>}
-                  {!hasProfile && !p.excluded && <Badge tone="attention" size="small">Analyzing</Badge>}
-                  {p.update_pending && <Badge tone="info" size="small">Update pending</Badge>}
-                  {p.overridden && !p.excluded && <Badge tone="success" size="small">Edited</Badge>}
-                  {p.profile_fallback && <Badge tone="warning" size="small">Basic profile</Badge>}
-                </InlineStack>
-              </BlockStack>
-              <InlineStack gap="300" wrap={false}>
-                {hasProfile && !p.excluded && <Button variant="plain" onClick={() => onEdit(p)}>Edit</Button>}
-                <Button variant="plain" loading={toggling} onClick={() => onToggle(p)}>
-                  {p.excluded ? 'Include' : 'Exclude'}
-                </Button>
-              </InlineStack>
+    <div className="gs-product-row" style={{
+      padding: 'var(--p-space-400)', borderTop: 'var(--p-border-width-025) solid var(--p-color-border-secondary)',
+      display: 'flex', gap: 'var(--p-space-400)', alignItems: 'flex-start', flexWrap: 'wrap',
+    }}>
+      <div style={{ opacity: p.excluded ? 0.5 : 1 }}>
+        <Thumbnail source={p.image_url || ImageIcon} alt={p.title} size="large" />
+      </div>
+      <div style={{ flex: '1 1 260px', minWidth: 0, opacity: p.excluded ? 0.6 : 1 }}>
+        <BlockStack gap="200">
+          <BlockStack gap="100">
+            <InlineStack gap="200" blockAlign="center">
+              <Text as="h3" variant="headingSm">{p.title}</Text>
+              {statusBadge(p, hasProfile)}
             </InlineStack>
-            {hasProfile && !p.excluded && (
-              <>
-                <div style={CLAMP_2}>
-                  <Text as="p" variant="bodySm" tone="subdued">{prof.gift_pitch}</Text>
-                </div>
-                <InlineStack gap="100" blockAlign="center">
-                  {(prof.vibes || []).slice(0, 3).map(v => <Badge key={v} size="small">{v}</Badge>)}
-                  {(prof.recipients || []).length > 0 && (
-                    <Text as="span" variant="bodySm" tone="subdued">
-                      For {(prof.recipients || []).slice(0, 3).join(', ')}
-                    </Text>
-                  )}
-                </InlineStack>
-              </>
-            )}
+            <Text as="p" variant="bodySm" tone="subdued">{[price, p.product_type].filter(Boolean).join(' · ')}</Text>
           </BlockStack>
-        </div>
-      </InlineStack>
+          {showProfile && prof.gift_pitch && (
+            <div style={CLAMP_2}><Text as="p" variant="bodyMd">{prof.gift_pitch}</Text></div>
+          )}
+          {showProfile && (
+            <BlockStack gap="050">
+              <LabeledList label="Good for" values={prof.recipients} labels={labels} />
+              <LabeledList label="Occasions" values={prof.occasions} labels={labels} />
+            </BlockStack>
+          )}
+          {p.excluded && <Text as="p" variant="bodySm" tone="subdued">Never suggested by the gift finder.</Text>}
+        </BlockStack>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--p-space-200)', alignItems: 'stretch', minWidth: 130 }}>
+        {showProfile && <Button onClick={() => onEdit(p)}>Edit gift profile</Button>}
+        <Button variant="tertiary" tone={p.excluded ? undefined : 'critical'} loading={toggling} onClick={() => onToggle(p)}>
+          {p.excluded ? 'Include again' : 'Exclude'}
+        </Button>
+      </div>
     </div>
   )
 }
@@ -182,6 +198,11 @@ export default function CatalogPage() {
   [])
 
   useEffect(() => { loadStatus() }, [loadStatus])
+  // Display names for profile values (mom → Mom) and the Edit modal's choices.
+  useEffect(() => { fetchJson('/api/catalog/playground/options').then(setOptions).catch(() => {}) }, [])
+  const labels = options
+    ? Object.fromEntries(['recipients', 'occasions', 'vibes'].flatMap(k => options[k].map(o => [o.value, o.label])))
+    : {}
   useEffect(() => { loadProducts(query, page) }, [loadProducts, page]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Poll while a sync runs; refresh the list once it finishes.
@@ -295,7 +316,7 @@ export default function CatalogPage() {
               <div>
                 {!list && <div style={{ padding: 'var(--p-space-400)' }}><SkeletonBodyText lines={6} /></div>}
                 {(list?.products || []).map(p => (
-                  <ProductRow key={p.product_id} p={p} toggling={toggling === p.product_id} onToggle={toggleExcluded} onEdit={openEditor} />
+                  <ProductRow key={p.product_id} p={p} labels={labels} toggling={toggling === p.product_id} onToggle={toggleExcluded} onEdit={openEditor} />
                 ))}
               </div>
             )}
