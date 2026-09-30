@@ -303,24 +303,18 @@
   }
 
   // ── step 2: results ───────────────────────────────────────────────────────
-  // Loading state while the AI picks (a few seconds): placeholder cards and a
-  // status line that moves on, so the wait reads as progress.
+  // Loading state while the AI picks (a few seconds): a short line of text
+  // that moves on, with a small animated indicator. No empty placeholder boxes.
   var LOADING_STEPS = ['Looking through the store\u2026', 'Picking the best matches\u2026', 'Writing why each one fits\u2026'];
   function skeleton() {
     clear(els.body);
     clearInterval(state.loadingTimer);
-    var status = el('p', 'gs-status gs-status--pending', LOADING_STEPS[0]);
+    var wrap = el('div', 'gs-loading');
+    wrap.appendChild(el('span', 'gs-dots'));
+    var status = el('p', 'gs-loading-text', LOADING_STEPS[0]);
     status.setAttribute('role', 'status');
-    els.body.appendChild(status);
-    for (var i = 0; i < 3; i++) {
-      var card = el('div', 'gs-card gs-card--skeleton');
-      card.setAttribute('aria-hidden', 'true');
-      card.appendChild(el('span', 'gs-sk gs-sk-img'));
-      var lines = el('div', 'gs-sk-text');
-      ['gs-sk-name', 'gs-sk-price', 'gs-sk-reason'].forEach(function (c) { lines.appendChild(el('span', 'gs-sk ' + c)); });
-      card.appendChild(lines);
-      els.body.appendChild(card);
-    }
+    wrap.appendChild(status);
+    els.body.appendChild(wrap);
     var step = 0;
     state.loadingTimer = setInterval(function () {
       if (!status.isConnected || step >= LOADING_STEPS.length - 1) { clearInterval(state.loadingTimer); return; }
