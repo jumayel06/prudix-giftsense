@@ -1,16 +1,24 @@
 api_version = "2026-07"
 
+# Shopify allows one print target per extension, so the order page and the
+# orders list are two extensions sharing the same module.
+
+# Order details → Print → "GiftSense gift cards" (cards and/or gift receipt).
 [[extensions]]
 name = "GiftSense gift cards"
 handle = "giftsense-print"
 type = "ui_extension"
 
-# Order details → Print → "GiftSense gift cards" (cards and/or gift receipt).
 [[extensions.targeting]]
 module = "./src/PrintAction.jsx"
 target = "admin.order-details.print-action.render"
 
 # Orders list → select orders → Print → same, for up to 50 orders.
+[[extensions]]
+name = "GiftSense gift cards (bulk)"
+handle = "giftsense-print-bulk"
+type = "ui_extension"
+
 [[extensions.targeting]]
 module = "./src/PrintAction.jsx"
 target = "admin.order-index.selection-print-action.render"

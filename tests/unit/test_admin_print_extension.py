@@ -8,12 +8,14 @@ EXT = Path(__file__).resolve().parents[2] / "extensions" / "giftsense-print"
 
 
 def test_targets_the_order_print_menu():
+    # Shopify allows exactly one print target per extension (deploy rejects more).
     cfg = tomllib.loads((EXT / "shopify.extension.toml").read_text())
-    [ext] = cfg["extensions"]
-    assert ext["type"] == "ui_extension"
-    assert [t["target"] for t in ext["targeting"]] == [
+    exts = cfg["extensions"]
+    assert all(e["type"] == "ui_extension" and len(e["targeting"]) == 1 for e in exts)
+    assert len({e["handle"] for e in exts}) == len(exts)
+    assert [e["targeting"][0]["target"] for e in exts] == [
         "admin.order-details.print-action.render", "admin.order-index.selection-print-action.render"]
-    assert all((EXT / t["module"]).exists() for t in ext["targeting"])
+    assert all((EXT / e["targeting"][0]["module"]).exists() for e in exts)
 
 
 def test_src_is_a_relative_path_to_a_real_backend_route():
