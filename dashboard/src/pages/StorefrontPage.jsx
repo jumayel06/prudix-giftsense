@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Page, Layout, Card, BlockStack, InlineStack, Text, Button, Banner, Badge, List, SkeletonBodyText } from '@shopify/polaris'
 import { fetchJson } from '../utils/shopifyFetch'
 
@@ -8,6 +8,12 @@ const BLOCK_HANDLE = 'gift-finder'
 
 function editorUrl(shop, params) {
   return `https://${shop}/admin/themes/current/editor?${new URLSearchParams(params)}`
+}
+
+const EMBED_BADGE = {
+  on: <Badge tone="success">On</Badge>,
+  off: <Badge tone="warning">Switched off</Badge>,
+  missing: <Badge tone="attention">Not added yet</Badge>,
 }
 
 function Step({ number, title, children, action }) {
@@ -31,11 +37,23 @@ function Step({ number, title, children, action }) {
 export default function StorefrontPage() {
   const [shop, setShop] = useState(null)
   const [error, setError] = useState(null)
+  const [theme, setTheme] = useState(null)
+  const [checking, setChecking] = useState(false)
   const apiKey = import.meta.env.VITE_SHOPIFY_API_KEY
+
+  const loadTheme = () => fetchJson('/api/theme/status').then(setTheme).catch(() => setTheme({ embed: 'unknown' }))
+
+  const checkTheme = useCallback(() => {
+    setChecking(true)
+    loadTheme().finally(() => setChecking(false))
+  }, [])
 
   useEffect(() => {
     fetchJson('/api/settings').then(d => setShop(d.shop_domain)).catch(() => setError('Could not load your store details.'))
+    loadTheme()
   }, [])
+
+  const embedOn = theme?.embed === 'on'
 
   // Theme editor lives outside the embedded app: open it in the top window.
   const openEditor = params => window.open(editorUrl(shop, params), '_top')
@@ -55,16 +73,28 @@ export default function StorefrontPage() {
           <BlockStack gap="400">
             <Step
               number="1"
-              title="Turn on the gift finder button"
-              action={<Button variant="primary" onClick={() => openEditor({ context: 'apps', activateAppId: `${apiKey}/${EMBED_HANDLE}` })}>
-                Turn on in theme editor
-              </Button>}
+              title={<InlineStack gap="200" blockAlign="center"><span>Turn on the gift finder button</span>{EMBED_BADGE[theme?.embed]}</InlineStack>}
+              action={<InlineStack gap="200">
+                <Button variant={embedOn ? 'secondary' : 'primary'} onClick={() => openEditor({ context: 'apps', activateAppId: `${apiKey}/${EMBED_HANDLE}` })}>
+                  {embedOn ? 'Customize in theme editor' : 'Turn on in theme editor'}
+                </Button>
+                <Button variant="plain" onClick={checkTheme} loading={checking}>Check again</Button>
+              </InlineStack>}
             >
-              <Text as="p">
-                Adds a floating <b>Find a gift</b> button to every page of your store. In the theme editor, make sure
-                <b> GiftSense gift finder</b> is switched on under App embeds, then click <b>Save</b>.
-              </Text>
-              <Text as="p" tone="subdued">You can change the button text, corner and colors there too.</Text>
+              {embedOn ? (
+                <Text as="p">
+                  The <b>Find a gift</b> button is live on your store{theme.theme_name ? ` (theme: ${theme.theme_name})` : ''}.
+                  You can change its text, corner and colors in the theme editor.
+                </Text>
+              ) : (
+                <>
+                  <Text as="p">
+                    Adds a floating <b>Find a gift</b> button to every page of your store. In the theme editor, make sure
+                    <b> GiftSense gift finder</b> is switched on under App embeds, then click <b>Save</b>.
+                  </Text>
+                  <Text as="p" tone="subdued">You can change the button text, corner and colors there too. Come back and click Check again.</Text>
+                </>
+              )}
             </Step>
 
             <Step
