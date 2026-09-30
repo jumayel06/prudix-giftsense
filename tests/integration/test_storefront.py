@@ -272,3 +272,43 @@ async def test_sessions_are_per_shop(db_session, models):
     call(db_session, "POST", "/api/storefront/search", json=BRIEF)
     mine = (await db_session.execute(select(GiftSession).where(GiftSession.shop_id == shop.id))).scalar_one()
     assert mine.searches == 1
+
+
+# ── Refine ("Not quite right?") ──────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_config_includes_refine_questions(db_session):
+    await seeded_shop(db_session)
+    q = call(db_session, "GET", "/api/storefront/config").json()["intake"]["refine_questions"]
+    assert len(q) >= 3 and all(len(x["options"]) == 2 for x in q)
+    from app.services.gifting import vocab
+    assert all(o["vibe"] in vocab.VIBES for x in q for o in x["options"])
+
+
+@pytest.mark.asyncio
+async def test_refine_is_counted_and_limited_to_two_per_session(db_session, models):
+    from core.db.models import GiftSession
+    shop = await seeded_shop(db_session, n=8)
+    assert call(db_session, "POST", "/api/storefront/search", json=BRIEF).status_code == 200
+    for _ in range(2):
+        assert call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "refine": True}).status_code == 200
+    resp = call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "refine": True})
+    assert resp.status_code == 409
+    s = (await db_session.execute(select(GiftSession).where(GiftSession.shop_id == shop.id))).scalar_one()
+    assert s.refines == 2 and s.searches == 3
+
+
+@pytest.mark.asyncio
+async def test_refine_without_a_prior_search_is_rejected(db_session, models):
+    await seeded_shop(db_session)
+    assert call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "refine": True}).status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_instant_refine_is_allowed_but_not_counted(db_session, models):
+    from core.db.models import GiftSession
+    await seeded_shop(db_session)
+    call(db_session, "POST", "/api/storefront/search", json=BRIEF)
+    assert call(db_session, "POST", "/api/storefront/search",
+                json={**BRIEF, "refine": True, "phase": "instant"}).status_code == 200
+    assert (await db_session.execute(select(GiftSession))).scalar_one().refines == 0

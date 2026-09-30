@@ -28,6 +28,7 @@ from app.llm import chat
 from app.plan_guard import may_generate
 from app.ai_models import model_for_shop
 from app.services import catalog_index, metering, rate_limit
+from app.services.gifting import vocab
 from app.services.gifting.brief import GiftBrief, intake_options
 from app.services.gifting.embeddings import OpenAIEmbedder
 from app.services.gifting.retrieval import Intake
@@ -75,19 +76,27 @@ class SearchRequest(GiftBrief):
     # reasons in ~0.5 s (no AI, nothing charged); "ai" = the metered search
     # whose picks and reasons replace them when ready.
     phase: Literal["instant", "ai"] = "ai"
+    # A "Not quite right?" follow-up search (max vocab.MAX_REFINES per session).
+    refine: bool = False
+
+
+async def _session(db: AsyncSession, shop: Shop, sid: uuid.UUID) -> GiftSession | None:
+    return (await db.execute(
+        select(GiftSession).where(GiftSession.shop_id == shop.id, GiftSession.sid == sid)
+    )).scalar_one_or_none()
 
 
 async def _record_session(db: AsyncSession, shop: Shop, body: "SearchRequest", pick_ids: list[str]) -> None:
     """Upsert the widget session's last brief and final picks (AI phase only)."""
-    intake = body.model_dump(mode="json", exclude={"sid", "phase", "exclude_ids"})
-    session = (await db.execute(
-        select(GiftSession).where(GiftSession.shop_id == shop.id, GiftSession.sid == body.sid)
-    )).scalar_one_or_none()
+    intake = body.model_dump(mode="json", exclude={"sid", "phase", "exclude_ids", "refine"})
+    session = await _session(db, shop, body.sid)
     if session is None:
-        session = GiftSession(shop_id=shop.id, sid=body.sid, searches=0)
+        session = GiftSession(shop_id=shop.id, sid=body.sid, searches=0, refines=0)
         db.add(session)
     session.intake, session.last_picks = intake, pick_ids
     session.searches = (session.searches or 0) + 1
+    if body.refine:
+        session.refines = (session.refines or 0) + 1
     try:
         await db.commit()
     except IntegrityError:   # the same sid's first two searches raced; the other one won
@@ -115,7 +124,11 @@ async def gift_search(body: SearchRequest, request: Request, shop: Shop = Depend
         raise HTTPException(403, "Gift finder is not available.")
     if not await _within_abuse_limits(request, shop, body.sid, body.phase):
         raise HTTPException(429, SLOW_DOWN)
-    intake = Intake(**body.model_dump(exclude={"sid", "phase"}))
+    if body.refine and body.phase == "ai":
+        session = await _session(db, shop, body.sid)
+        if session is None or session.refines >= vocab.MAX_REFINES:
+            raise HTTPException(409, "No more refinements for this search.")
+    intake = Intake(**body.model_dump(exclude={"sid", "phase", "refine"}))
     if body.phase == "instant":
         rec, _ = await catalog_index.recommend_for_shop(db, shop.id, intake, OpenAIEmbedder(),
                                                         model_for_shop(shop), use_llm=False)

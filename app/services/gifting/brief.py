@@ -68,4 +68,6 @@ def intake_options() -> dict:
         "budgets": [{"value": b, "label": budget_label(b)} for b in vocab.BUDGET_BANDS],
         "max_vibes": MAX_VIBES,
         "max_free_text": MAX_FREE_TEXT,
+        "refine_questions": vocab.REFINE_QUESTIONS,
+        "max_refines": vocab.MAX_REFINES,
     }

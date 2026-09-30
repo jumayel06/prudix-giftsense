@@ -251,6 +251,7 @@ class GiftSession(Base):
     intake: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     last_picks: Mapped[list] = mapped_column(JSON, nullable=False, default=list)   # product ids, best first
     searches: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    refines: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False,

@@ -71,3 +71,19 @@ def clean_list(values, allowed: list[str]) -> list[str]:
         if v in allowed and v not in out:
             out.append(v)
     return out
+
+
+# "Not quite right?" follow-up questions (docs/TECHNICAL_PLAN.md §4.6). The
+# widget asks the first one whose vibes the shopper hasn't already chosen; the
+# answer adds that vibe and searches again without the products already shown.
+REFINE_QUESTIONS = [
+    {"id": "practical_treat", "question": "More practical, or more of a treat?",
+     "options": [{"label": "Practical", "vibe": "practical"}, {"label": "A treat", "vibe": "luxurious"}]},
+    {"id": "home_out", "question": "For relaxing at home, or for getting out?",
+     "options": [{"label": "At home", "vibe": "cozy"}, {"label": "Getting out", "vibe": "adventurous"}]},
+    {"id": "sentimental_fun", "question": "Sentimental, or fun?",
+     "options": [{"label": "Sentimental", "vibe": "sentimental"}, {"label": "Fun", "vibe": "funny"}]},
+    {"id": "classic_trendy", "question": "Classic, or on-trend?",
+     "options": [{"label": "Classic", "vibe": "classic"}, {"label": "On-trend", "vibe": "trendy"}]},
+]
+MAX_REFINES = 2   # per widget session; then the widget offers "Browse all products"

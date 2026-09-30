@@ -173,9 +173,9 @@ Input: the intake `{recipient, occasion, budget_band, vibes[2–3], age_band?, f
 - **Fallback:** if the LLM errors, times out after 6 s, or the shop is over budget, return the top 5 from §4.4 with **templated reasons** ("Fits your $50 budget · tagged cozy & practical"). **The widget never breaks because of an LLM or budget problem.** It degrades gracefully instead.
 - **Cache:** identical normalized intake plus `catalog_version` within 24 h is served from `recommendation_cache` at zero cost.
 
-### 4.6 "None of these"
+### 4.6 "None of these" (refine)
 
-`POST /refine` with the session id: excludes products already shown and asks **one** clarifying question. The question is chosen by the LLM from a fixed menu (e.g. "More practical or more sentimental?", "Something they can use every day, or a treat?"), and its answer maps to a vibe or interest reweighting. Then the pipeline reruns. Max 2 refinements per session. After that, show a "Browse gift collection" link instead of a dead end.
+"Not quite right?" under the picks asks **one** question from a fixed menu (`vocab.REFINE_QUESTIONS`: practical vs a treat, at home vs getting out, sentimental vs fun, classic vs on-trend). The widget picks the first question whose options the shopper hasn't already chosen as vibes, so there is no AI call and no cost. The answer adds that vibe (dropping the oldest past 3) and the search reruns with `refine: true`, excluding products already shown. Max 2 refinements per session, enforced server-side through `gift_sessions.refines` (409 after that); then the widget offers "Browse all products".
 
 ### 4.7 Latency budget
 

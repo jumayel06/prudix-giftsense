@@ -10,7 +10,8 @@
 
   var MAX_EXCLUDE = 50;
   var AGE_FOR = { kid: 'kid', teen: 'teen', new_baby: 'baby' };
-  var state = { answers: { recipient: null, occasion: null, budget_band: null, vibes: [], free_text: '' }, shown: [] };
+  var state = { answers: { recipient: null, occasion: null, budget_band: null, vibes: [], free_text: '' },
+    shown: [], refines: 0, asked: [] };
   var ctx = null;
   var els = {};
 
@@ -243,7 +244,7 @@
 
     els.go = el('button', 'gs-primary', 'Show gift ideas');
     els.go.type = 'button';
-    els.go.addEventListener('click', function () { state.shown = []; search(); });
+    els.go.addEventListener('click', function () { state.shown = []; state.refines = 0; state.asked = []; search(); });
     els.body.appendChild(els.go);
     els.hint = el('p', 'gs-hint', 'Pick who it\u2019s for, the occasion and a budget.');
     els.body.appendChild(els.hint);
@@ -281,13 +282,14 @@
   // Two requests at once: "instant" (ranked picks, simple reasons, ~0.5 s) and
   // "ai" (personal picks and reasons, a few seconds). Instant cards show first
   // and the AI's replace them; if the AI fails, the instant ones stay.
-  function search() {
+  function search(refine) {
     skeleton();
     var seq = state.seq = (state.seq || 0) + 1;
     var a = state.answers;
     var body = {
       sid: ctx.sid, recipient: a.recipient, occasion: a.occasion, budget_band: a.budget_band,
-      vibes: a.vibes.slice(), free_text: a.free_text.trim(), exclude_ids: state.shown.slice(-MAX_EXCLUDE)
+      vibes: a.vibes.slice(), free_text: a.free_text.trim(), exclude_ids: state.shown.slice(-MAX_EXCLUDE),
+      refine: refine === true
     };
     if (AGE_FOR[a.recipient]) body.age_band = AGE_FOR[a.recipient];
     var instant = null;
@@ -319,14 +321,74 @@
       var more = el('button', 'gs-primary', 'Show different ideas');
       more.type = 'button';
       more.disabled = !!pending;
-      more.addEventListener('click', search);
+      more.addEventListener('click', function () { search(); });
       row.appendChild(more);
     }
+    if (showMore && !pending) row.appendChild(refineControl());
     var back = el('button', 'gs-secondary', 'Change answers');
     back.type = 'button';
     back.addEventListener('click', function () { state.seq = (state.seq || 0) + 1; renderIntake(); });
     row.appendChild(back);
     return row;
+  }
+
+  // ── "Not quite right?" ────────────────────────────────────────────────────
+  function nextQuestion() {
+    var vibes = state.answers.vibes;
+    var qs = (ctx.config.intake.refine_questions || []);
+    for (var i = 0; i < qs.length; i++) {
+      var q = qs[i];
+      var answered = q.options.some(function (o) { return vibes.indexOf(o.vibe) !== -1; });
+      if (!answered && state.asked.indexOf(q.id) === -1) return q;
+    }
+    return null;
+  }
+
+  function refineControl() {
+    var max = ctx.config.intake.max_refines || 2;
+    var q = nextQuestion();
+    if (state.refines >= max || !q) {
+      var browse = el('a', 'gs-secondary', 'Browse all products');
+      browse.href = root() + 'collections/all';
+      return browse;
+    }
+    var b = el('button', 'gs-secondary', 'Not quite right?');
+    b.type = 'button';
+    b.addEventListener('click', function () { renderQuestion(q); });
+    return b;
+  }
+
+  function renderQuestion(q) {
+    clear(els.body);
+    var p = el('p', 'gs-status', q.question);
+    p.setAttribute('role', 'status');
+    els.body.appendChild(p);
+    var row = el('div', 'gs-chips');
+    q.options.forEach(function (o) {
+      var b = el('button', 'gs-chip', o.label);
+      b.type = 'button';
+      b.addEventListener('click', function () {
+        var vibes = state.answers.vibes;
+        if (vibes.indexOf(o.vibe) === -1) {
+          vibes.push(o.vibe);
+          var max = ctx.config.intake.max_vibes || 3;
+          while (vibes.length > max) vibes.shift();
+        }
+        state.asked.push(q.id);
+        state.refines += 1;
+        search(true);
+      });
+      row.appendChild(b);
+    });
+    els.body.appendChild(row);
+    var back = el('button', 'gs-secondary', 'Back to ideas');
+    back.type = 'button';
+    back.style.marginTop = '12px';
+    back.addEventListener('click', function () { renderResults(state.lastPicks || [], false, true); });
+    els.body.appendChild(back);
+    renderFoot();
+    var first = els.body.querySelector('.gs-chip');
+    if (first) first.focus();
   }
 
   function renderMessage(text) {
@@ -338,7 +400,7 @@
     renderFoot();
   }
 
-  function renderResults(picks, pending) {
+  function renderResults(picks, pending, restoring) {
     var replacing = !!els.body.querySelector('.gs-card:not(.gs-card--skeleton)');
     clear(els.body);
     if (!picks.length) {
@@ -352,7 +414,7 @@
     heading.setAttribute('role', 'status');
     els.body.appendChild(heading);
     picks.forEach(function (p) {
-      if (!pending) state.shown.push(p.product_id);   // only final picks are excluded next time
+      if (!pending && !restoring) state.shown.push(p.product_id);   // only final picks are excluded next time
       var href = safeHref(p.url);
       var card = el('div', 'gs-card');
       var link = el(href ? 'a' : 'div', 'gs-card-link');
@@ -383,6 +445,7 @@
       card.appendChild(text);
       els.body.appendChild(card);
     });
+    if (!pending) state.lastPicks = picks;
     els.body.appendChild(actions(true, pending));
     renderFoot();
     // Move focus only on the first render, never when the AI picks swap in.
