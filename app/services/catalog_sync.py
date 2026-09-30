@@ -27,7 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
 from app.config import PLANS, TRIAL_MAX_PRODUCTS
-from app.plan_guard import effective_cycle_start
+from app.plan_guard import catalog_budget_for, effective_cycle_start, get_cycle_cost_usd
 from app.llm import calc_cost, chat
 from app.services.gifting.catalog import CatalogProduct
 from app.services.gifting.embeddings import Embedder
@@ -288,6 +288,11 @@ async def analyze_pending(
             return await enrich_product(row_to_product(row), model=model, chat_fn=chat_fn)
 
     while True:
+        # Margin guarantee: past this cycle's catalog budget, products wait for
+        # the next cycle (keeping any profile they have). Checked per chunk.
+        if await get_cycle_cost_usd(shop, db, catalog=True) >= catalog_budget_for(shop):
+            logger.warning("catalog_budget_reached", shop=shop.shop_domain, budget=catalog_budget_for(shop))
+            break
         base = select(CatalogProductRow).where(CatalogProductRow.shop_id == shop.id)
         if failed_ids:
             base = base.where(CatalogProductRow.product_id.not_in(failed_ids))

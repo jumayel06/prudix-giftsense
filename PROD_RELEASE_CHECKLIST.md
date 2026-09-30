@@ -68,3 +68,7 @@ Everything that must be flipped, set, rotated or verified before GiftSense goes 
 
 ## 🧹 Tech debt picked up during dev
 - [ ] Dockerfile builds `dashboard/` — requires the dashboard shell to exist before the first Railway build
+
+### Margin
+- [ ] Before lifetime revenue nears $1M (Shopify's 15% share starts): re-check `tests/regression/test_margin_guarantee.py` against 85% of price and adjust `ai_budget_usd` / prices
+- [ ] Replace the per-plan `hosting_usd` estimates in `app/config.py` with real Railway + Supabase + Redis cost per install once there are paying merchants

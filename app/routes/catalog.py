@@ -22,8 +22,9 @@ from sqlalchemy.orm import defer
 
 from app.ai_models import AI_TIERS, ai_tier_for, model_for_shop, model_label
 from app.jobs import enqueue
-from app.llm import calc_cost, chat
-from app.services import catalog_index
+from app.llm import chat
+from app.plan_guard import catalog_budget_for, get_cycle_cost_usd
+from app.services import metering
 from app.services.catalog_sync import (
     ACTIVE_STATUSES, IN_PROGRESS, count_held, count_pending, product_limit, rereads_limit, rereads_remaining,
     row_to_product,
@@ -32,7 +33,6 @@ from app.services.gifting import vocab
 from app.services.gifting.brief import GiftBrief, intake_options
 from app.services.gifting.embeddings import OpenAIEmbedder
 from app.services.gifting.profile import MAX_PITCH_CHARS, GiftProfile, apply_overrides, embedding_text
-from app.services.gifting.rerank import PROMPT_VERSION as RERANK_PROMPT_VERSION
 from app.services.gifting.retrieval import Intake
 from core.db.models import CatalogProductRow, CatalogSync, Shop, UsageLog
 from core.db.session import get_db
@@ -104,6 +104,9 @@ async def catalog_status(shop: Shop = Depends(get_current_shop), db: AsyncSessio
         "products": total, "analyzed": total - pending, "pending": pending, "excluded": excluded,
         "limit": product_limit(shop), "is_trial": shop.plan_status == "trial_active",
         "rereads_used": rereads_limit(shop) - remaining, "rereads_limit": rereads_limit(shop), "held": held,
+        # This cycle's catalog analysis budget is used up (margin guarantee):
+        # new/edited products wait for the next cycle.
+        "analysis_paused": await get_cycle_cost_usd(shop, db, catalog=True) >= catalog_budget_for(shop),
         "next_manual_sync_at": next_manual.isoformat() if next_manual else None,
         "sync": _sync_json(latest),
     }
@@ -185,23 +188,21 @@ async def playground_search(
     if shop.plan_status not in ACTIVE_STATUSES:
         raise HTTPException(403, "Choose a plan to try the gift finder.")
     since = datetime.now(timezone.utc) - timedelta(days=1)
-    used_today = (await db.execute(
+    used_today = (await db.execute(       # reservations only (settle/refund rows don't count)
         select(func.count()).select_from(UsageLog).where(
-            UsageLog.shop_id == shop.id, UsageLog.action_type == "playground", UsageLog.created_at >= since)
+            UsageLog.shop_id == shop.id, UsageLog.action_type == "playground",
+            UsageLog.generations_consumed > 0, UsageLog.created_at >= since)
     )).scalar_one()
     if used_today >= PLAYGROUND_DAILY_LIMIT:
         raise HTTPException(429, f"You've run {PLAYGROUND_DAILY_LIMIT} test searches today. Try again tomorrow.")
 
+    # Metered like a shopper search (same generations, limits and AI budget),
+    # so Try it can't push the store past its margin guarantee (app/config.py).
     model = model_for_shop(shop)
     intake = Intake(**brief.model_dump())
-    rec, latency_ms = await catalog_index.recommend_for_shop(db, shop.id, intake, OpenAIEmbedder(), model, chat_fn=chat)
-
-    if rec.input_tokens or rec.output_tokens:
-        db.add(UsageLog(id=uuid.uuid4(), shop_id=shop.id, action_type="playground", generations_consumed=0,
-                        tokens_input=rec.input_tokens, tokens_output=rec.output_tokens, model_used=rec.model or model,
-                        cost_usd=calc_cost(rec.model or model, rec.input_tokens, rec.output_tokens),
-                        prompt_version=RERANK_PROMPT_VERSION, duration_ms=latency_ms))
-        await db.commit()
+    result = await metering.run_gift_search(db, shop, intake, OpenAIEmbedder(), chat_fn=chat,
+                                            action_type="playground")
+    rec, latency_ms = result.recommendation, result.latency_ms
 
     return {
         "picks": [{
@@ -214,6 +215,8 @@ async def playground_search(
         "ai_model_label": model_label(rec.model or model),  # the model that actually answered
         "mode": rec.mode, "latency_ms": latency_ms, "used_fallback": rec.used_fallback,
         "candidates_considered": rec.candidates_considered,
+        "charged": result.charged,
+        "limited": result.limited,           # why AI wasn't used (e.g. generation_limit)
     }
 
 

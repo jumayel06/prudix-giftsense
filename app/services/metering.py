@@ -26,7 +26,8 @@ from app.ai_models import AI_TIERS, ai_tier_for, model_for_shop
 from app.config import PLANS
 from app.llm import calc_cost, chat
 from app.plan_guard import (
-    daily_cost_cap_for, generation_limit_for, get_daily_cost_usd, get_generations_used, may_generate,
+    ai_budget_for, daily_cost_cap_for, generation_limit_for, get_cycle_cost_usd, get_daily_cost_usd,
+    get_generations_used, may_generate,
 )
 from app.services import catalog_index
 from app.services.gifting.embeddings import Embedder
@@ -75,7 +76,7 @@ async def reserve(db: AsyncSession, shop: Shop, action_type: str,
                   prompt_version: str = RERANK_PROMPT_VERSION) -> tuple[Reservation | None, str | None]:
     """Reserve the shop's AI-tier weight in generations for one AI use.
     Returns (reservation, None), or (None, reason) when AI isn't allowed:
-    "inactive" | "generation_limit" | "daily_cost_cap" | "hourly_cap"."""
+    "inactive" | "generation_limit" | "daily_cost_cap" | "cost_budget" | "hourly_cap"."""
     if not may_generate(shop):
         return None, "inactive"
     tier = ai_tier_for(shop.plan_tier, shop.selected_model)
@@ -91,6 +92,10 @@ async def reserve(db: AsyncSession, shop: Shop, action_type: str,
     if generation_limit_for(shop) - await get_generations_used(shop, db) < weight:
         await db.commit()
         return None, "generation_limit"
+    if await get_cycle_cost_usd(shop, db, catalog=False) >= ai_budget_for(shop):
+        await db.commit()
+        logger.warning("metering_ai_budget", shop=shop.shop_domain, budget=ai_budget_for(shop))
+        return None, "cost_budget"
     if hourly_generation_cap(shop) - await _generations_last_hour(db, shop) < weight:
         await db.commit()
         logger.warning("metering_hourly_cap", shop=shop.shop_domain)
@@ -133,12 +138,13 @@ class GiftSearchResult:
 
 async def run_gift_search(
     db: AsyncSession, shop: Shop, intake: Intake, embedder: Embedder, chat_fn=chat,
+    action_type: str = "gift_search",
 ) -> GiftSearchResult:
-    """A metered shopper gift search. Always returns picks (templates when AI
-    is unavailable or fails); charges generations only when the AI's picks
-    were used."""
+    """A metered gift search (storefront, or "playground" for the dashboard's
+    Try it). Always returns picks (templates when AI is unavailable or fails);
+    charges generations only when the AI's picks were used."""
     model = model_for_shop(shop)
-    reservation, limited = await reserve(db, shop, "gift_search")
+    reservation, limited = await reserve(db, shop, action_type)
     rec, latency_ms = await catalog_index.recommend_for_shop(
         db, shop.id, intake, embedder, model, chat_fn=chat_fn, use_llm=reservation is not None)
     if reservation is None:

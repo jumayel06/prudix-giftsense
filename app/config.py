@@ -84,6 +84,12 @@ PLANS = {
         "media_messages_per_month":    0,
         "trial_media_messages":        0,
         "daily_cost_cap_usd":          1.00,
+        # Worst-case margin guarantee (see MARGIN_* below, enforced by
+        # tests/unit/test_margin_guarantee.py). USD per billing cycle.
+        "hosting_usd":                 1.50,
+        "media_cost_usd":              0.00,
+        "ai_budget_usd":               2.00,
+        "catalog_budget_usd":          0.25,
     },
     "growth": {
         "name":                        "Growth",
@@ -98,6 +104,10 @@ PLANS = {
         "media_messages_per_month":    200,
         "trial_media_messages":        5,
         "daily_cost_cap_usd":          3.00,
+        "hosting_usd":                 2.00,
+        "media_cost_usd":              0.10,
+        "ai_budget_usd":               6.25,
+        "catalog_budget_usd":          1.40,
     },
     "pro": {
         "name":                        "Pro",
@@ -112,6 +122,10 @@ PLANS = {
         "media_messages_per_month":    500,
         "trial_media_messages":        10,
         "daily_cost_cap_usd":          7.00,
+        "hosting_usd":                 2.50,
+        "media_cost_usd":              1.00,
+        "ai_budget_usd":               12.75,
+        "catalog_budget_usd":          3.40,
     },
 }
 
@@ -119,6 +133,25 @@ PLANS = {
 # catalog read a trial install can cost us: ~$0.30 at ~$0.003/product). On
 # conversion a re-sync adds the rest up to the plan's max_products.
 TRIAL_MAX_PRODUCTS = 100
+
+# ── Worst-case margin guarantee ──────────────────────────────────────────────
+# Every AI call's real cost is recorded in usage_logs.cost_usd. Per billing
+# cycle a shop may spend at most:
+#   ai_budget_usd       shopper searches + gift notes + Try it (incl. failed
+#                       calls' tokens). Reached → template picks/notes, like the
+#                       generation limit.
+#   catalog_budget_usd  catalog analysis. Reached → products wait for the next
+#                       cycle (they keep any profile they already have).
+# price × (1 − MARGIN_MIN) must cover hosting + media + both budgets + the
+# in-flight slack (calls already running when a budget is crossed).
+# The budgets sit above the measured worst case at 100% of every limit
+# (TECHNICAL_PLAN §8.2), so they only bite on pathological token use or abuse.
+MARGIN_MIN = 0.80
+MARGIN_IN_FLIGHT_SLACK_USD = 0.05
+# Trial (no revenue yet): budgets scale with trial generations, with a floor so
+# a merchant can still try the app properly.
+TRIAL_AI_BUDGET_MIN_USD = 1.00
+TRIAL_CATALOG_BUDGET_USD = 0.25
 
 
 def subscription_name(plan_tier: str) -> str:

@@ -82,6 +82,15 @@ function SyncCard({ status, onResync, resyncing }) {
           New products and price or stock changes don't count.
         </Text>
 
+        {status.analysis_paused && (
+          <Banner tone="info">
+            <p>
+              Product analysis for this month is complete. New and edited products will be analyzed when your plan
+              renews; products already analyzed keep working in the gift finder.
+            </p>
+          </Banner>
+        )}
+
         {status.held > 0 && (
           <Banner tone="info">
             <p>

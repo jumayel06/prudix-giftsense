@@ -137,7 +137,7 @@ async def test_options_lists_the_intake_vocabulary(db_session):
 
 
 @pytest.mark.asyncio
-async def test_playground_returns_picks_and_logs_cost_without_generations(db_session, fake_models):
+async def test_playground_returns_picks_and_is_metered_like_a_search(db_session, fake_models):
     shop = make_shop(selected_model="advanced")
     db_session.add(shop)
     await db_session.flush()
@@ -152,8 +152,11 @@ async def test_playground_returns_picks_and_logs_cost_without_generations(db_ses
     pick = data["picks"][0]
     assert pick["title"].startswith("Candle") and pick["reason"] and pick["source"] == "ai"
     assert pick["price_min"] == 30.0
-    log = (await db_session.execute(select(UsageLog))).scalar_one()
-    assert log.action_type == "playground" and log.generations_consumed == 0 and float(log.cost_usd) > 0
+    # Metered like a shopper search: reserve +2 (Advanced), settle with cost.
+    logs = (await db_session.execute(select(UsageLog).order_by(UsageLog.created_at))).scalars().all()
+    assert {l.action_type for l in logs} == {"playground"}
+    assert sum(l.generations_consumed for l in logs) == 2 and sum(float(l.cost_usd) for l in logs) > 0
+    assert data["charged"] is True and data["limited"] is None
 
 
 @pytest.mark.asyncio
@@ -181,9 +184,10 @@ async def test_playground_daily_cap(db_session, fake_models):
     shop = make_shop()
     db_session.add(shop)
     await db_session.flush()
+    # Reservation rows (+1 each); settle rows (0) must not count toward the cap.
     db_session.add_all([UsageLog(id=uuid.uuid4(), shop_id=shop.id, action_type="playground",
-                                 generations_consumed=0, model_used="gpt-6-luna")
-                        for _ in range(PLAYGROUND_DAILY_LIMIT)])
+                                 generations_consumed=g, model_used="gpt-6-luna")
+                        for _ in range(PLAYGROUND_DAILY_LIMIT) for g in (1, 0)])
     await db_session.commit()
     resp = call(db_session, "POST", "/api/catalog/playground", json=BRIEF)
     assert resp.status_code == 429

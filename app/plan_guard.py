@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import CYCLE_DAYS, PLANS
+from app.config import CYCLE_DAYS, PLANS, TRIAL_AI_BUDGET_MIN_USD, TRIAL_CATALOG_BUDGET_USD
 from core.config import settings
 from core.db.models import Shop, UsageLog
 
@@ -185,6 +185,38 @@ async def check_daily_cost_cap(shop: Shop, db: AsyncSession) -> None:
                 "resumes_at": resumes_at.isoformat(),
             },
         )
+
+
+def ai_budget_for(shop: Shop) -> float:
+    """USD this cycle for shopper AI + Try it (margin guarantee, app/config.py).
+    Trial: scaled to the trial's share of generations, with a floor."""
+    plan = PLANS.get(shop.plan_tier or "starter", PLANS["starter"])
+    budget = plan["ai_budget_usd"]
+    if shop.plan_status == "trial_active":
+        share = generation_limit_for(shop) / plan["generation_limit"]
+        return round(max(TRIAL_AI_BUDGET_MIN_USD, budget * share), 2)
+    return budget
+
+
+def catalog_budget_for(shop: Shop) -> float:
+    """USD this cycle for catalog analysis (margin guarantee)."""
+    plan = PLANS.get(shop.plan_tier or "starter", PLANS["starter"])
+    if shop.plan_status == "trial_active":
+        return min(plan["catalog_budget_usd"], TRIAL_CATALOG_BUDGET_USD)
+    return plan["catalog_budget_usd"]
+
+
+async def get_cycle_cost_usd(shop: Shop, db: AsyncSession, *, catalog: bool) -> float:
+    """Recorded AI spend (usage_logs.cost_usd) this cycle: catalog analysis
+    only (catalog=True) or everything else (False). Same cycle floor as
+    get_generations_used."""
+    kind = UsageLog.action_type == "catalog_analysis"
+    query = select(func.coalesce(func.sum(UsageLog.cost_usd), 0)).where(
+        UsageLog.shop_id == shop.id, kind if catalog else ~kind)
+    cycle_floor = effective_cycle_start(shop)
+    if cycle_floor:
+        query = query.where(UsageLog.created_at >= cycle_floor)
+    return float((await db.execute(query)).scalar() or 0)
 
 
 async def get_generations_used(shop: Shop, db: AsyncSession) -> int:

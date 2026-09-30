@@ -101,7 +101,7 @@ export default function PlaygroundPage() {
   return (
     <Page
       title="Try the gift finder"
-      subtitle="Search your own catalog the way a shopper would. Test searches don't use your plan's generations."
+      subtitle="Search your own catalog the way a shopper would. Each test search uses generations like a shopper's search."
       backAction={{ content: 'Catalog', onAction: () => navigate('/catalog') }}
     >
       <Layout>
@@ -153,7 +153,12 @@ export default function PlaygroundPage() {
                   <Tag>{result.candidates_considered} products considered</Tag>
                   {result.mode === 'small_catalog' && <Tag>Small-catalog mode</Tag>}
                 </InlineStack>
-                {result.used_fallback && (
+                {result.limited && result.limited !== 'inactive' && (
+                  <Banner tone="warning">
+                    <p>You've used this month's AI, so these picks use standard reasons, exactly what shoppers see until your plan renews.</p>
+                  </Banner>
+                )}
+                {!result.limited && result.used_fallback && (
                   <Banner tone="info"><p>The AI didn't answer in time, so these picks use standard reasons. Shoppers never see an empty result.</p></Banner>
                 )}
                 <InlineGrid columns={1} gap="300">
