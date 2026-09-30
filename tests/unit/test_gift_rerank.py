@@ -15,8 +15,8 @@ from app.services.gifting.retrieval import Candidate, Intake
 INTAKE = Intake(recipient="parent", occasion="birthday", budget_band="25_50", vibes=["cozy", "relaxing"])
 
 
-def cand(pid, title, price=40.0, vibes=("cozy",), facts=("soy wax",), score=0.8):
-    p = CatalogProduct(product_id=pid, title=title, price_min=price, price_max=price, product_type="Candles")
+def cand(pid, title, price=40.0, vibes=("cozy",), facts=("soy wax",), score=0.8, ptype="Candles"):
+    p = CatalogProduct(product_id=pid, title=title, price_min=price, price_max=price, product_type=ptype)
     prof = GiftProfile(giftable=0.9, recipients=["parent"], occasions=["birthday"], vibes=list(vibes),
                        gift_pitch=f"{title} for cozy nights.", facts=list(facts))
     return Candidate(p, prof, [], score, 0.5)
@@ -174,3 +174,28 @@ def test_fact_is_grounded(fact, ok):
 
 def test_prompt_asks_for_the_fact_behind_each_reason():
     assert '"fact"' in RERANK_SYSTEM_PROMPT
+
+
+
+@pytest.mark.asyncio
+async def test_at_most_two_picks_of_one_type_when_others_exist():
+    # Eval 2026-09-28: ~2.3 product types in the top 5 (target 3).
+    cands = [cand("c1", "Candle A"), cand("c2", "Candle B"), cand("c3", "Candle C"), cand("c4", "Candle D"),
+             cand("m1", "Mug", ptype="Mugs"), cand("b1", "Book", ptype="Books")]
+    chat = llm({"picks": [{"product_id": i, "fact": "soy wax", "reason": "Soy wax glow."} for i in ("c1", "c2", "c3", "c4")]})
+    result = await rerank(INTAKE, cands, model="gpt-6-luna", chat_fn=chat)
+    types = [p.product.product_type for p in result.picks]
+    assert types.count("Candles") == 2 and len(result.picks) >= 3
+    assert {"Mugs", "Books"} & set(types)          # topped up from other types
+
+
+@pytest.mark.asyncio
+async def test_single_type_store_is_not_limited():
+    cands = [cand(f"c{i}", f"Candle {i}") for i in range(6)]
+    chat = llm({"picks": [{"product_id": f"c{i}", "fact": "soy wax", "reason": "Soy wax glow."} for i in range(5)]})
+    result = await rerank(INTAKE, cands, model="gpt-6-luna", chat_fn=chat)
+    assert len(result.picks) == 5 and all(p.source == "ai" for p in result.picks)
+
+
+def test_prompt_asks_for_type_variety():
+    assert "same type" in RERANK_SYSTEM_PROMPT.lower()

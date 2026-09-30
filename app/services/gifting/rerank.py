@@ -29,7 +29,10 @@ logger = structlog.get_logger()
 
 ChatFn = Callable[..., Awaitable[LLMResponse]]
 
-PROMPT_VERSION = "rerank-v3"
+PROMPT_VERSION = "rerank-v4"
+# Variety: at most this many picks per product type, when the shortlist has
+# other types (eval 2026-09-28: ~2.3 types in the top 5, target 3).
+MAX_SAME_TYPE = 2
 MIN_PICKS = 3
 MAX_PICKS = 5
 MAX_REASON_CHARS = 160
@@ -47,7 +50,7 @@ Rules:
 - The reason may only claim what the fact, title or pitch says. You may add who it's for or the occasion from the brief. Never add features, materials, styles, sizes, uses, effects or feelings the listing doesn't state ("hand-painted", "made for graduation", "a keepsake", "easy to assemble").
 - Link a product to the shopper's note or to a trait (e.g. sentimental, classic) only when that product's own details support the link; if they don't, don't claim it. If nothing fits the note, still pick the best gifts, but don't pretend they match it.
 - Don't mention a price unless it's the product's listed price.
-- Prefer variety: don't pick several near-identical products.
+- Prefer variety: at most 2 products of the same type, and no near-identical products.
 - No links, emojis or exclamation marks.
 
 Return JSON only: {"picks": [{"product_id": "...", "fact": "...", "reason": "..."}]}"""
@@ -184,12 +187,30 @@ def _prompt(intake: Intake, candidates: list[Candidate]) -> str:
     return "\n".join(lines)
 
 
-def _templates(intake: Intake, candidates: list[Candidate], skip: set[str], n: int) -> list[Pick]:
-    out = []
+def _type_key(product) -> str:
+    return (product.product_type or "").strip().lower()
+
+
+def _type_capped(candidates: list[Candidate]) -> bool:
+    """The variety cap only applies when the shortlist offers other types."""
+    return len({_type_key(c.product) for c in candidates}) > 1
+
+
+def _over_cap(picks: list[Pick], product, capped: bool) -> bool:
+    if not capped:
+        return False
+    return sum(1 for p in picks if _type_key(p.product) == _type_key(product)) >= MAX_SAME_TYPE
+
+
+def _templates(intake: Intake, candidates: list[Candidate], skip: set[str], n: int,
+               existing: list[Pick] | None = None) -> list[Pick]:
+    """Top up with template reasons, keeping the per-type variety cap."""
+    capped = _type_capped(candidates)
+    out: list[Pick] = []
     for c in candidates:
         if len(out) >= n:
             break
-        if c.product.product_id in skip:
+        if c.product.product_id in skip or _over_cap((existing or []) + out, c.product, capped):
             continue
         out.append(Pick(c.product, template_reason(intake, c), "template"))
     return out
@@ -229,12 +250,15 @@ async def rerank(
                             input_tokens=resp.input_tokens, output_tokens=resp.output_tokens,
                         model=getattr(resp, "model", "") or model)
 
+    capped = _type_capped(candidates)
     for item in raw if isinstance(raw, list) else []:
         if not isinstance(item, dict):
             continue
         c = by_id.get(str(item.get("product_id")))
         if c is None or any(p.product.product_id == c.product.product_id for p in picks):
             continue
+        if _over_cap(picks, c.product, capped):
+            continue   # a third of the same type: skip, top up with another type below
         reason = validate_reason(item.get("reason"), c)
         if reason is None:
             continue
@@ -248,7 +272,7 @@ async def rerank(
 
     used_fallback = not picks
     if len(picks) < MIN_PICKS:
-        picks += _templates(intake, candidates, {p.product.product_id for p in picks}, MIN_PICKS - len(picks))
+        picks += _templates(intake, candidates, {p.product.product_id for p in picks}, MIN_PICKS - len(picks), picks)
     return RerankResult(picks=picks, used_fallback=used_fallback,
                         input_tokens=resp.input_tokens, output_tokens=resp.output_tokens,
                         model=getattr(resp, "model", "") or model)
