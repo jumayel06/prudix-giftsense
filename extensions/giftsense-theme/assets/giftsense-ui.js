@@ -303,17 +303,26 @@
   }
 
   // ── step 2: results ───────────────────────────────────────────────────────
+  // Loading state while the AI picks (a few seconds): placeholder cards and a
+  // status line that moves on, so the wait reads as progress.
+  var LOADING_STEPS = ['Looking through the store\u2026', 'Picking the best matches\u2026', 'Writing why each one fits\u2026'];
   function skeleton() {
     clear(els.body);
-    var status = el('p', 'gs-status', 'Finding gifts…');
+    clearInterval(state.loadingTimer);
+    var status = el('p', 'gs-status gs-status--pending', LOADING_STEPS[0]);
     status.setAttribute('role', 'status');
     els.body.appendChild(status);
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 4; i++) {
       var card = el('div', 'gs-card gs-card--skeleton');
       card.appendChild(el('div', 'gs-img'));
       card.appendChild(el('div', 'gs-lines'));
       els.body.appendChild(card);
     }
+    var step = 0;
+    state.loadingTimer = setInterval(function () {
+      if (!status.isConnected || step >= LOADING_STEPS.length - 1) { clearInterval(state.loadingTimer); return; }
+      status.textContent = LOADING_STEPS[++step];
+    }, 1600);
   }
 
   function post(body) {
@@ -326,9 +335,12 @@
     });
   }
 
-  // Two requests at once: "instant" (ranked picks, simple reasons, ~0.5 s) and
-  // "ai" (personal picks and reasons, a few seconds). Instant cards show first
-  // and the AI's replace them; if the AI fails, the instant ones stay.
+  // Two requests at once: "ai" (personal picks and reasons, a few seconds; the
+  // backend falls back to simple reasons itself after 8 s) and "instant"
+  // (ranked picks, ~0.5 s). Shoppers see one list, never a list that swaps
+  // itself out: the AI's, or the instant one only if the AI request fails
+  // (rate limit, network). Showing instant picks first and replacing them
+  // looked broken to shoppers (dev store, 2026-09-30).
   function search(refine) {
     skeleton();
     var seq = state.seq = (state.seq || 0) + 1;
@@ -340,25 +352,26 @@
     };
     if (AGE_FOR[a.recipient]) body.age_band = AGE_FOR[a.recipient];
     var instant = null;
-    var aiDone = false;
 
-    post(Object.assign({}, body, { phase: 'instant' })).then(function (res) {
-      if (seq !== state.seq || aiDone || !res.ok || !(res.data.picks || []).length) return;
-      instant = res.data.picks;
-      renderResults(instant, true);
+    var instantReady = post(Object.assign({}, body, { phase: 'instant' })).then(function (res) {
+      if (res.ok && (res.data.picks || []).length) instant = res.data.picks;
     }).catch(function () { /* the AI request still decides */ });
+    function fallback(message) {
+      instantReady.then(function () {
+        if (seq !== state.seq) return;
+        clearInterval(state.loadingTimer);
+        if (instant) renderResults(instant, false);
+        else renderMessage(message);
+      });
+    }
 
     post(Object.assign({}, body, { phase: 'ai' })).then(function (res) {
       if (seq !== state.seq) return;
-      aiDone = true;
-      if (res.ok) { renderResults(res.data.picks || [], false); return; }
-      if (instant) { renderResults(instant, false); return; }
-      renderMessage(res.status === 429 && res.data.detail ? res.data.detail : 'Something went wrong. Please try again.');
+      if (res.ok) { clearInterval(state.loadingTimer); renderResults(res.data.picks || [], false); return; }
+      fallback(res.status === 429 && res.data.detail ? res.data.detail : 'Something went wrong. Please try again.');
     }).catch(function () {
       if (seq !== state.seq) return;
-      aiDone = true;
-      if (instant) renderResults(instant, false);
-      else renderMessage('Something went wrong. Please check your connection and try again.');
+      fallback('Something went wrong. Please check your connection and try again.');
     });
   }
 
