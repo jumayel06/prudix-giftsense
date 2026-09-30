@@ -106,7 +106,6 @@ function SyncCard({ status, onResync, resyncing }) {
 }
 
 const CLAMP_2 = { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }
-const MAX_CHIPS = 3
 
 // One badge per row, most important first.
 function statusBadge(p, hasProfile) {
@@ -121,12 +120,10 @@ function statusBadge(p, hasProfile) {
 
 function LabeledList({ label, values, labels }) {
   if (!values || values.length === 0) return null
-  const shown = values.slice(0, MAX_CHIPS).map(v => labels[v] || v)
-  const more = values.length - shown.length
   return (
     <Text as="p" variant="bodyMd">
       <Text as="span" tone="subdued">{label}: </Text>
-      {shown.join(', ')}{more > 0 ? ` +${more} more` : ''}
+      {values.map(v => labels[v] || v).join(', ')}
     </Text>
   )
 }
