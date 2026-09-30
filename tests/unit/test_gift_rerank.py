@@ -149,6 +149,20 @@ async def test_reason_that_borrows_the_shoppers_note_unsupported_gets_a_template
 
 
 @pytest.mark.asyncio
+async def test_naming_who_its_for_or_the_occasion_is_not_stretching():
+    # Dev store 2026-09-30: "for my husband" turned every AI reason ("…your
+    # husband will…") into a template, since no listing says "husband".
+    intake = Intake(recipient="partner", occasion="birthday", budget_band="25_50", vibes=["practical"],
+                    free_text="for my husband, his birthday")
+    chat = llm({"picks": [
+        {"product_id": "a", "fact": "soy wax", "reason": "Soy wax glow your husband can unwind with on his birthday."},
+        {"product_id": "b", "fact": "soy wax", "reason": "A plush robe for slow mornings."},
+    ]})
+    result = await rerank(intake, CANDS[:2], model="gpt-6-sol", chat_fn=chat)
+    assert [p.source for p in result.picks[:2]] == ["ai", "ai"]
+
+
+@pytest.mark.asyncio
 async def test_reason_must_rest_on_a_fact_from_the_listing():
     # Eval 2026-09-28: small embellishments ("hand-painted", "made for
     # graduation") stayed unfaithful at ~83%. The model must name the listing

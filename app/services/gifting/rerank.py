@@ -121,6 +121,17 @@ _NOTE_STOPWORDS = {
     "that", "this", "with", "from", "they", "them", "their", "have", "loves", "love", "likes", "into",
     "about", "really", "very", "just", "also", "gift", "gifts", "some", "something", "wants", "would",
     "first", "every", "always", "recently", "lately", "been", "being", "what", "when", "where", "which",
+    # Who it's for and the occasion: a reason may name them ("your husband",
+    # "her birthday") though no listing does. Without these, "for my husband"
+    # turned every AI reason into a template (dev store, 2026-09-30).
+    "husband", "wife", "spouse", "partner", "boyfriend", "girlfriend", "fiance", "fiancee", "hubby",
+    "father", "mother", "daddy", "mommy", "parents", "brother", "sister", "sibling", "siblings",
+    "daughter", "son", "sons", "daughters", "grandma", "grandpa", "grandmother", "grandfather",
+    "grandparents", "aunt", "uncle", "niece", "nephew", "cousin", "friend", "friends", "bestie",
+    "coworker", "colleague", "boss", "manager", "teacher", "neighbor", "neighbour", "host", "hostess",
+    "himself", "herself", "guys", "girl", "girls", "baby", "kids", "child", "children", "teen", "teenager",
+    "birthday", "anniversary", "christmas", "holiday", "holidays", "wedding", "graduation", "retirement",
+    "housewarming", "valentine", "valentines", "mothers", "fathers", "years", "turning",
 }
 
 
