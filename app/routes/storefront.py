@@ -5,6 +5,7 @@
     POST /api/storefront/search   gift search: phase "instant" (no AI, free) and
                                   phase "ai" (metered, app/services/metering.py)
     POST /api/storefront/note/draft  metered AI gift-note draft (3 rewrites per gift)
+    POST /api/storefront/events      batched widget events (analytics)
 
 Trust: Shopify's proxy signature (app/services/proxy_auth.py); the shop is
 the signed `shop` param, never anything in the body. Shoppers always get
@@ -35,7 +36,7 @@ from app.services.gifting.brief import GiftBrief, intake_options
 from app.services.gifting.embeddings import OpenAIEmbedder
 from app.services.gifting.retrieval import Intake
 from app.services.proxy_auth import verify_proxy_signature
-from core.db.models import CatalogProductRow, GiftSession, Shop
+from core.db.models import CatalogProductRow, GiftEvent, GiftSession, Shop
 from core.db.session import get_db
 
 router = APIRouter(prefix="/api/storefront")
@@ -230,3 +231,33 @@ async def note_draft(body: NoteDraftRequest, request: Request, shop: Shop = Depe
 
     return _no_store({"note": result.text, "source": result.source, "tone": tone, "max_chars": settings["max_chars"],
                       "rewrites_left": MAX_NOTE_DRAFTS_PER_GIFT - count - 1})
+
+
+# ── Analytics beacon ─────────────────────────────────────────────────────────
+
+EVENT_TYPES = {"widget_open", "intake_complete", "pick_click", "pick_atc", "refine",
+               "panel_open", "note_drafted", "panel_submit"}
+EVENTS_PER_SID_PER_HOUR = 300
+
+
+class StorefrontEvent(BaseModel):
+    type: str = Field(max_length=40)
+    product_id: Optional[str] = Field(default=None, max_length=40)
+
+
+class EventBatch(BaseModel):
+    sid: uuid.UUID
+    events: list[StorefrontEvent] = Field(max_length=20)
+
+
+@router.post("/events")
+async def events(body: EventBatch, shop: Shop = Depends(storefront_shop), db: AsyncSession = Depends(get_db)):
+    """Batched widget events for analytics (docs/TECHNICAL_PLAN.md §7.1).
+    Unknown types are dropped silently so old widgets never error."""
+    keep = [e for e in body.events if e.type in EVENT_TYPES]
+    if keep and await rate_limit.hit(f"events:sid:{shop.id}:{body.sid}", EVENTS_PER_SID_PER_HOUR, rate_limit.HOUR):
+        db.add_all([GiftEvent(shop_id=shop.id, sid=body.sid, type=e.type, product_id=e.product_id) for e in keep])
+        await db.commit()
+    else:
+        keep = []
+    return _no_store({"stored": len(keep)})

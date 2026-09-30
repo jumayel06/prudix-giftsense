@@ -9,7 +9,7 @@ tests/integration/test_purge_completeness.py fails CI otherwise.
 Deletion order respects FK constraints (children before parents):
   usage_logs → jobs
   billing_events
-  catalog_products, catalog_syncs, gift_sessions, gift_orders
+  catalog_products, catalog_syncs, gift_sessions, gift_orders, gift_events, order_counts_daily
   then anonymise the shop row (kept so trial_used=True survives reinstall)
 """
 
@@ -19,7 +19,10 @@ import structlog
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.db.models import BillingEvent, CatalogProductRow, CatalogSync, GiftOrder, GiftSession, Job, Shop, UsageLog
+from core.db.models import (
+    BillingEvent, CatalogProductRow, CatalogSync, GiftEvent, GiftOrder, GiftSession, Job, OrderCountDaily, Shop,
+    UsageLog,
+)
 
 logger = structlog.get_logger()
 
@@ -33,6 +36,8 @@ async def purge_shop_data(shop_id: uuid.UUID, db: AsyncSession) -> None:
     await db.execute(delete(CatalogSync).where(CatalogSync.shop_id == shop_id))
     await db.execute(delete(GiftSession).where(GiftSession.shop_id == shop_id))
     await db.execute(delete(GiftOrder).where(GiftOrder.shop_id == shop_id))
+    await db.execute(delete(GiftEvent).where(GiftEvent.shop_id == shop_id))
+    await db.execute(delete(OrderCountDaily).where(OrderCountDaily.shop_id == shop_id))
 
     # Anonymise shop row — keep it so trial_used=True survives a future reinstall
     result = await db.execute(select(Shop).where(Shop.id == shop_id))

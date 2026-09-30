@@ -25,7 +25,7 @@ from app.workers.catalog import (
     catalog_finish_bulk, catalog_start_sync, catalog_sync_product, kick_catalog_syncs, reconcile_catalogs,
 )
 from core.config import settings
-from core.db.models import BillingEvent, ProcessedWebhook, Shop
+from core.db.models import BillingEvent, GiftEvent, ProcessedWebhook, Shop
 from core.db.session import AsyncSessionLocal
 from core.shopify_auth import get_valid_access_token
 from core.shopify_graphql import shopify_graphql_post
@@ -141,6 +141,18 @@ async def reconcile_uninstalled_shops(ctx: dict) -> None:
                     shop=shop.shop_domain, error=str(e),
                 )
     logger.info("reconcile_uninstalled_shops_complete", scanned=len(shops), caught=caught)
+
+
+GIFT_EVENTS_RETENTION_DAYS = 90
+
+
+async def purge_old_gift_events(ctx: dict) -> None:
+    """Storefront analytics events are kept 90 days (docs/TECHNICAL_PLAN.md §7.1)."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=GIFT_EVENTS_RETENTION_DAYS)
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(delete(GiftEvent).where(GiftEvent.created_at < cutoff))
+        await db.commit()
+    logger.info("purge_old_gift_events_complete", deleted=result.rowcount or 0)
 
 
 async def purge_uninstalled_shops(ctx: dict) -> None:
@@ -336,6 +348,7 @@ class WorkerSettings:
         # Missed trial conversion/expiry webhook safety net. Hourly at :40.
         cron(reconcile_trial_conversions, minute=40),
         cron(purge_uninstalled_shops, hour=3, minute=0),
+        cron(purge_old_gift_events, hour=3, minute=30),
         # First catalog sync for newly active shops + missed bulk_operations/finish.
         cron(kick_catalog_syncs, minute=set(range(0, 60, 5)), timeout=3600),
         # Nightly full re-export (missed product webhooks, deletions, upgrades).

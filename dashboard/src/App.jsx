@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { AppProvider, Frame, Navigation, SkeletonPage, SkeletonBodyText } from '@shopify/polaris'
 import { TitleBar } from '@shopify/app-bridge-react'
-import { HomeIcon, CreditCardIcon, SettingsIcon, ChatIcon, ProductIcon, WandIcon, StoreIcon } from '@shopify/polaris-icons'
+import { HomeIcon, CreditCardIcon, SettingsIcon, ChatIcon, ProductIcon, WandIcon, StoreIcon, ChartVerticalIcon } from '@shopify/polaris-icons'
 import enTranslations from '@shopify/polaris/locales/en.json'
 import '@shopify/polaris/build/esm/styles.css'
 
@@ -16,6 +16,7 @@ import SettingsPage from './pages/SettingsPage'
 import SupportPage from './pages/SupportPage'
 import ComingSoonPage from './pages/ComingSoonPage'
 import StorefrontPage from './pages/StorefrontPage'
+import AnalyticsPage from './pages/AnalyticsPage'
 import { UPCOMING } from './utils/upcoming'
 
 const APP_NAME = 'Prudix GiftSense'
@@ -76,7 +77,7 @@ function SidebarNav({ planStatus, onMobileClose }) {
           />
           <Navigation.Section title="Gifting" items={soon('gifting')} />
           <Navigation.Section title="Orders" items={soon('orders')} />
-          <Navigation.Section title="Insights" items={soon('insights')} />
+          <Navigation.Section title="Insights" items={[item('Analytics', '/analytics', ChartVerticalIcon)]} />
           <Navigation.Section
             title="Account"
             items={[
@@ -118,7 +119,7 @@ function AppFooter() {
 }
 
 const TITLES = {
-  '/': APP_NAME, '/catalog': 'Catalog', '/playground': 'Try the gift finder', '/plans': 'Plans', '/settings': 'Settings', '/support': 'Support', '/storefront': 'Storefront',
+  '/': APP_NAME, '/catalog': 'Catalog', '/playground': 'Try the gift finder', '/plans': 'Plans', '/settings': 'Settings', '/support': 'Support', '/storefront': 'Storefront', '/analytics': 'Analytics',
   ...Object.fromEntries(UPCOMING.map(u => [u.path, u.title])),
 }
 
@@ -218,6 +219,7 @@ function AppShell() {
             <Route path="/" element={<HomePage stats={stats} />} />
             <Route path="/catalog" element={<CatalogPage />} />
             <Route path="/storefront" element={<StorefrontPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/playground" element={<PlaygroundPage />} />
             <Route path="/plans" element={<PlanPickerPage />} />
             <Route path="/settings" element={<SettingsPage />} />

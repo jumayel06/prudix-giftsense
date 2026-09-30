@@ -6,7 +6,7 @@
  */
 import {
   NoteIcon, PackageIcon, CalendarIcon, MicrophoneIcon, ReplaceIcon,
-  ListBulletedIcon, OrderIcon, ChartVerticalIcon,
+  ListBulletedIcon, OrderIcon,
 } from '@shopify/polaris-icons'
 
 export const UPCOMING = [
@@ -59,15 +59,6 @@ export const UPCOMING = [
     items: [
       { feature: 'gift_cards_print', text: 'Print gift cards and tags for each gift' },
       { feature: 'gift_receipt', text: 'Price-free gift receipts' },
-    ],
-  },
-  {
-    path: '/analytics', label: 'Analytics', section: 'insights', icon: ChartVerticalIcon,
-    title: 'Analytics',
-    intro: 'See the sales GiftSense brings in.',
-    items: [
-      { feature: 'basic_analytics', text: 'Gift finder searches, gift orders and revenue' },
-      { feature: 'full_analytics', text: 'Full analytics and a weekly sales email' },
     ],
   },
 ]

@@ -29,7 +29,9 @@ from app.config import (
 from app.jobs import enqueue
 from app.services.gift_orders import metafield_value, note_source, parse_gift_order
 from core.config import settings
-from core.db.models import BillingEvent, CatalogProductRow, GiftOrder, GiftSession, ProcessedWebhook, Shop, SuppressedEmail
+from core.db.models import (
+    BillingEvent, CatalogProductRow, GiftOrder, GiftSession, OrderCountDaily, ProcessedWebhook, Shop, SuppressedEmail,
+)
 from core.db.session import get_db
 
 logger = structlog.get_logger()
@@ -611,12 +613,35 @@ async def _handle_bulk_finished(shop_domain: str, payload: dict, db: AsyncSessio
 # Parse here (cheap) and store the gift_orders row; tagging + the order
 # metafield (Shopify calls) run in the annotate_gift_order job.
 
+async def _count_order(db: AsyncSession, shop: Shop, payload: dict) -> None:
+    """Every order counts toward the "gift orders vs all orders" denominator."""
+    try:
+        total = round(float(payload.get("total_price") or 0), 2)
+    except (TypeError, ValueError):
+        total = 0.0
+    day = datetime.now(timezone.utc).date()
+    for _ in range(2):
+        row = (await db.execute(select(OrderCountDaily).where(
+            OrderCountDaily.shop_id == shop.id, OrderCountDaily.day == day))).scalar_one_or_none()
+        if row is None:
+            db.add(OrderCountDaily(shop_id=shop.id, day=day, orders=1, revenue=total))
+        else:
+            row.orders = (row.orders or 0) + 1
+            row.revenue = float(row.revenue or 0) + total
+        try:
+            await db.commit()
+            return
+        except IntegrityError:      # another order created today's row first
+            await db.rollback()
+
+
 async def _handle_order_created(shop_domain: str, payload: dict, db: AsyncSession) -> None:
-    parsed = parse_gift_order(payload)
-    if parsed is None:
-        return
     shop = (await db.execute(select(Shop).where(Shop.shop_domain == shop_domain))).scalar_one_or_none()
     if shop is None or shop.plan_status in ("uninstalled", "purged"):
+        return
+    await _count_order(db, shop, payload)
+    parsed = parse_gift_order(payload)
+    if parsed is None:
         return
     exists_ = (await db.execute(select(GiftOrder.id).where(
         GiftOrder.shop_id == shop.id, GiftOrder.order_id == parsed.order_id))).first()

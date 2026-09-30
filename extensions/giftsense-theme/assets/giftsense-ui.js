@@ -79,13 +79,40 @@
         slot.appendChild(gift);
         var add = el('button', 'gs-secondary gs-small', 'Add to cart');
         add.type = 'button';
-        add.addEventListener('click', function () { addToCart(available[0].id, add, slot); });
+        add.addEventListener('click', function () { addToCart(available[0].id, add, slot, pick.product_id); });
         slot.appendChild(add);
       })
       .catch(function () { /* the card link still works */ });
   }
 
-  function addToCart(variantId, button, slot) {
+  // ── analytics beacon (POST /apps/giftsense/events) ───────────────────────
+  // Batched; flushed every 3 s and when the page is hidden (keepalive), so
+  // closing the tab doesn't lose the last events. Never blocks the UI.
+  var queue = [];
+  var flushTimer = null;
+  function track(type, productId) {
+    if (!ctx) return;
+    queue.push(productId ? { type: type, product_id: String(productId).slice(0, 40) } : { type: type });
+    if (queue.length >= 20) flush();
+    else if (!flushTimer) flushTimer = setTimeout(flush, 3000);
+  }
+  function flush() {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+    if (!queue.length || !ctx) return;
+    var batch = queue.splice(0, 20);
+    try {
+      fetch(ctx.api + '/events', {
+        method: 'POST', credentials: 'same-origin', keepalive: true,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sid: ctx.sid, events: batch })
+      }).catch(function () {});
+    } catch (e) { /* analytics must never break the widget */ }
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(); });
+  window.addEventListener('pagehide', flush);
+
+  function addToCart(variantId, button, slot, productId) {
     button.disabled = true;
     button.textContent = 'Adding\u2026';
     var json = { 'Content-Type': 'application/json', Accept: 'application/json' };
@@ -101,6 +128,7 @@
       });
     }).then(function () {
       button.textContent = 'Added \u2713';
+      track('pick_atc', productId);
       var view = el('a', 'gs-link', 'View cart');
       view.href = root() + 'cart';
       slot.appendChild(view);
@@ -174,6 +202,7 @@
     } else {
       renderIntake();
     }
+    track(entry && entry.type === 'product' ? 'panel_open' : 'widget_open');
   }
 
   function close() {
@@ -258,7 +287,11 @@
 
     els.go = el('button', 'gs-primary', 'Show gift ideas');
     els.go.type = 'button';
-    els.go.addEventListener('click', function () { state.shown = []; state.refines = 0; state.asked = []; search(); });
+    els.go.addEventListener('click', function () {
+      state.shown = []; state.refines = 0; state.asked = [];
+      track('intake_complete');
+      search();
+    });
     els.body.appendChild(els.go);
     els.hint = el('p', 'gs-hint', 'Pick who it\u2019s for, the occasion and a budget.');
     els.body.appendChild(els.hint);
@@ -390,6 +423,7 @@
         }
         state.asked.push(q.id);
         state.refines += 1;
+        track('refine');
         search(true);
       });
       row.appendChild(b);
@@ -535,6 +569,7 @@
           return;
         }
         g.note = note.value = res.d.note;
+        track('note_drafted', productId);
         counter.textContent = note.value.length + '/' + notes.max_chars;
         g.left = res.d.rewrites_left;
         draftStatus.textContent = g.left > 0 ? 'Edit it any way you like. ' + g.left + ' rewrite' + (g.left === 1 ? '' : 's') + ' left.' : 'Edit it any way you like.';
@@ -553,6 +588,7 @@
 
   function renderGiftPanel(pick, variantId, opts) {
     opts = opts || {};
+    if (!opts.standalone) track('panel_open', pick.product_id);
     var notes = ctx.config.notes || { tone: 'warm', max_chars: 250, tones: [] };
     var g = { mode: 'direct', label: labelFor(state.answers.recipient), note: '', tone: notes.tone, name: '', left: null };
     clear(els.body);
@@ -655,6 +691,7 @@
       });
     }).then(function () {
       clear(els.body);
+      track('panel_submit', pick.product_id);
       var done = el('p', 'gs-status', 'Added to your cart as a gift ✓');
       done.setAttribute('role', 'status');
       els.body.appendChild(done);
@@ -718,6 +755,9 @@
       var text = el('div', 'gs-text');
       var name = el(href ? 'a' : 'span', 'gs-name', p.title);
       if (href) name.href = href;
+      (function (id) {
+        [link, name].forEach(function (a) { if (a.href) a.addEventListener('click', function () { track('pick_click', id); flush(); }); });
+      })(p.product_id);
       text.appendChild(name);
       text.appendChild(el('span', 'gs-price', p.price_min === p.price_max
         ? money(p.price_min) : money(p.price_min) + ' \u2013 ' + money(p.price_max)));

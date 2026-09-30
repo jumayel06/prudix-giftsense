@@ -7,9 +7,9 @@ Every table with a `shop_id` column must also be purged in app/purge.py
 (enforced by tests/integration/test_purge_completeness.py).
 """
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -289,3 +289,31 @@ class GiftOrder(Base):
     note_source: Mapped[str | None] = mapped_column(String, nullable=True)      # ai_accepted | ai_edited | manual
     annotated: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class GiftEvent(Base):
+    """Storefront widget events (analytics beacon), kept 90 days
+    (purge_old_gift_events cron). Only the random widget `sid` and a product
+    id: no customer data."""
+    __tablename__ = "gift_events"
+    __table_args__ = (Index("ix_gift_events_shop_created", "shop_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    shop_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("shops.id", ondelete="CASCADE"), nullable=False)
+    sid: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    type: Mapped[str] = mapped_column(String, nullable=False)
+    product_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class OrderCountDaily(Base):
+    """Every order (gift or not) per shop per day, from orders/create: the
+    denominator for "gift orders vs all orders"."""
+    __tablename__ = "order_counts_daily"
+    __table_args__ = (UniqueConstraint("shop_id", "day", name="uq_order_counts_daily_shop_day"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    shop_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("shops.id", ondelete="CASCADE"), nullable=False)
+    day: Mapped[date] = mapped_column(Date, nullable=False)
+    orders: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    revenue: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
