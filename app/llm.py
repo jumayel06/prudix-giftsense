@@ -175,3 +175,14 @@ async def _claude_chat(model, system, prompt, json_mode, timeout, extra) -> LLMR
         output_tokens=usage.output_tokens if usage else 0,
         model=model,
     )
+
+
+async def moderate(text: str) -> bool:
+    """True if OpenAI's (free) moderation flags `text`. Fails open (False) with
+    a log: callers moderate our own AI output, whose inputs are constrained."""
+    try:
+        resp = await _openai_client.moderations.create(model="omni-moderation-latest", input=text, timeout=5.0)
+        return bool(resp.results and resp.results[0].flagged)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("moderation_unavailable", error=str(e)[:200])
+        return False

@@ -4,6 +4,7 @@
     GET  /api/storefront/config   widget bootstrap (intake options, branding)
     POST /api/storefront/search   gift search: phase "instant" (no AI, free) and
                                   phase "ai" (metered, app/services/metering.py)
+    POST /api/storefront/note/draft  metered AI gift-note draft (3 rewrites per gift)
 
 Trust: Shopify's proxy signature (app/services/proxy_auth.py); the shop is
 the signed `shop` param, never anything in the body. Shoppers always get
@@ -14,26 +15,27 @@ Abuse limits: 10 searches/hour per widget session and 30 per shopper-IP hash
 (template picks, never an error).
 """
 import uuid
-from typing import Literal
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic import Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import PLANS
-from app.llm import chat
-from app.plan_guard import may_generate
 from app.ai_models import model_for_shop
+from app.config import PLANS
+from app.llm import chat, moderate
+from app.plan_guard import may_generate
 from app.services import catalog_index, metering, rate_limit
+from app.services.gift_settings import Tone, note_settings
 from app.services.gifting import vocab
 from app.services.gifting.brief import GiftBrief, intake_options
 from app.services.gifting.embeddings import OpenAIEmbedder
 from app.services.gifting.retrieval import Intake
 from app.services.proxy_auth import verify_proxy_signature
-from core.db.models import GiftSession, Shop
+from core.db.models import CatalogProductRow, GiftSession, Shop
 from core.db.session import get_db
 
 router = APIRouter(prefix="/api/storefront")
@@ -144,3 +146,83 @@ async def gift_search(body: SearchRequest, request: Request, shop: Shop = Depend
             "reason": p.reason,
         } for p in picks],
     })
+
+
+# ── Gift note drafts ─────────────────────────────────────────────────────────
+
+MAX_NOTE_DRAFTS_PER_GIFT = 4          # the first draft + 3 rewrites
+NOTE_DRAFTS_PER_SID_PER_HOUR = 20
+NOTE_DRAFTS_PER_IP_PER_HOUR = 60
+
+
+class NoteDraftRequest(BaseModel):
+    sid: uuid.UUID
+    product_id: Optional[str] = Field(default=None, max_length=40)   # None = one note for the whole order
+    recipient: Optional[str] = None
+    occasion: Optional[str] = None
+    tone: Optional[Tone] = None
+    # Recipient's first name as typed by the shopper: letters, spaces, . ' - only.
+    name: str = Field(default="", max_length=40, pattern=r"^[\w .'\-]*$")
+
+    @field_validator("recipient")
+    @classmethod
+    def _recipient(cls, v):
+        if v is not None and v not in vocab.RECIPIENTS:
+            raise ValueError("unknown recipient")
+        return v
+
+    @field_validator("occasion")
+    @classmethod
+    def _occasion(cls, v):
+        if v is not None and v not in vocab.OCCASIONS:
+            raise ValueError("unknown occasion")
+        return v
+
+
+@router.post("/note/draft")
+async def note_draft(body: NoteDraftRequest, request: Request, shop: Shop = Depends(storefront_shop),
+                     db: AsyncSession = Depends(get_db)):
+    if not may_generate(shop):
+        raise HTTPException(403, "Gift notes are not available.")
+    ip = rate_limit.shopper_ip(request.headers.get("x-forwarded-for"))
+    if not await rate_limit.hit(f"note:sid:{shop.id}:{body.sid}", NOTE_DRAFTS_PER_SID_PER_HOUR, rate_limit.HOUR) or (
+            ip and not await rate_limit.hit(f"note:ip:{shop.id}:{rate_limit.ip_hash(ip)}",
+                                            NOTE_DRAFTS_PER_IP_PER_HOUR, rate_limit.HOUR)):
+        raise HTTPException(429, SLOW_DOWN)
+
+    gift_key = body.product_id or "order"
+    session = await _session(db, shop, body.sid)
+    drafts = dict((session.note_drafts if session else None) or {})
+    count = (drafts.get(gift_key) or {}).get("count", 0)
+    if count >= MAX_NOTE_DRAFTS_PER_GIFT:
+        raise HTTPException(409, "You've rewritten this note a few times already. Edit it by hand to make it yours.")
+
+    intake = (session.intake if session else None) or {}
+    settings = note_settings(shop)
+    tone = body.tone or settings["tone"]
+    product = None
+    if body.product_id:
+        product = (await db.execute(select(CatalogProductRow).where(
+            CatalogProductRow.shop_id == shop.id, CatalogProductRow.product_id == body.product_id))).scalar_one_or_none()
+    profile = (product.gift_profile or {}) if product else {}
+
+    result = await metering.run_note_draft(
+        db, shop, chat_fn=chat, moderate_fn=moderate,
+        recipient=body.recipient or intake.get("recipient"), occasion=body.occasion or intake.get("occasion"),
+        tone=tone, max_chars=settings["max_chars"], banned_words=settings["banned_words"], name=body.name.strip(),
+        product_title=product.title if product else "", product_pitch=profile.get("gift_pitch", ""),
+        product_facts=profile.get("facts", []),
+    )
+
+    if session is None:
+        session = GiftSession(shop_id=shop.id, sid=body.sid, intake={}, last_picks=[], searches=0, refines=0)
+        db.add(session)
+    drafts[gift_key] = {"count": count + 1, "last": result.text}
+    session.note_drafts = drafts
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+
+    return _no_store({"note": result.text, "source": result.source, "tone": tone, "max_chars": settings["max_chars"],
+                      "rewrites_left": MAX_NOTE_DRAFTS_PER_GIFT - count - 1})

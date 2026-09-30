@@ -44,6 +44,7 @@ class Reservation:
     action_type: str
     weight: int
     model: str
+    prompt_version: str = RERANK_PROMPT_VERSION
 
 
 HOURLY_SHARE = 0.10        # of the monthly plan limit
@@ -70,7 +71,8 @@ async def _lock_shop(db: AsyncSession, shop_id) -> None:
     await db.execute(select(Shop.id).where(Shop.id == shop_id).with_for_update())
 
 
-async def reserve(db: AsyncSession, shop: Shop, action_type: str) -> tuple[Reservation | None, str | None]:
+async def reserve(db: AsyncSession, shop: Shop, action_type: str,
+                  prompt_version: str = RERANK_PROMPT_VERSION) -> tuple[Reservation | None, str | None]:
     """Reserve the shop's AI-tier weight in generations for one AI use.
     Returns (reservation, None), or (None, reason) when AI isn't allowed:
     "inactive" | "generation_limit" | "daily_cost_cap" | "hourly_cap"."""
@@ -94,9 +96,9 @@ async def reserve(db: AsyncSession, shop: Shop, action_type: str) -> tuple[Reser
         logger.warning("metering_hourly_cap", shop=shop.shop_domain)
         return None, "hourly_cap"
     db.add(UsageLog(id=uuid.uuid4(), shop_id=shop.id, action_type=action_type, generations_consumed=weight,
-                    model_used=model, cost_usd=0, prompt_version=RERANK_PROMPT_VERSION))
+                    model_used=model, cost_usd=0, prompt_version=prompt_version))
     await db.commit()  # releases the lock
-    return Reservation(shop.id, action_type, weight, model), None
+    return Reservation(shop.id, action_type, weight, model, prompt_version), None
 
 
 async def settle(db: AsyncSession, r: Reservation, input_tokens: int, output_tokens: int, model: str | None = None,
@@ -105,7 +107,7 @@ async def settle(db: AsyncSession, r: Reservation, input_tokens: int, output_tok
     used = model or r.model
     db.add(UsageLog(id=uuid.uuid4(), shop_id=r.shop_id, action_type=r.action_type, generations_consumed=0,
                     tokens_input=input_tokens, tokens_output=output_tokens, model_used=used,
-                    cost_usd=calc_cost(used, input_tokens, output_tokens), prompt_version=RERANK_PROMPT_VERSION,
+                    cost_usd=calc_cost(used, input_tokens, output_tokens), prompt_version=r.prompt_version,
                     duration_ms=duration_ms))
     await db.commit()
 
@@ -117,7 +119,7 @@ async def refund(db: AsyncSession, r: Reservation, input_tokens: int = 0, output
     used = model or r.model
     db.add(UsageLog(id=uuid.uuid4(), shop_id=r.shop_id, action_type=r.action_type, generations_consumed=-r.weight,
                     tokens_input=input_tokens, tokens_output=output_tokens, model_used=used,
-                    cost_usd=calc_cost(used, input_tokens, output_tokens), prompt_version=RERANK_PROMPT_VERSION))
+                    cost_usd=calc_cost(used, input_tokens, output_tokens), prompt_version=r.prompt_version))
     await db.commit()
 
 
@@ -146,3 +148,23 @@ async def run_gift_search(
         return GiftSearchResult(rec, latency_ms, charged=False)
     await settle(db, reservation, rec.input_tokens, rec.output_tokens, rec.model or None, latency_ms)
     return GiftSearchResult(rec, latency_ms, charged=True)
+
+
+async def run_note_draft(db: AsyncSession, shop: Shop, *, chat_fn=chat, moderate_fn=None, **note_inputs):
+    """A metered gift-note draft. Always returns a note (a template when AI is
+    unavailable, over a limit, or fails); charges only for an AI note."""
+    from app.llm import moderate
+    from app.services.gifting import notes
+
+    model = model_for_shop(shop)
+    reservation, _ = await reserve(db, shop, "gift_note", notes.PROMPT_VERSION)
+    if reservation is None:
+        s = note_inputs
+        return notes.NoteResult(notes.template_note(s["tone"], s.get("recipient"), s.get("occasion"),
+                                                    s.get("name", ""), s["max_chars"]), "template")
+    result = await notes.draft_note(**note_inputs, model=model, chat_fn=chat_fn, moderate_fn=moderate_fn or moderate)
+    if result.source == "ai":
+        await settle(db, reservation, result.input_tokens, result.output_tokens, result.model or None)
+    else:
+        await refund(db, reservation, result.input_tokens, result.output_tokens, result.model or None)
+    return result

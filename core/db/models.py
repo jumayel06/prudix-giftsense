@@ -255,6 +255,10 @@ class GiftSession(Base):
     last_picks: Mapped[list] = mapped_column(JSON, nullable=False, default=list)   # product ids, best first
     searches: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     refines: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    # {gift_key: {"count": drafts so far, "last": last AI/template draft}}; gift_key
+    # is the product id or "order". The last draft is compared with the order's
+    # final note to measure draft acceptance.
+    note_drafts: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False,

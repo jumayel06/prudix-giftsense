@@ -168,3 +168,12 @@ async def test_response_records_the_model_that_answered():
     with patch.object(llm._anthropic_client.messages, "create", create):
         resp = await llm.chat("claude-sonnet-5", "sys", "hi")
     assert resp.model == "claude-sonnet-5"
+
+
+@pytest.mark.asyncio
+async def test_moderate_reports_flags_and_fails_open():
+    flagged = SimpleNamespace(results=[SimpleNamespace(flagged=True)])
+    with patch.object(llm._openai_client.moderations, "create", AsyncMock(return_value=flagged)):
+        assert await llm.moderate("x") is True
+    with patch.object(llm._openai_client.moderations, "create", AsyncMock(side_effect=RuntimeError("down"))):
+        assert await llm.moderate("x") is False
