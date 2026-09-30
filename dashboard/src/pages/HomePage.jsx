@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { Page, Layout, Card, BlockStack, InlineStack, Text, ProgressBar, Button, Banner, Badge } from '@shopify/polaris'
+import OnboardingChecklist from '../components/OnboardingChecklist'
 
-// Home for the week-1 shell: plan + usage. The onboarding checklist (enable
-// the widget, catalog analysis, wrap setup) arrives with the gift finder.
+// Home: onboarding checklist (until done or dismissed), plan and usage.
 
 function UsageCard({ stats }) {
   const isTrial = stats.plan_status === 'trial_active'
@@ -61,6 +61,11 @@ export default function HomePage({ stats }) {
             <Banner tone="success" title="Enjoying GiftSense?">
               <Button url={stats.review_prompt_url} target="_blank">Leave a review</Button>
             </Banner>
+          </Layout.Section>
+        )}
+        {['active', 'trial_active'].includes(stats.plan_status) && (
+          <Layout.Section>
+            <OnboardingChecklist />
           </Layout.Section>
         )}
         <Layout.Section>
