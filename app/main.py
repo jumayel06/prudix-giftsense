@@ -11,7 +11,7 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.routes import auth, billing, catalog, onboarding, storefront, theme, webhooks
+from app.routes import auth, billing, catalog, onboarding, print_cards, storefront, theme, webhooks
 from app.routes import settings as settings_routes
 from app.routes import stats
 from app.admin.auth import require_admin
@@ -184,6 +184,7 @@ app.include_router(catalog.router)
 app.include_router(storefront.router)
 app.include_router(theme.router)
 app.include_router(onboarding.router)
+app.include_router(print_cards.router)
 app.include_router(settings_routes.router)
 app.include_router(stats.router)
 app.include_router(webhooks.router)

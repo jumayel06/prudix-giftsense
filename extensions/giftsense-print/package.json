@@ -1,0 +1,11 @@
+{
+  "name": "giftsense-print",
+  "private": true,
+  "version": "1.0.0",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@preact/signals": "^2.0.0",
+    "@shopify/ui-extensions": "2026.7.4",
+    "preact": "^10.29.0"
+  }
+}

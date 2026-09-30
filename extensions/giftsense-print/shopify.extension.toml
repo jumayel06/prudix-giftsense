@@ -1,0 +1,11 @@
+api_version = "2026-07"
+
+[[extensions]]
+name = "GiftSense gift cards"
+handle = "giftsense-print"
+type = "ui_extension"
+
+# Order details → Print menu → "GiftSense gift cards": one card per gift.
+[[extensions.targeting]]
+module = "./src/PrintAction.jsx"
+target = "admin.order-details.print-action.render"
