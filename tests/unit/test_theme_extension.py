@@ -28,13 +28,19 @@ def test_bootstrap_stays_under_10kb():
     assert (EXT / "assets" / "giftsense.js").stat().st_size < BOOTSTRAP_MAX_BYTES
 
 
+BLOCKS = sorted(p.name for p in (EXT / "blocks").glob("*.liquid"))
+
+
 def test_block_schemas_are_valid_with_the_right_targets():
     assert schema("app-embed.liquid")["target"] == "body"
     assert schema("gift-finder.liquid")["target"] == "section"
+    gift_options = schema("gift-options.liquid")
+    assert gift_options["target"] == "section"
+    assert gift_options["enabled_on"]["templates"] == ["product", "cart"]
 
 
 def test_every_referenced_asset_exists():
-    for block in ("app-embed.liquid", "gift-finder.liquid"):
+    for block in BLOCKS:
         for asset in re.findall(r"'([\w.-]+)' \| asset_url", (EXT / "blocks" / block).read_text()):
             assert (EXT / "assets" / asset).exists(), f"{block} references missing {asset}"
 
@@ -46,7 +52,7 @@ def test_no_html_injection_in_storefront_js():
 
 
 def test_all_calls_go_through_the_app_proxy():
-    for block in ("app-embed.liquid", "gift-finder.liquid"):
+    for block in BLOCKS:
         assert 'data-api="/apps/giftsense"' in (EXT / "blocks" / block).read_text()
 
 

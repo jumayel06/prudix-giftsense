@@ -163,7 +163,17 @@
     els.dialog.style.setProperty('--gs-on-accent', (ctx.onAccent || '').trim() || '#ffffff');
     els.overlay.hidden = false;
     document.documentElement.classList.add('gs-lock');
-    renderIntake();
+    document.getElementById('gs-title').textContent =
+      ctx.entry && ctx.entry.type !== 'finder' ? 'Gift options' : 'Find the perfect gift';
+    var entry = ctx.entry;
+    if (entry && entry.type === 'product' && entry.product && entry.product.variant_id) {
+      renderGiftPanel({ product_id: entry.product.product_id, title: entry.product.title },
+                      Number(entry.product.variant_id), { askContext: true, standalone: true });
+    } else if (entry && entry.type === 'cart') {
+      renderCartNote();
+    } else {
+      renderIntake();
+    }
   }
 
   function close() {
@@ -405,44 +415,75 @@
     return r ? r.label : '';
   }
 
-  function renderGiftPanel(pick, variantId) {
-    var notes = ctx.config.notes || { tone: 'warm', max_chars: 250, tones: [] };
-    var g = { mode: 'direct', label: labelFor(state.answers.recipient), note: '', tone: notes.tone, name: '', left: null };
-    clear(els.body);
-    els.body.appendChild(el('p', 'gs-status', 'Add “' + pick.title + '” as a gift'));
-
-    var modes = el('fieldset', 'gs-group');
-    modes.appendChild(el('legend', 'gs-label', 'Where is this going?'));
-    var modeRow = el('div', 'gs-chips');
-    var labelWrap = el('label', 'gs-group');
-    [['direct', 'Ship it straight to them'], ['self', 'I’ll give it to them']].forEach(function (m) {
-      var b = el('button', 'gs-chip', m[1]);
+  function contextChips(title, options, key, onPick) {
+    var wrap = el('fieldset', 'gs-group');
+    wrap.appendChild(el('legend', 'gs-label', title));
+    var row = el('div', 'gs-chips');
+    options.forEach(function (o) {
+      var b = el('button', 'gs-chip gs-small-chip', o.label);
       b.type = 'button';
-      b.setAttribute('data-value', m[0]);
+      b.setAttribute('aria-pressed', state.answers[key] === o.value ? 'true' : 'false');
       b.addEventListener('click', function () {
-        g.mode = m[0];
-        modeRow.querySelectorAll('.gs-chip').forEach(function (c) {
-          c.setAttribute('aria-pressed', c.getAttribute('data-value') === g.mode ? 'true' : 'false');
-        });
-        labelWrap.hidden = g.mode !== 'self';
+        state.answers[key] = o.value;
+        row.querySelectorAll('.gs-chip').forEach(function (c) { c.setAttribute('aria-pressed', c === b ? 'true' : 'false'); });
+        if (onPick) onPick(o.value);
       });
-      b.setAttribute('aria-pressed', m[0] === g.mode ? 'true' : 'false');
-      modeRow.appendChild(b);
+      row.appendChild(b);
     });
-    modes.appendChild(modeRow);
-    els.body.appendChild(modes);
+    wrap.appendChild(row);
+    return wrap;
+  }
 
-    labelWrap.appendChild(el('span', 'gs-label', 'Who’s it for?'));
-    var label = el('input', 'gs-note');
-    label.type = 'text';
-    label.maxLength = 40;
-    label.value = g.label;
-    label.placeholder = 'e.g. Mom';
-    label.addEventListener('input', function () { g.label = label.value; });
-    labelWrap.appendChild(label);
-    labelWrap.hidden = true;
-    els.body.appendChild(labelWrap);
+  // Cart page: one gift note for the whole order (direct mode), nothing added.
+  function renderCartNote() {
+    var g = { note: '', tone: (ctx.config.notes || {}).tone || 'warm', name: '', left: null };
+    clear(els.body);
+    els.body.appendChild(el('p', 'gs-status', 'Add a gift note to your order'));
+    var intake = ctx.config.intake;
+    els.body.appendChild(contextChips('Who’s it for? (optional)', intake.recipients, 'recipient'));
+    els.body.appendChild(contextChips('What’s the occasion? (optional)', intake.occasions, 'occasion'));
+    var section = noteSection(g, null);
+    els.body.appendChild(section);
+    var textarea = section.querySelector('textarea');
+    fetch(root() + 'cart.js', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (cart) {
+      var existing = cart && cart.attributes && cart.attributes['Gift note'];
+      if (existing && !textarea.value) { textarea.value = g.note = existing; textarea.dispatchEvent(new Event('input')); }
+    }).catch(function () {});
+    var row = el('div', 'gs-actions');
+    var save = el('button', 'gs-primary', 'Save gift note');
+    save.type = 'button';
+    save.addEventListener('click', function () {
+      save.disabled = true;
+      var note = (g.note || '').trim();
+      fetch(root() + 'cart/update.js', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ attributes: { 'Gift note': note, _giftsense_mode: 'direct', _giftsense_sid: ctx.sid } })
+      }).then(function (r) {
+        if (!r.ok) throw new Error('update');
+        clear(els.body);
+        var done = el('p', 'gs-status', note ? 'Gift note saved ✓' : 'Gift note removed');
+        done.setAttribute('role', 'status');
+        els.body.appendChild(done);
+        var ok = el('button', 'gs-primary', 'Done');
+        ok.type = 'button';
+        ok.addEventListener('click', close);
+        els.body.appendChild(ok);
+        ok.focus();
+      }).catch(function () { save.disabled = false; save.textContent = 'Try again'; });
+    });
+    row.appendChild(save);
+    var cancel = el('button', 'gs-secondary', 'Cancel');
+    cancel.type = 'button';
+    cancel.addEventListener('click', close);
+    row.appendChild(cancel);
+    els.body.appendChild(row);
+    renderFoot();
+  }
 
+  // Note box + "Write it for me" (tones, first name, rewrites left); edits g.note.
+  function noteSection(g, productId) {
+    var notes = ctx.config.notes || { tone: 'warm', max_chars: 250, tones: [] };
     var noteWrap = el('div', 'gs-group');
     noteWrap.appendChild(el('span', 'gs-label', 'Gift note (optional)'));
     var note = el('textarea', 'gs-note');
@@ -484,7 +525,7 @@
       fetch(ctx.api + '/note/draft', {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ sid: ctx.sid, product_id: pick.product_id, recipient: state.answers.recipient,
+        body: JSON.stringify({ sid: ctx.sid, product_id: productId || null, recipient: state.answers.recipient,
           occasion: state.answers.occasion, tone: g.tone, name: g.name.trim() })
       }).then(function (r) {
         return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; });
@@ -507,21 +548,73 @@
     draftRow.appendChild(draftBtn);
     draftRow.appendChild(draftStatus);
     noteWrap.appendChild(draftRow);
-    els.body.appendChild(noteWrap);
+    return noteWrap;
+  }
+
+  function renderGiftPanel(pick, variantId, opts) {
+    opts = opts || {};
+    var notes = ctx.config.notes || { tone: 'warm', max_chars: 250, tones: [] };
+    var g = { mode: 'direct', label: labelFor(state.answers.recipient), note: '', tone: notes.tone, name: '', left: null };
+    clear(els.body);
+    els.body.appendChild(el('p', 'gs-status', 'Add “' + pick.title + '” as a gift'));
+
+    var labelWrap = el('label', 'gs-group');
+    var label = el('input', 'gs-note');
+    if (opts.askContext && !state.answers.recipient) {
+      var intake = ctx.config.intake;
+      els.body.appendChild(contextChips('Who\u2019s it for? (optional)', intake.recipients, 'recipient', function (v) {
+        if (!label.value || label.value === g.label) { g.label = label.value = labelFor(v); }
+      }));
+      els.body.appendChild(contextChips('What\u2019s the occasion? (optional)', intake.occasions, 'occasion'));
+    }
+    var modes = el('fieldset', 'gs-group');
+    modes.appendChild(el('legend', 'gs-label', 'Where is this going?'));
+    var modeRow = el('div', 'gs-chips');
+    [['direct', 'Ship it straight to them'], ['self', 'I’ll give it to them']].forEach(function (m) {
+      var b = el('button', 'gs-chip', m[1]);
+      b.type = 'button';
+      b.setAttribute('data-value', m[0]);
+      b.addEventListener('click', function () {
+        g.mode = m[0];
+        modeRow.querySelectorAll('.gs-chip').forEach(function (c) {
+          c.setAttribute('aria-pressed', c.getAttribute('data-value') === g.mode ? 'true' : 'false');
+        });
+        labelWrap.hidden = g.mode !== 'self';
+      });
+      b.setAttribute('aria-pressed', m[0] === g.mode ? 'true' : 'false');
+      modeRow.appendChild(b);
+    });
+    modes.appendChild(modeRow);
+    els.body.appendChild(modes);
+
+    labelWrap.appendChild(el('span', 'gs-label', 'Who’s it for?'));
+    label.type = 'text';
+    label.maxLength = 40;
+    label.value = g.label;
+    label.placeholder = 'e.g. Mom';
+    label.addEventListener('input', function () { g.label = label.value; });
+    labelWrap.appendChild(label);
+    labelWrap.hidden = true;
+    els.body.appendChild(labelWrap);
+
+    els.body.appendChild(noteSection(g, pick.product_id));
 
     var row = el('div', 'gs-actions');
     var addBtn = el('button', 'gs-primary', 'Add gift to cart');
     addBtn.type = 'button';
     addBtn.addEventListener('click', function () { addGift(pick, variantId, g, addBtn); });
     row.appendChild(addBtn);
-    var back = el('button', 'gs-secondary', 'Back to ideas');
+    var back = el('button', 'gs-secondary', opts.standalone ? 'Cancel' : 'Back to ideas');
     back.type = 'button';
-    back.addEventListener('click', function () { renderResults(state.lastPicks || [], false, true); });
+    back.addEventListener('click', function () {
+      if (opts.standalone) close(); else renderResults(state.lastPicks || [], false, true);
+    });
     row.appendChild(back);
     els.body.appendChild(row);
     renderFoot();
     els.body.scrollTop = 0;
-    modeRow.querySelector('.gs-chip').focus();
+    var firstChip = els.body.querySelector('.gs-chip');
+    if (firstChip) firstChip.focus();
   }
 
   function addGift(pick, variantId, g, button) {

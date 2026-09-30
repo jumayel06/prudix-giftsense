@@ -1,0 +1,55 @@
+{% comment %}
+  GiftSense "Gift options" block for product and cart pages (plan §6.1).
+  Product page: "This is a gift" opens the gift panel for this product (the
+  variant currently selected in the product form). Cart page: "Add a gift
+  note" sets a note for the whole order. Both write the cart attributes and
+  line properties the orders/create webhook reads.
+{% endcomment %}
+{% if product %}
+  {% assign gs_entry = 'product' %}
+{% else %}
+  {% assign gs_entry = 'cart' %}
+{% endif %}
+<div
+  class="giftsense-options"
+  data-giftsense-root
+  data-giftsense-entry="{{ gs_entry }}"
+  data-api="/apps/giftsense"
+  data-ui-src="{{ 'giftsense-ui.js' | asset_url }}"
+  data-css-src="{{ 'giftsense.css' | asset_url }}"
+  data-currency="{{ shop.currency }}"
+  data-locale="{{ request.locale.iso_code }}"
+  {% if product %}
+    data-product-id="{{ product.id }}"
+    data-product-title="{{ product.title | escape }}"
+    data-variant-id="{{ product.selected_or_first_available_variant.id }}"
+  {% endif %}
+  style="--gs-accent: {{ block.settings.accent }}; --gs-on-accent: {{ block.settings.on_accent }};"
+  {{ block.shopify_attributes }}
+>
+  <button type="button" class="giftsense-options__button" data-giftsense-open>
+    {% if product %}{{ block.settings.product_label | default: 'This is a gift' | escape }}{% else %}{{ block.settings.cart_label | default: 'Add a gift note' | escape }}{% endif %}
+  </button>
+</div>
+<style>
+  .giftsense-options{margin:12px 0}
+  .giftsense-options__button{width:100%;padding:12px 18px;border:1px solid var(--gs-accent,#111827);border-radius:999px;
+    background:transparent;color:var(--gs-accent,#111827);font:600 15px/1.2 inherit;cursor:pointer}
+  .giftsense-options__button::before{content:"\1F381  "}
+  .giftsense-options__button:focus-visible{outline:3px solid var(--gs-accent,#111827);outline-offset:3px}
+</style>
+<script src="{{ 'giftsense.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Gift options",
+  "target": "section",
+  "enabled_on": { "templates": ["product", "cart"] },
+  "settings": [
+    { "type": "text", "id": "product_label", "label": "Button text on product pages", "default": "This is a gift" },
+    { "type": "text", "id": "cart_label", "label": "Button text on the cart page", "default": "Add a gift note" },
+    { "type": "color", "id": "accent", "label": "Button color", "default": "#111827" },
+    { "type": "color", "id": "on_accent", "label": "Button text color", "default": "#ffffff" }
+  ]
+}
+{% endschema %}

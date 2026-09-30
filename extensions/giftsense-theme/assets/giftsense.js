@@ -84,11 +84,26 @@
         return;
       }
 
+      // Which kind of block opened the dialog: finder (default), a product
+      // page (gift panel for this product) or the cart page (order note).
+      function entryFor(trigger) {
+        var r = trigger.closest('[data-giftsense-entry]');
+        if (!r) return null;
+        var entry = { type: r.getAttribute('data-giftsense-entry') };
+        if (entry.type === 'product') {
+          var form = document.querySelector('form[action*="/cart/add"] [name="id"]');
+          entry.product = { product_id: r.getAttribute('data-product-id'), title: r.getAttribute('data-product-title'),
+            variant_id: (form && form.value) || r.getAttribute('data-variant-id') };
+        }
+        return entry;
+      }
+
       function open(trigger) {
         trigger.setAttribute('aria-busy', 'true');
         loadUi(main).then(function (ui) {
           trigger.removeAttribute('aria-busy');
           ui.open({
+            entry: entryFor(trigger),
             api: api, config: config, sid: sessionId(), trigger: trigger,
             currency: main.getAttribute('data-currency') || 'USD',
             locale: main.getAttribute('data-locale') || document.documentElement.lang || 'en',
