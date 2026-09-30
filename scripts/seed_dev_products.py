@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Seed the DEV store with the Commerce demo apparel catalog (dev only).
 
-Products: scripts/dev_catalog/apparel.json (snapshot of Prudix Commerce's
-scripts/seed_demo_store.py specs). Images: a local folder of files named
-"<n>. <Title>.jpg" (one per product).
+Catalogs in scripts/dev_catalog/:
+  apparel.json  Prudix Commerce's demo apparel (22 products). Images: a local
+                folder of files named "<n>. <Title>.jpg" (--images).
+  gifts.json    gift products across every price band. Each spec has an
+                "image_url" (Shopify Burst stock photo, free for commercial
+                use) that Shopify fetches itself.
+A spec without "options" is a single-variant product (one "price").
 
 Uses GiftSense's own offline token for the shop (write_products +
 write_publications) and the GraphQL Admin API only:
@@ -15,6 +19,7 @@ write_publications) and the GraphQL Admin API only:
 Usage:
   .venv/bin/python scripts/seed_dev_products.py --images ~/Downloads/Untitled --dry-run
   .venv/bin/python scripts/seed_dev_products.py --images ~/Downloads/Untitled
+  .venv/bin/python scripts/seed_dev_products.py --catalog gifts --dry-run
 """
 import argparse
 import asyncio
@@ -36,7 +41,7 @@ from core.shopify_auth import get_valid_access_token  # noqa: E402
 from core.shopify_graphql import shopify_graphql_post  # noqa: E402
 
 DEV_SHOP = "prudix-commerce-dev.myshopify.com"
-CATALOG = Path(__file__).parent / "dev_catalog" / "apparel.json"
+CATALOGS = Path(__file__).parent / "dev_catalog"
 
 EXISTING = """query($q: String!) { products(first: 1, query: $q) { nodes { id title } } }"""
 STAGED = """
@@ -64,7 +69,9 @@ def data(resp, key):
     return (body.get("data") or {}).get(key) or {}
 
 
-def image_for(images: Path, n: int) -> Path | None:
+def image_for(images: Path | None, n: int) -> Path | None:
+    if images is None:
+        return None
     matches = sorted(images.glob(f"{n}. *"))
     return matches[0] if matches else None
 
@@ -88,6 +95,9 @@ async def upload_image(gql, shop, token, path: Path) -> str:
 
 
 def product_input(spec: dict, image_url: str | None) -> dict:
+    if not spec.get("options"):                      # single-variant product
+        spec = {**spec, "options": [{"name": "Title"}],
+                "variants": [{"option1": "Default Title", "price": spec["price"], "sku": spec.get("sku")}]}
     option = spec["options"][0]["name"]
     inp = {
         "title": spec["title"],
@@ -106,14 +116,14 @@ def product_input(spec: dict, image_url: str | None) -> dict:
         } for v in spec["variants"]],
     }
     if image_url:
-        inp["files"] = [{"originalSource": image_url, "alt": spec["image_alt"], "contentType": "IMAGE"}]
+        inp["files"] = [{"originalSource": image_url, "alt": spec.get("image_alt") or spec["title"], "contentType": "IMAGE"}]
     return inp
 
 
-async def main(images: Path, dry_run: bool) -> None:
+async def main(catalog: str, images: Path | None, dry_run: bool) -> None:
     logging.disable(logging.INFO)
-    specs = json.loads(CATALOG.read_text())
-    missing = [s["title"] for s in specs if not image_for(images, s["n"])]
+    specs = json.loads((CATALOGS / f"{catalog}.json").read_text())
+    missing = [s["title"] for s in specs if not s.get("image_url") and not image_for(images, s["n"])]
     if missing:
         print(f"No image for: {', '.join(missing)} (they'll be created without one)")
 
@@ -138,10 +148,11 @@ async def main(images: Path, dry_run: bool) -> None:
             continue
         img = image_for(images, spec["n"])
         if dry_run:
-            print(f"  + {title} — {len(spec['variants'])} variants, image: {img.name if img else 'none'}")
+            source = spec.get("image_url") or (img.name if img else "none")
+            print(f"  + {title} — {len(spec.get('variants') or [1])} variant(s), image: {source}")
             continue
         try:
-            image_url = await upload_image(gql, DEV_SHOP, token, img) if img else None
+            image_url = spec.get("image_url") or (await upload_image(gql, DEV_SHOP, token, img) if img else None)
             result = data(await gql(DEV_SHOP, token, PRODUCT_SET, {"input": product_input(spec, image_url)}),
                           "productSet")
             if result.get("userErrors") or not result.get("product"):
@@ -162,7 +173,8 @@ async def main(images: Path, dry_run: bool) -> None:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--images", type=Path, required=True)
+    ap.add_argument("--catalog", default="apparel", help="file name in scripts/dev_catalog/ (apparel, gifts)")
+    ap.add_argument("--images", type=Path, help="local photo folder (apparel)")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
-    asyncio.run(main(a.images.expanduser(), a.dry_run))
+    asyncio.run(main(a.catalog, a.images.expanduser() if a.images else None, a.dry_run))
