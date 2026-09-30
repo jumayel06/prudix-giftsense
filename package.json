@@ -1,0 +1,8 @@
+{
+  "name": "prudix-giftsense",
+  "private": true,
+  "license": "UNLICENSED",
+  "workspaces": [
+    "extensions/*"
+  ]
+}
