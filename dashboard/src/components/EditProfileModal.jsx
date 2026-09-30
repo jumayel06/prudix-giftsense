@@ -69,7 +69,9 @@ export default function EditProfileModal({ product, options, onClose, onSaved })
         onAction: () => save({ recipients, occasions, vibes, gift_pitch: pitch.trim() || null }),
       }}
       secondaryActions={[
-        ...(product.overridden ? [{ content: 'Reset to AI suggestion', destructive: true, onAction: () => save(null) }] : []),
+        // Always visible so merchants know it exists; enabled once they've edited.
+        { content: 'Reset to AI suggestion', destructive: true, disabled: !product.overridden || saving,
+          onAction: () => save(null) },
         { content: 'Cancel', onAction: onClose },
       ]}
     >
@@ -79,6 +81,11 @@ export default function EditProfileModal({ product, options, onClose, onSaved })
           <Text as="p" tone="subdued">
             The gift finder uses this to decide when to suggest this product. Your edits replace the AI&apos;s suggestion
             and take effect right away.
+          </Text>
+          <Text as="p" variant="bodySm" tone="subdued">
+            {product.overridden
+              ? 'You have edited this profile. Reset to AI suggestion brings back what our AI wrote.'
+              : 'This is what our AI suggested from your listing. After you save changes, you can reset back to it anytime.'}
           </Text>
           <Toggles label="Who is it a good gift for?" options={options.recipients} value={recipients} onChange={setRecipients} />
           <Toggles label="Occasions" options={options.occasions} value={occasions} onChange={setOccasions} />
