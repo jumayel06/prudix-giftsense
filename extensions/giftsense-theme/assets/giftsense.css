@@ -40,11 +40,17 @@
 .gs-name { font-weight: 600; }
 .gs-price { font-size: 14px; color: #374151; }
 .gs-reason { font-size: 13px; color: #4b5563; }
-.gs-card--skeleton .gs-lines { flex: 1; border-radius: 6px;
-  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: gs-shimmer 1.2s infinite; }
-.gs-card--skeleton .gs-img { animation: gs-shimmer 1.2s infinite; background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; }
+/* Loading cards: same shape as a result card (picture, name, price, reason). */
+.gs-card--skeleton { align-items: flex-start; }
+.gs-card--skeleton .gs-sk { display: block; border-radius: 6px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e9ebef 50%, #f3f4f6 75%); background-size: 200% 100%; animation: gs-shimmer 1.3s infinite; }
+.gs-card--skeleton .gs-sk-img { flex: 0 0 76px; width: 76px; height: 76px; border-radius: 8px; }
+.gs-card--skeleton .gs-sk-text { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-top: 4px; min-width: 0; }
+.gs-card--skeleton .gs-sk-name { height: 14px; width: 62%; }
+.gs-card--skeleton .gs-sk-price { height: 12px; width: 22%; }
+.gs-card--skeleton .gs-sk-reason { height: 11px; width: 88%; }
 @keyframes gs-shimmer { to { background-position: -200% 0; } }
-@media (prefers-reduced-motion: reduce) { .gs-card--skeleton .gs-lines, .gs-card--skeleton .gs-img { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .gs-card--skeleton .gs-sk { animation: none; } }
 
 /* Phones: bottom sheet */
 @media (max-width: 640px) {

@@ -312,10 +312,13 @@
     var status = el('p', 'gs-status gs-status--pending', LOADING_STEPS[0]);
     status.setAttribute('role', 'status');
     els.body.appendChild(status);
-    for (var i = 0; i < 4; i++) {
+    for (var i = 0; i < 3; i++) {
       var card = el('div', 'gs-card gs-card--skeleton');
-      card.appendChild(el('div', 'gs-img'));
-      card.appendChild(el('div', 'gs-lines'));
+      card.setAttribute('aria-hidden', 'true');
+      card.appendChild(el('span', 'gs-sk gs-sk-img'));
+      var lines = el('div', 'gs-sk-text');
+      ['gs-sk-name', 'gs-sk-price', 'gs-sk-reason'].forEach(function (c) { lines.appendChild(el('span', 'gs-sk ' + c)); });
+      card.appendChild(lines);
       els.body.appendChild(card);
     }
     var step = 0;

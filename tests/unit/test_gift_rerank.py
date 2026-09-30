@@ -213,3 +213,10 @@ async def test_single_type_store_is_not_limited():
 
 def test_prompt_asks_for_type_variety():
     assert "same type" in RERANK_SYSTEM_PROMPT.lower()
+
+
+def test_prompt_wants_product_substance_and_no_hedging():
+    # Dev store 2026-09-30: "A ribbon-boxed gift for your husband…" (packaging)
+    # and "…if he likes wearing them" (hedge).
+    p = RERANK_SYSTEM_PROMPT.lower()
+    assert "never on packaging" in p and "no hedges" in p

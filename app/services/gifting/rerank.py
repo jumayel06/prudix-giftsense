@@ -29,7 +29,7 @@ logger = structlog.get_logger()
 
 ChatFn = Callable[..., Awaitable[LLMResponse]]
 
-PROMPT_VERSION = "rerank-v4"
+PROMPT_VERSION = "rerank-v5"
 # Variety: at most this many picks per product type, when the shortlist has
 # other types (eval 2026-09-28: ~2.3 types in the top 5, target 3).
 MAX_SAME_TYPE = 2
@@ -49,6 +49,8 @@ Rules:
 - "fact" must be copied word for word from that product's facts or title.
 - The reason may only claim what the fact, title or pitch says. You may add who it's for or the occasion from the brief. Never add features, materials, styles, sizes, uses, effects or feelings the listing doesn't state ("hand-painted", "made for graduation", "a keepsake", "easy to assemble").
 - Link a product to the shopper's note or to a trait (e.g. sentimental, classic) only when that product's own details support the link; if they don't, don't claim it. If nothing fits the note, still pick the best gifts, but don't pretend they match it.
+- Build the reason on what the product is or does (its material, make, fit or use), never on packaging, shipping, gift boxes or wrapping.
+- Say it plainly and confidently: no hedges like "if he likes", "might", "could be" or "maybe".
 - Don't mention a price unless it's the product's listed price.
 - Prefer variety: at most 2 products of the same type, and no near-identical products.
 - No links, emojis or exclamation marks.
