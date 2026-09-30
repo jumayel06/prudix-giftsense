@@ -16,6 +16,7 @@ from typing import Optional
 import structlog
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy import delete, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import (
@@ -26,8 +27,9 @@ from app.config import (
     PLANS,
 )
 from app.jobs import enqueue
+from app.services.gift_orders import metafield_value, note_source, parse_gift_order
 from core.config import settings
-from core.db.models import BillingEvent, CatalogProductRow, ProcessedWebhook, Shop, SuppressedEmail
+from core.db.models import BillingEvent, CatalogProductRow, GiftOrder, GiftSession, ProcessedWebhook, Shop, SuppressedEmail
 from core.db.session import get_db
 
 logger = structlog.get_logger()
@@ -102,7 +104,8 @@ async def handle_webhook(
         await _handle_product_deleted(shop_domain, payload, db)
     elif topic == "bulk_operations/finish":
         await _handle_bulk_finished(shop_domain, payload, db)
-    # orders/create lands with gift orders (week 4); acknowledged with 200 until then.
+    elif topic == "orders/create":
+        await _handle_order_created(shop_domain, payload, db)
 
     return {"ok": True}
 
@@ -602,3 +605,45 @@ async def _handle_bulk_finished(shop_domain: str, payload: dict, db: AsyncSessio
     if not op_id or await _catalog_shop(shop_domain, db) is None:
         return
     await enqueue("catalog_finish_bulk", shop_domain, op_id, _job_id=f"catalog-bulk:{op_id}")
+
+
+# ── Gift orders (docs/TECHNICAL_PLAN.md §5.3, §6.3) ──────────────────────────
+# Parse here (cheap) and store the gift_orders row; tagging + the order
+# metafield (Shopify calls) run in the annotate_gift_order job.
+
+async def _handle_order_created(shop_domain: str, payload: dict, db: AsyncSession) -> None:
+    parsed = parse_gift_order(payload)
+    if parsed is None:
+        return
+    shop = (await db.execute(select(Shop).where(Shop.shop_domain == shop_domain))).scalar_one_or_none()
+    if shop is None or shop.plan_status in ("uninstalled", "purged"):
+        return
+    exists_ = (await db.execute(select(GiftOrder.id).where(
+        GiftOrder.shop_id == shop.id, GiftOrder.order_id == parsed.order_id))).first()
+    if exists_:
+        return
+
+    source = None
+    if parsed.note or any(g.get("note") for g in parsed.groups):
+        draft = None
+        if parsed.sid:
+            session = (await db.execute(select(GiftSession).where(
+                GiftSession.shop_id == shop.id, GiftSession.sid == parsed.sid))).scalar_one_or_none()
+            drafts = (session.note_drafts if session else None) or {}
+            draft = (drafts.get("order") or next(iter(drafts.values()), None) or {}).get("last") if drafts else None
+        final = parsed.note or next(g["note"] for g in parsed.groups if g.get("note"))
+        source = note_source(final, draft)
+
+    db.add(GiftOrder(
+        shop_id=shop.id, order_id=parsed.order_id, order_name=parsed.order_name, sid=parsed.sid,
+        delivery_mode=parsed.delivery_mode, gift_lines=parsed.gift_lines, gift_revenue=parsed.gift_revenue,
+        order_total=parsed.order_total, currency=parsed.currency, note_source=source,
+        groups=[{k: g.get(k) for k in ("id", "label", "wrap", "message")} for g in parsed.groups],
+    ))
+    try:
+        await db.commit()
+    except IntegrityError:          # the same order redelivered concurrently
+        await db.rollback()
+        return
+    await enqueue("annotate_gift_order", shop_domain, parsed.order_gid, metafield_value(parsed),
+                  _job_id=f"gift-order:{shop.id}:{parsed.order_id}")

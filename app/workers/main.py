@@ -20,6 +20,7 @@ from sqlalchemy import delete, select
 from app.config import GRACE_PERIOD_DAYS, derive_tier_from_subscription_name
 from app.jobs import enqueue
 from app.purge import purge_shop_data
+from app.workers.orders import annotate_gift_order
 from app.workers.catalog import (
     catalog_finish_bulk, catalog_start_sync, catalog_sync_product, kick_catalog_syncs, reconcile_catalogs,
 )
@@ -323,6 +324,7 @@ class WorkerSettings:
         func(catalog_start_sync, timeout=120),
         func(catalog_finish_bulk, timeout=3600, max_tries=1),
         func(catalog_sync_product, timeout=300, keep_result=0),
+        func(annotate_gift_order, timeout=60),
     ]
 
     cron_jobs = [

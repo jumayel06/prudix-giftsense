@@ -6,10 +6,10 @@ customer name / email / phone / address, but Shopify counts customer IDs and
 order IDs as personal data, so every row keyed by them must be deletable and
 reportable.
 
-`CUSTOMER_TABLES` is empty until gift orders ship (week 4). Each GiftSense
-table keyed by customer or order ID must be registered there (gift_orders,
-gift_media, note_drafts, choice_requests, registries…) and covered by
-tests/integration/test_gdpr_customer_webhooks.py.
+Each GiftSense table keyed by customer or order ID is registered in
+`_tables()` (gift_orders now; gift_media, choice_requests, registries…
+as they ship) and covered by tests. gift_sessions have no order id; they are
+reached through the redacted orders' `sid` (`_linked_session_sids`).
 
 `customers/redact` deletes the rows for the customer + `orders_to_redact`.
 `customers/data_request` collects them and emails the store owner, who answers
@@ -25,8 +25,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger()
 
-# (model, customer_id column name or None, order_id column name or None)
-CUSTOMER_TABLES: list[tuple[type, str | None, str | None]] = []
+def _tables():
+    from core.db.models import GiftOrder
+    # (model, customer_id column name or None, order_id column name or None)
+    return [(GiftOrder, None, "order_id")]
+
+
+async def _linked_session_sids(db, shop_id, order_ids: list[str]) -> list:
+    """Widget sessions behind the redacted orders (attribution via sid)."""
+    from sqlalchemy import select
+    from core.db.models import GiftOrder
+    if not order_ids:
+        return []
+    rows = await db.execute(select(GiftOrder.sid).where(
+        GiftOrder.shop_id == shop_id, GiftOrder.order_id.in_(order_ids), GiftOrder.sid.is_not(None)))
+    return [r for r in rows.scalars() if r]
 
 
 def customer_and_order_ids(payload: dict) -> tuple[str | None, list[str]]:
@@ -48,9 +61,14 @@ def _conditions(model, customer_col, order_col, customer_id, order_ids):
 async def redact_customer(shop_id: uuid.UUID, payload: dict, db: AsyncSession) -> dict:
     """Delete every row tied to the payload's customer + orders. Returns counts."""
     from sqlalchemy import delete
+    from core.db.models import GiftSession
     customer_id, order_ids = customer_and_order_ids(payload)
     counts: dict[str, int] = {}
-    for model, customer_col, order_col in CUSTOMER_TABLES:
+    sids = await _linked_session_sids(db, shop_id, order_ids)
+    if sids:
+        res = await db.execute(delete(GiftSession).where(GiftSession.shop_id == shop_id, GiftSession.sid.in_(sids)))
+        counts["gift_sessions"] = res.rowcount or 0
+    for model, customer_col, order_col in _tables():
         cond = _conditions(model, customer_col, order_col, customer_id, order_ids)
         if cond is None:
             continue
@@ -63,20 +81,29 @@ async def redact_customer(shop_id: uuid.UUID, payload: dict, db: AsyncSession) -
 async def collect_customer_data(shop_id: uuid.UUID, payload: dict, db: AsyncSession) -> dict:
     """Everything GiftSense holds for the payload's customer + requested orders."""
     from sqlalchemy import select
+    from core.db.models import GiftSession
     customer_id, order_ids = customer_and_order_ids(payload)
     data: dict[str, list[dict]] = {}
-    for model, customer_col, order_col in CUSTOMER_TABLES:
+    tables = list(_tables())
+    sids = await _linked_session_sids(db, shop_id, order_ids)
+    for model, customer_col, order_col in tables:
         cond = _conditions(model, customer_col, order_col, customer_id, order_ids)
         if cond is None:
             continue
         rows = (await db.execute(select(model).where(model.shop_id == shop_id, cond))).scalars().all()
         cols = [c.name for c in model.__table__.columns if c.name not in ("id", "shop_id")]
-        data[model.__tablename__] = [
-            {c: (v if v is None or isinstance(v, (int, float, str, bool)) else str(v))
-             for c in cols for v in [getattr(r, c, None)]}
-            for r in rows
-        ]
+        data[model.__tablename__] = [_row(r, cols) for r in rows]
+    if sids:
+        rows = (await db.execute(select(GiftSession).where(GiftSession.shop_id == shop_id,
+                                                            GiftSession.sid.in_(sids)))).scalars().all()
+        cols = [c.name for c in GiftSession.__table__.columns if c.name not in ("id", "shop_id")]
+        data["gift_sessions"] = [_row(r, cols) for r in rows]
     return {k: v for k, v in data.items() if v}
+
+
+def _row(r, cols) -> dict:
+    return {c: (v if v is None or isinstance(v, (int, float, str, bool, list, dict)) else str(v))
+            for c in cols for v in [getattr(r, c, None)]}
 
 
 def render_data_request_email(shop_domain: str, payload: dict, data: dict) -> tuple[str, str, str]:
