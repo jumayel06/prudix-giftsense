@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai_models import AI_TIERS, ai_tier_for, tier_models_for_shop
 from app.config import PLANS
+from app.services.gift_settings import NOTE_TONES, GiftNotesUpdate, note_settings, update_note_settings
 from core.db.models import Shop
 from core.db.session import get_db
 from core.shopify_deps import get_current_shop
@@ -33,6 +34,8 @@ async def get_settings(
         "ai_tiers": _ai_tier_catalog(),
         # "Currently runs on …" per tier, resolved for this store (rollout-aware).
         "ai_tier_models": tier_models_for_shop(shop_record),
+        "gift_notes": note_settings(shop_record),
+        "note_tones": [{"value": k, "label": v} for k, v in NOTE_TONES.items()],
         "features": plan["features"],
         "plan_tier": plan_tier,
         "plan_status": shop_record.plan_status,
@@ -63,6 +66,7 @@ def _ai_tier_catalog() -> dict:
 class SaveSettingsRequest(BaseModel):
     ai_tier: str | None = None
     digest_email_opt_in: bool | None = None
+    gift_notes: GiftNotesUpdate | None = None
 
 
 @router.put("/api/settings")
@@ -83,6 +87,8 @@ async def save_settings(
 
     if payload.digest_email_opt_in is not None:
         shop_record.digest_email_opt_in = payload.digest_email_opt_in
+    if payload.gift_notes is not None:
+        update_note_settings(shop_record, payload.gift_notes)
 
     await db.commit()
     return {"ok": True}

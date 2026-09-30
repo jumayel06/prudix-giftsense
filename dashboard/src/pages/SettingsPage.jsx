@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Page, Layout, Card, BlockStack, InlineStack, Text, RadioButton, Checkbox,
-  Button, Banner, SkeletonBodyText, Badge,
+  Button, Banner, SkeletonBodyText, Badge, Select, TextField,
 } from '@shopify/polaris'
 import { shopifyFetch, fetchJson } from '../utils/shopifyFetch'
 import { parseApiError } from '../utils/apiError'
@@ -13,6 +13,8 @@ export default function SettingsPage() {
   const [data, setData] = useState(null)
   const [aiTier, setAiTier] = useState(null)
   const [digestOptIn, setDigestOptIn] = useState(true)
+  const [notes, setNotes] = useState(null)
+  const [bannedText, setBannedText] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -22,9 +24,16 @@ export default function SettingsPage() {
         setData(d)
         setAiTier(d.ai_tier)
         setDigestOptIn(d.digest_email_opt_in)
+        setNotes(d.gift_notes)
+        setBannedText(d.gift_notes.banned_words.join(', '))
       })
       .catch(() => setError('Could not load settings. Please refresh.'))
   }, [])
+
+  function notesPayload() {
+    const words = bannedText.split(',').map(w => w.trim().toLowerCase()).filter(Boolean)
+    return { tone: notes.tone, max_chars: Number(notes.max_chars), banned_words: [...new Set(words)] }
+  }
 
   async function save() {
     setSaving(true)
@@ -33,7 +42,7 @@ export default function SettingsPage() {
       const res = await shopifyFetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ai_tier: aiTier, digest_email_opt_in: digestOptIn }),
+        body: JSON.stringify({ ai_tier: aiTier, digest_email_opt_in: digestOptIn, gift_notes: notesPayload() }),
       })
       if (!res.ok) {
         let json = {}
@@ -41,7 +50,7 @@ export default function SettingsPage() {
         setError(parseApiError(json).message)
         return
       }
-      setData(d => ({ ...d, ai_tier: aiTier, digest_email_opt_in: digestOptIn }))
+      setData(d => ({ ...d, ai_tier: aiTier, digest_email_opt_in: digestOptIn, gift_notes: notesPayload() }))
       showToast('Settings saved')
     } catch {
       setError('Could not save settings. Please try again.')
@@ -59,7 +68,8 @@ export default function SettingsPage() {
   }
 
   const hasWeeklyEmail = data.features.includes('weekly_email')
-  const dirty = aiTier !== data.ai_tier || digestOptIn !== data.digest_email_opt_in
+  const notesDirty = JSON.stringify(notesPayload()) !== JSON.stringify(data.gift_notes)
+  const dirty = aiTier !== data.ai_tier || digestOptIn !== data.digest_email_opt_in || notesDirty
 
   return (
     <Page
@@ -134,6 +144,32 @@ export default function SettingsPage() {
                 We move each option to better AI models as they're released, at no extra cost to you.
                 {data.plan_tier !== 'pro' && ' Stronger options are available on higher plans.'}
               </Text>
+            </BlockStack>
+          </Card>
+        </Layout.AnnotatedSection>
+
+        <Layout.AnnotatedSection
+          title="Gift notes"
+          description="How the AI drafts gift notes for shoppers. Shoppers can edit every draft before it's added to their order."
+        >
+          <Card>
+            <BlockStack gap="400">
+              <Select
+                label="Default tone"
+                options={data.note_tones.map(t => ({ label: t.label, value: t.value }))}
+                value={notes.tone}
+                onChange={tone => setNotes(n => ({ ...n, tone }))}
+                helpText="Shoppers can switch tone for their own draft."
+              />
+              <TextField
+                label="Maximum length (characters)" type="number" min={80} max={500}
+                value={String(notes.max_chars)} onChange={v => setNotes(n => ({ ...n, max_chars: v }))}
+                helpText="250 fits most printed gift cards." autoComplete="off"
+              />
+              <TextField
+                label="Words the AI must never use" value={bannedText} onChange={setBannedText}
+                placeholder="e.g. cheap, discount" helpText="Separate with commas." autoComplete="off"
+              />
             </BlockStack>
           </Card>
         </Layout.AnnotatedSection>

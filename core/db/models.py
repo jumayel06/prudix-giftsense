@@ -46,6 +46,9 @@ class Shop(Base):
     # PLANS[tier]["product_rereads_per_month"]; reset when the cycle changes.
     catalog_rereads_used: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
     catalog_rereads_cycle_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Merchant gift settings by section, e.g. {"notes": {tone, max_chars, banned_words}}
+    # (app/services/gift_settings.py applies defaults).
+    gift_settings: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     trial_used: Mapped[bool] = mapped_column(Boolean, default=False)
     trial_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
