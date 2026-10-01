@@ -14,6 +14,9 @@ it prints even before our webhook job ran. No customer fields are queried.
 """
 import html
 import re
+from dataclasses import dataclass
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
@@ -30,16 +33,18 @@ from core.shopify_graphql import shopify_graphql_post
 
 router = APIRouter()
 
-# No customer fields and no prices: receipts must never show them.
+# No customer fields and no prices: receipts must never show them. The shop's
+# contactEmail is the store's public support address, not a customer's.
 ORDERS_QUERY = """
 query($ids: [ID!]!) {
-  shop { name }
+  shop { name contactEmail primaryDomain { host } }
   nodes(ids: $ids) {
     ... on Order {
       id
       name
+      createdAt
       customAttributes { key value }
-      lineItems(first: 100) { nodes { name quantity customAttributes { key value } } }
+      lineItems(first: 100) { nodes { name title variantTitle quantity customAttributes { key value } } }
     }
   }
 }
@@ -93,6 +98,38 @@ def _items_by_group(order: dict) -> dict[str, list[str]]:
     return out
 
 
+@dataclass
+class StoreInfo:
+    name: str
+    host: str = ""          # e.g. "snowandco.com", for the receipt's exchange box
+    email: str = ""         # the store's public contact email
+    timezone: str = "UTC"
+
+
+def _order_date(order: dict, tz: str) -> str:
+    try:
+        when = datetime.fromisoformat(str(order.get("createdAt")).replace("Z", "+00:00"))
+        when = when.astimezone(ZoneInfo(tz or "UTC"))
+    except (ValueError, TypeError, KeyError):
+        return ""
+    return f"{when:%B} {when.day}, {when.year}"
+
+
+def _receipt_lines(order: dict, gift_id: str | None) -> list[tuple[str, str, int]]:
+    """(item, option, quantity) for one gift group (gift_id), all gift items
+    (gift_id="*") or every line (None)."""
+    out = []
+    for li in (order.get("lineItems") or {}).get("nodes") or []:
+        attrs = {a.get("key"): a.get("value") for a in li.get("customAttributes") or []}
+        gid = attrs.get("_giftsense_gift")
+        if gift_id == "*" and not gid or gift_id not in (None, "*") and gid != gift_id:
+            continue
+        option = li.get("variantTitle") or ""
+        out.append((li.get("title") or li.get("name") or "", "" if option == "Default Title" else option,
+                    int(li.get("quantity") or 1)))
+    return out
+
+
 def _card(heading: str, note: str | None, items: list[str], shop_name: str) -> str:
     esc = html.escape
     note_html = f'<p class="note">{esc(note)}</p>' if note else '<p class="note empty">&nbsp;</p>'
@@ -113,15 +150,27 @@ body { margin: 0; font-family: Georgia, "Times New Roman", serif; color: #1f2937
 .note { font-size: 18pt; line-height: 1.5; font-style: italic; margin: 0 0 .3in; white-space: pre-wrap; }
 .items { list-style: none; padding: 0; margin: 0 0 .3in; font-size: 10pt; color: #6b7280; }
 .from { font-size: 10pt; color: #9ca3af; margin: 0; }
-.receipt { page: receipt; page-break-after: always; break-after: page;
+.receipt { page: receipt; page-break-after: always; break-after: page; color: #1f2937;
            font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 11pt; }
 .receipt:last-child { page-break-after: auto; break-after: auto; }
-.receipt .shop { font-size: 14pt; font-weight: 700; margin: 0; }
-.receipt h1 { font-size: 20pt; margin: .1in 0; }
-.receipt .meta { color: #6b7280; margin: 0 0 .25in; }
-.receipt h2 { font-size: 12pt; margin: .2in 0 .05in; border-bottom: 1px solid #e5e7eb; padding-bottom: .04in; }
-.receipt ul { margin: 0; padding-left: .2in; }
-.receipt .footer { margin-top: .4in; color: #6b7280; font-size: 9.5pt; }
+.r-head { display: flex; justify-content: space-between; align-items: flex-end; gap: .3in;
+          border-bottom: 2px solid #1f2937; padding-bottom: .15in; margin-bottom: .3in; }
+.r-shop { font-size: 16pt; font-weight: 700; margin: 0; }
+.r-host { color: #6b7280; margin: .03in 0 0; font-size: 10pt; }
+.r-title { text-align: right; }
+.r-title h1 { font-size: 13pt; letter-spacing: .12em; text-transform: uppercase; margin: 0; }
+.r-title p { color: #6b7280; margin: .04in 0 0; font-size: 10pt; }
+.r-for { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 13pt; margin: .25in 0 .08in; }
+.r-items { width: 100%; border-collapse: collapse; }
+.r-items th { text-align: left; font-size: 8.5pt; letter-spacing: .08em; text-transform: uppercase; color: #6b7280;
+              border-bottom: 1px solid #d1d5db; padding: .06in 0; }
+.r-items td { border-bottom: 1px solid #eef0f3; padding: .1in 0; vertical-align: top; }
+.r-items .qty { width: .7in; text-align: right; }
+.r-items .opt { width: 2.2in; color: #4b5563; }
+.r-exchange { margin-top: .45in; border: 1px solid #d1d5db; border-radius: 6px; padding: .16in .2in; }
+.r-exchange h2 { font-size: 10pt; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 .06in; }
+.r-exchange p { margin: .03in 0; }
+.r-foot { margin-top: .3in; color: #9ca3af; font-size: 9pt; text-align: center; }
 .empty-page { font-family: -apple-system, sans-serif; padding: 1in; text-align: center; color: #6b7280; }
 """
 
@@ -134,35 +183,45 @@ def _cards(order: dict, parsed, shop_name: str) -> list[str]:
     return [_card("A gift for you", parsed.note, [], shop_name)]
 
 
-def _all_items(order: dict) -> list[str]:
-    out = []
-    for li in (order.get("lineItems") or {}).get("nodes") or []:
-        qty = int(li.get("quantity") or 1)
-        out.append(f"{li.get('name', '')}{f' × {qty}' if qty > 1 else ''}")
-    return out
-
-
-def _receipt(order: dict, parsed, shop_name: str) -> str:
+def _items_table(rows: list[tuple[str, str, int]]) -> str:
     esc = html.escape
-    by_group = _items_by_group(order)
-    sections: list[tuple[str, list[str]]] = []
+    has_opts = any(opt for _, opt, _ in rows)
+    head = "<tr><th>Item</th>" + ("<th>Option</th>" if has_opts else "") + '<th class="qty">Qty</th></tr>'
+    body = "".join(f"<tr><td>{esc(item)}</td>" + (f'<td class="opt">{esc(opt)}</td>' if has_opts else "")
+                   + f'<td class="qty">{qty}</td></tr>' for item, opt, qty in rows)
+    return f'<table class="r-items">{head}{body}</table>'
+
+
+def _receipt(order: dict, parsed, store: StoreInfo) -> str:
+    """A price-free gift receipt: store, order number and date, the gift items
+    (per recipient in "I'll give it to them" orders) with size/colour and
+    quantity, and how to exchange. Never prices or customer details."""
+    esc = html.escape
     if parsed.groups:
-        sections = [(f"For {g['label']}" if g["label"] else "Gift", by_group.get(g["id"], [])) for g in parsed.groups]
+        sections = [(f"A gift for {g['label']}" if g["label"] else "", _receipt_lines(order, g["id"]))
+                    for g in parsed.groups]
     else:
-        gift_items = [i for items in by_group.values() for i in items]
-        sections = [("Items", gift_items or _all_items(order))]
-    body = "".join(
-        f'<h2>{esc(title)}</h2><ul>{"".join(f"<li>{esc(i)}</li>" for i in items)}</ul>'
-        for title, items in sections if items
-    )
+        sections = [("", _receipt_lines(order, "*") or _receipt_lines(order, None))]
+    body = "".join((f'<p class="r-for">{esc(title)}</p>' if title else "") + _items_table(rows)
+                   for title, rows in sections if rows)
     name = esc(order.get("name") or "")
-    return (f'<section class="receipt"><p class="shop">{esc(shop_name)}</p><h1>Gift receipt</h1>'
-            f'<p class="meta">Order {name}</p>{body}'
-            f'<p class="footer">Prices are not shown on this gift receipt. To exchange an item, contact '
-            f'{esc(shop_name)} with order {name}.</p></section>')
+    date = _order_date(order, store.timezone)
+    contact = " or ".join(x for x in (f"<b>{esc(store.email)}</b>" if store.email else "",
+                                      f"<b>{esc(store.host)}</b>" if store.host else "") if x)
+    how = (f"Contact {esc(store.name)} at {contact}" if contact else f"Contact {esc(store.name)}")
+    return (f'<section class="receipt">'
+            f'<header class="r-head"><div><p class="r-shop">{esc(store.name)}</p>'
+            + (f'<p class="r-host">{esc(store.host)}</p>' if store.host else "")
+            + f'</div><div class="r-title"><h1>Gift receipt</h1><p>Order {name}{f" · {esc(date)}" if date else ""}</p>'
+            f'</div></header>{body}'
+            f'<div class="r-exchange"><h2>Exchanges</h2><p>{how} and mention order <b>{name}</b>.</p>'
+            f'<p>Exchanges follow {esc(store.name)}&#8217;s return policy.</p></div>'
+            f'<p class="r-foot">This gift receipt does not show prices.</p></section>')
 
 
-def render_documents(orders: list[dict], shop_name: str, docs: set[str]) -> str:
+def render_documents(orders: list[dict], store: StoreInfo | str, docs: set[str]) -> str:
+    store = store if isinstance(store, StoreInfo) else StoreInfo(name=store)
+    shop_name = store.name
     esc = html.escape
     parts: list[str] = []
     names = []
@@ -174,7 +233,7 @@ def render_documents(orders: list[dict], shop_name: str, docs: set[str]) -> str:
         if "cards" in docs:
             parts.extend(_cards(order, parsed, shop_name))
         if "receipt" in docs:
-            parts.append(_receipt(order, parsed, shop_name))
+            parts.append(_receipt(order, parsed, store))
     body = "".join(parts) or (f'<p class="empty-page">{esc(", ".join(n for n in names if n) or "This order")} has no '
                               "GiftSense gift details to print.</p>")
     title = "Gift note cards" if docs == {"cards"} else "Gift receipt" if docs == {"receipt"} else "Gift documents"
@@ -198,6 +257,9 @@ async def print_gifts(orderIds: str = Query(..., max_length=MAX_ORDERS * 40),  #
     orders = [o for o in data.get("nodes") or [] if o and o.get("id")]
     if not orders:
         raise HTTPException(404, "Order not found")
-    page = render_documents(orders, (data.get("shop") or {}).get("name") or shop.shop_domain, wanted)
+    s = data.get("shop") or {}
+    store = StoreInfo(name=s.get("name") or shop.shop_domain, host=(s.get("primaryDomain") or {}).get("host") or "",
+                      email=s.get("contactEmail") or "", timezone=shop.store_timezone or "UTC")
+    page = render_documents(orders, store, wanted)
     return HTMLResponse(page, headers={"Access-Control-Allow-Origin": ADMIN_ORIGIN, "Vary": "Origin",
                                        "Cache-Control": "no-store"})

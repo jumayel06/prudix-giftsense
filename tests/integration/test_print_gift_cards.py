@@ -4,6 +4,7 @@ docs=cards → one gift card per gift group (note + items); docs=receipt → a
 price-free gift receipt per order. orderIds takes one order (order page) or
 up to 50 (orders list bulk print)."""
 import json
+import re
 import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -34,9 +35,9 @@ def order(gid=ORDER_GID, name="#1001", attrs=None, lines=None):
             "lineItems": {"nodes": lines or []}}
 
 
-def gql_response(*orders):
+def gql_response(*orders, shop=None):
     resp = MagicMock(status_code=200)
-    resp.json.return_value = {"data": {"shop": {"name": "Snow & Co"}, "nodes": list(orders)}}
+    resp.json.return_value = {"data": {"shop": shop or {"name": "Snow & Co"}, "nodes": list(orders)}}
     return resp
 
 
@@ -126,7 +127,7 @@ async def test_receipt_lists_gift_items_by_recipient_without_prices(db_session, 
 async def test_receipt_for_a_cart_note_order_lists_all_items(db_session, shop):
     o = order(attrs={"Gift note": "Enjoy!"}, lines=[line("Ski Wax"), line("Gloves", qty=2)])
     html = get(db_session, gql_response(o), query=f"orderIds={ORDER_GID}&docs=receipt")[0].text
-    assert "Ski Wax" in html and "Gloves" in html and "× 2" in html
+    assert "Ski Wax" in html and "Gloves" in html and '<td class="qty">2</td>' in html
 
 
 @pytest.mark.asyncio
@@ -170,5 +171,25 @@ async def test_requires_a_valid_session_token(db_session, shop, monkeypatch):
 async def test_query_reads_no_customer_fields_or_prices(db_session, shop):
     _, gql = get(db_session, gql_response(SELF_ORDER), query=f"orderIds={ORDER_GID}&docs=cards,receipt")
     query = gql.await_args.args[2]
-    for field in ("customer", "email", "shippingAddress", "billingAddress", "phone", "Price", "price"):
+    for field in ("customer", "shippingAddress", "billingAddress", "phone", "Price", "price"):
         assert field not in query
+    # Only the store's own public contact email (shop.contactEmail), never a customer's.
+    assert re.findall(r"\w*[Ee]mail\w*", query) == ["contactEmail"]
+
+
+@pytest.mark.asyncio
+async def test_receipt_has_date_options_and_how_to_exchange(db_session, shop):
+    o = order(attrs={"Gift note": "Enjoy!"}, lines=[
+        {**line("Merino Sweater - M / Charcoal", {"_giftsense_gift": "order"}, qty=2),
+         "title": "Merino Sweater", "variantTitle": "M / Charcoal"},
+        {**line("Ski Wax", {"_giftsense_gift": "order"}), "title": "Ski Wax", "variantTitle": "Default Title"}])
+    o["createdAt"] = "2026-10-01T03:59:08Z"            # Sept 30 in New York, Oct 1 in UTC
+    shop.store_timezone = "America/New_York"
+    await db_session.commit()
+    store = {"name": "Snow & Co", "contactEmail": "help@snowco.com", "primaryDomain": {"host": "snowco.com"}}
+    html = get(db_session, gql_response(o, shop=store), query=f"orderIds={ORDER_GID}&docs=receipt")[0].text
+    assert "Order #1001 · September 30, 2026" in html             # in the store's timezone
+    assert "Merino Sweater" in html and "M / Charcoal" in html and '<td class="qty">2</td>' in html
+    assert "Default Title" not in html
+    assert "help@snowco.com" in html and "snowco.com" in html and "mention order <b>#1001</b>" in html
+    assert "$" not in html and "49" not in html                   # still no prices
