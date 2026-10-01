@@ -1,4 +1,5 @@
-"""Is the GiftSense app embed switched on in the shop's live theme?
+"""Is the GiftSense app embed switched on in the shop's live theme, and where
+are its blocks (Find a gift section, Gift options) placed?
 
 GraphQL Admin only (App Store rule 2.2.4; Commerce's equivalent used REST):
 reads config/settings_data.json of the MAIN theme (read_themes scope) and
@@ -10,6 +11,9 @@ Lessons carried over from Commerce's product-block check:
   - Slashes can arrive escaped (`shopify:\\/\\/apps`) → unescape first.
   - settings_data.json starts with a /* … */ comment → strip before parsing.
   - `current` can be a preset name instead of an object.
+Blocks: every JSON template (templates/*.json) and section group
+(sections/*.json) is scanned for `.../blocks/gift-finder/` and
+`.../blocks/gift-options/`, skipping disabled sections and blocks.
 Any failure → "unknown" (the page then shows the setup steps, never an error).
 """
 import json
@@ -22,6 +26,7 @@ from core.shopify_graphql import shopify_graphql_post
 logger = structlog.get_logger()
 
 EMBED_BLOCK = "app-embed"   # extensions/giftsense-theme/blocks/app-embed.liquid
+PLACED_BLOCKS = ("gift-finder", "gift-options")
 
 QUERY = """
 {
@@ -31,6 +36,9 @@ QUERY = """
       name
       files(filenames: ["config/settings_data.json"], first: 1) {
         nodes { body { ... on OnlineStoreThemeFileBodyText { content } } }
+      }
+      templates: files(filenames: ["templates/*.json", "sections/*.json"], first: 250) {
+        nodes { filename body { ... on OnlineStoreThemeFileBodyText { content } } }
       }
     }
   }
@@ -45,36 +53,92 @@ def _current_blocks(data: dict) -> dict:
     return (current or {}).get("blocks") or {}
 
 
+def _load_theme_json(text: str):
+    text = text.replace("\\/", "/")
+    text = re.sub(r"^\s*/\*.*?\*/", "", text, count=1, flags=re.S)
+    return json.loads(text)
+
+
+def _block_pattern(app_handle: str | None, block: str) -> re.Pattern:
+    handle = rf"{re.escape(re.sub(r'-\d+$', '', app_handle))}(?:-\d+)?" if app_handle else r"[^/]+"
+    return re.compile(rf"^shopify://apps/{handle}/blocks/{block}/")
+
+
 def embed_state(settings_text: str, app_handle: str | None) -> str:
     """"on" | "off" (added, switched off) | "missing" | "unknown"."""
-    text = settings_text.replace("\\/", "/")
-    text = re.sub(r"^\s*/\*.*?\*/", "", text, count=1, flags=re.S)
     try:
-        blocks = _current_blocks(json.loads(text))
+        blocks = _current_blocks(_load_theme_json(settings_text))
     except (ValueError, AttributeError):
         return "unknown"
-    handle = rf"{re.escape(re.sub(r'-\d+$', '', app_handle))}(?:-\d+)?" if app_handle else r"[^/]+"
-    pattern = re.compile(rf"^shopify://apps/{handle}/blocks/{EMBED_BLOCK}/")
+    pattern = _block_pattern(app_handle, EMBED_BLOCK)
     found = [b for b in blocks.values() if isinstance(b, dict) and pattern.match(str(b.get("type", "")))]
     if not found:
         return "missing"
     return "on" if any(not b.get("disabled") for b in found) else "off"
 
 
+_PAGE_NAMES = {"index": "Home page", "product": "Product pages", "collection": "Collection pages",
+               "cart": "Cart page", "page": "Pages", "search": "Search page", "list-collections": "Collections list",
+               "blog": "Blog", "article": "Blog posts", "404": "404 page"}
+
+
+def page_label(filename: str) -> str:
+    """templates/product.gift.json → "Product pages (gift)"; sections/header-group.json → "Header"."""
+    name = filename.rsplit("/", 1)[-1].removesuffix(".json")
+    if filename.startswith("sections/"):
+        return name.removesuffix("-group").replace("-", " ").capitalize()
+    base, _, alt = name.partition(".")
+    label = _PAGE_NAMES.get(base, base.replace("-", " ").capitalize())
+    return f"{label} ({alt})" if alt else label
+
+
+def _has_block(node, pattern: re.Pattern) -> bool:
+    """An enabled section/block of this type anywhere under node."""
+    if isinstance(node, dict):
+        if node.get("disabled"):
+            return False
+        if isinstance(node.get("type"), str) and pattern.match(node["type"]):
+            return True
+        return any(_has_block(v, pattern) for k, v in node.items() if k in ("sections", "blocks") or isinstance(v, dict))
+    if isinstance(node, list):
+        return any(_has_block(v, pattern) for v in node)
+    return False
+
+
+def block_placements(files: list[dict], app_handle: str | None) -> dict[str, list[str]]:
+    """{"gift-finder": ["Home page"], "gift-options": ["Product pages", "Cart page"]}"""
+    out: dict[str, list[str]] = {b: [] for b in PLACED_BLOCKS}
+    patterns = {b: _block_pattern(app_handle, b) for b in PLACED_BLOCKS}
+    for f in files:
+        content = ((f.get("body") or {}).get("content")) or ""
+        if "/blocks/gift-" not in content.replace("\\/", "/"):
+            continue
+        try:
+            data = _load_theme_json(content)
+        except ValueError:
+            continue
+        for block, pattern in patterns.items():
+            label = page_label(f.get("filename") or "")
+            if _has_block(data, pattern) and label not in out[block]:
+                out[block].append(label)
+    return out
+
+
 async def fetch_embed_status(shop_domain: str, token: str, gql=shopify_graphql_post) -> dict:
     try:
         resp = await gql(shop_domain, token, QUERY)
         if resp.status_code != 200:
-            return {"embed": "unknown", "theme_name": None}
+            return {"embed": "unknown", "theme_name": None, "blocks": None}
         data = resp.json().get("data") or {}
         handle = ((data.get("currentAppInstallation") or {}).get("app") or {}).get("handle")
         themes = (data.get("themes") or {}).get("nodes") or []
         if not themes:
-            return {"embed": "unknown", "theme_name": None}
+            return {"embed": "unknown", "theme_name": None, "blocks": None}
         files = (themes[0].get("files") or {}).get("nodes") or []
         content = ((files[0].get("body") or {}).get("content")) if files else None
         state = embed_state(content, handle) if content else "unknown"
-        return {"embed": state, "theme_name": themes[0].get("name")}
+        placed = block_placements((themes[0].get("templates") or {}).get("nodes") or [], handle)
+        return {"embed": state, "theme_name": themes[0].get("name"), "blocks": placed}
     except Exception as e:  # noqa: BLE001 — setup hint only, never an error
         logger.warning("theme_status_failed", shop=shop_domain, error=str(e)[:200])
-        return {"embed": "unknown", "theme_name": None}
+        return {"embed": "unknown", "theme_name": None, "blocks": None}

@@ -5,6 +5,7 @@ import { fetchJson } from '../utils/shopifyFetch'
 // Theme app extension handles (extensions/giftsense-theme/blocks/*.liquid).
 const EMBED_HANDLE = 'app-embed'
 const BLOCK_HANDLE = 'gift-finder'
+const OPTIONS_HANDLE = 'gift-options'
 
 function editorUrl(shop, params) {
   return `https://${shop}/admin/themes/current/editor?${new URLSearchParams(params)}`
@@ -14,6 +15,14 @@ const EMBED_BADGE = {
   on: <Badge tone="success">On</Badge>,
   off: <Badge tone="warning">Switched off</Badge>,
   missing: <Badge tone="attention">Not added yet</Badge>,
+}
+
+// "Added: Home page, Collection pages" from /api/theme/status blocks.
+function PlacedBadge({ pages }) {
+  if (!pages) return <Badge>Optional</Badge>
+  return pages.length
+    ? <Badge tone="success">{`Added: ${pages.join(', ')}`}</Badge>
+    : <Badge>Not added yet</Badge>
 }
 
 function Step({ number, title, children, action }) {
@@ -54,6 +63,8 @@ export default function StorefrontPage() {
   }, [])
 
   const embedOn = theme?.embed === 'on'
+  const finderPages = theme?.blocks?.[BLOCK_HANDLE] || []
+  const optionsPages = theme?.blocks?.[OPTIONS_HANDLE] || []
 
   // Theme editor lives outside the embedded app: open it in the top window.
   const openEditor = params => window.open(editorUrl(shop, params), '_top')
@@ -99,18 +110,43 @@ export default function StorefrontPage() {
 
             <Step
               number="2"
-              title={<InlineStack gap="200" blockAlign="center"><span>Add a gift finder section</span><Badge>Optional</Badge></InlineStack>}
-              action={<Button onClick={() => openEditor({ template: 'index', addAppBlockId: `${apiKey}/${BLOCK_HANDLE}`, target: 'newAppsSection' })}>
-                Add to home page
-              </Button>}
+              title={<InlineStack gap="200" blockAlign="center"><span>Add a gift finder section</span>
+                <PlacedBadge pages={theme?.blocks?.[BLOCK_HANDLE]} /></InlineStack>}
+              action={<InlineStack gap="200">
+                <Button onClick={() => openEditor({ template: 'index', addAppBlockId: `${apiKey}/${BLOCK_HANDLE}`, target: 'newAppsSection' })}>
+                  {finderPages.includes('Home page') ? 'Add to another page' : 'Add to home page'}
+                </Button>
+                <Button variant="plain" onClick={checkTheme} loading={checking}>Check again</Button>
+              </InlineStack>}
             >
               <Text as="p">
                 A <b>Not sure what to get?</b> section with a button that opens the gift finder. Great on your home page,
-                gift collections and holiday pages. You can move it or add it to other pages in the theme editor.
+                gift collections and holiday pages. Optional: the floating button already works on every page.
               </Text>
             </Step>
 
-            <Step number="3" title="Try it on your store">
+            <Step
+              number="3"
+              title={<InlineStack gap="200" blockAlign="center"><span>Add gift options to product and cart pages</span>
+                <PlacedBadge pages={theme?.blocks?.[OPTIONS_HANDLE]} /></InlineStack>}
+              action={<InlineStack gap="200">
+                <Button onClick={() => openEditor({ template: 'product', addAppBlockId: `${apiKey}/${OPTIONS_HANDLE}`, target: 'mainSection' })}
+                  disabled={optionsPages.includes('Product pages')}>
+                  {optionsPages.includes('Product pages') ? 'On product pages' : 'Add to product page'}
+                </Button>
+                <Button onClick={() => openEditor({ template: 'cart', addAppBlockId: `${apiKey}/${OPTIONS_HANDLE}`, target: 'mainSection' })}
+                  disabled={optionsPages.includes('Cart page')}>
+                  {optionsPages.includes('Cart page') ? 'On cart page' : 'Add to cart page'}
+                </Button>
+              </InlineStack>}
+            >
+              <Text as="p">
+                Lets shoppers who find a gift on their own still mark it as a gift: <b>This is a gift</b> on product pages
+                (who it&apos;s for, an AI-written note, gift wrap) and <b>Add a gift note</b> on the cart page.
+              </Text>
+            </Step>
+
+            <Step number="4" title="Try it on your store">
               <Text as="p">Open your store, click <b>Find a gift</b>, answer a few questions and see the picks.</Text>
               <List>
                 <List.Item>Picks come only from products the gift finder has analyzed (see Catalog).</List.Item>

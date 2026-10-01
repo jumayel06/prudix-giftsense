@@ -55,11 +55,54 @@ async def test_fetch_uses_graphql_and_reports_the_theme():
     }}
     gql = AsyncMock(return_value=resp)
     result = await ts.fetch_embed_status("shop.myshopify.com", "tok", gql=gql)
-    assert result == {"embed": "on", "theme_name": "Dawn"}
-    assert "roles: [MAIN]" in gql.await_args.args[2]
+    assert result == {"embed": "on", "theme_name": "Dawn", "blocks": {"gift-finder": [], "gift-options": []}}
+    assert "roles: [MAIN]" in gql.await_args.args[2] and "templates/*.json" in gql.await_args.args[2]
 
 
 @pytest.mark.asyncio
 async def test_fetch_failure_is_unknown_not_an_error():
     gql = AsyncMock(return_value=MagicMock(status_code=500))
     assert (await ts.fetch_embed_status("shop.myshopify.com", "tok", gql=gql))["embed"] == "unknown"
+
+
+# ── Block placements (Find a gift section, Gift options) ─────────────────────
+
+from app.services.theme_status import block_placements, page_label  # noqa: E402
+
+FINDER = "shopify://apps/prudix-giftsense-dev/blocks/gift-finder/0199-aaaa"
+OPTIONS = "shopify:\\/\\/apps\\/prudix-giftsense-dev-1\\/blocks\\/gift-options\\/0199-bbbb"   # escaped, suffixed
+
+
+def tfile(name, data, comment=True):
+    text = json.dumps(data)
+    return {"filename": name, "body": {"content": ("/* auto-generated */\n" if comment else "") + text}}
+
+
+def test_finds_blocks_by_page_and_skips_disabled():
+    files = [
+        tfile("templates/index.json", {"sections": {"apps_1": {"type": "apps", "blocks": {"b1": {"type": FINDER}}}}}),
+        tfile("templates/product.json", {"sections": {"main": {"type": "main-product", "blocks": {
+            "g": {"type": OPTIONS.replace("\\/", "/")}}}}}),
+        tfile("templates/collection.json", {"sections": {"apps_1": {"type": "apps", "disabled": True,
+                                                                   "blocks": {"b1": {"type": FINDER}}}}}),
+        tfile("templates/cart.json", {"sections": {"apps_1": {"type": "apps", "blocks": {
+            "b1": {"type": FINDER, "disabled": True}}}}}),
+        tfile("templates/page.contact.json", {"sections": {}}),
+    ]
+    assert block_placements(files, "prudix-giftsense-dev") == {
+        "gift-finder": ["Home page"], "gift-options": ["Product pages"]}
+
+
+def test_other_apps_blocks_are_ignored():
+    other = "shopify://apps/some-other-app/blocks/gift-finder/1"
+    files = [tfile("templates/index.json", {"sections": {"a": {"type": "apps", "blocks": {"b": {"type": other}}}}})]
+    assert block_placements(files, "prudix-giftsense-dev") == {"gift-finder": [], "gift-options": []}
+
+
+@pytest.mark.parametrize("filename,label", [
+    ("templates/index.json", "Home page"), ("templates/product.gift.json", "Product pages (gift)"),
+    ("templates/page.holiday.json", "Pages (holiday)"), ("sections/header-group.json", "Header"),
+    ("sections/footer-group.json", "Footer"),
+])
+def test_page_labels(filename, label):
+    assert page_label(filename) == label
