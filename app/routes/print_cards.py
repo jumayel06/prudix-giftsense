@@ -206,7 +206,11 @@ def _receipt(order: dict, parsed, store: StoreInfo) -> str:
                    for title, rows in sections if rows)
     name = esc(order.get("name") or "")
     date = _order_date(order, store.timezone)
-    contact = " or ".join(x for x in (f"<b>{esc(store.email)}</b>" if store.email else "",
+    # email_off: Cloudflare (dev tunnel, and any proxied domain) otherwise
+    # rewrites addresses to "[email protected]" + a decoder script that print
+    # views never run.
+    contact = " or ".join(x for x in (f"<!--email_off--><b>{esc(store.email)}</b><!--/email_off-->"
+                                      if store.email else "",
                                       f"<b>{esc(store.host)}</b>" if store.host else "") if x)
     how = (f"Contact {esc(store.name)} at {contact}" if contact else f"Contact {esc(store.name)}")
     return (f'<section class="receipt">'

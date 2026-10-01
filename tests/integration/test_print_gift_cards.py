@@ -192,4 +192,5 @@ async def test_receipt_has_date_options_and_how_to_exchange(db_session, shop):
     assert "Merino Sweater" in html and "M / Charcoal" in html and '<td class="qty">2</td>' in html
     assert "Default Title" not in html
     assert "help@snowco.com" in html and "snowco.com" in html and "mention order <b>#1001</b>" in html
+    assert "<!--email_off--><b>help@snowco.com</b><!--/email_off-->" in html   # Cloudflare leaves it alone
     assert "$" not in html and "49" not in html                   # still no prices
