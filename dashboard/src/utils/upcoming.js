@@ -19,7 +19,7 @@ export const UPCOMING = [
   {
     path: '/messages', label: 'Voice & video', section: 'gifting', icon: MicrophoneIcon,
     title: 'Voice and video messages',
-    intro: 'A recorded message the recipient opens by scanning a QR code on the gift card.',
+    intro: 'A recorded message the recipient opens by scanning a QR code on the gift note.',
     items: [
       { feature: 'voice_messages', text: 'Voice messages' },
       { feature: 'video_messages', text: 'Video messages' },

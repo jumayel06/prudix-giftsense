@@ -92,7 +92,7 @@ export default function GiftNotesPage() {
               <TextField
                 label="Maximum length (characters)" type="number" min={80} max={500}
                 value={String(notes.max_chars)} onChange={v => setNotes(n => ({ ...n, max_chars: v }))}
-                helpText="250 fits most printed gift cards." autoComplete="off"
+                helpText="250 fits a printed gift note card." autoComplete="off"
               />
               <TextField
                 label="Words the AI must never use" value={bannedText} onChange={setBannedText}
@@ -104,7 +104,7 @@ export default function GiftNotesPage() {
 
         <Layout.AnnotatedSection
           title="Where shoppers see it"
-          description="Notes are saved on the order and print on your GiftSense gift cards."
+          description="Notes are saved on the order. You can print them as gift note cards to slip into the package."
         >
           <Card>
             <BlockStack gap="300">

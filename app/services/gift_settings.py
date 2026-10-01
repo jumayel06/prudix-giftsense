@@ -1,7 +1,7 @@
 """Merchant gift-note settings (Settings page), stored in shops.gift_settings.
 
 tone        default voice for AI note drafts (shoppers can switch per draft)
-max_chars   note length cap; 250 matches common printed gift cards
+max_chars   note length cap; 250 fits a printed gift note card
 banned_words words a draft must never contain (checked case-insensitively)
 """
 from typing import Literal, Optional

@@ -177,7 +177,7 @@ def render_documents(orders: list[dict], shop_name: str, docs: set[str]) -> str:
             parts.append(_receipt(order, parsed, shop_name))
     body = "".join(parts) or (f'<p class="empty-page">{esc(", ".join(n for n in names if n) or "This order")} has no '
                               "GiftSense gift details to print.</p>")
-    title = "Gift cards" if docs == {"cards"} else "Gift receipt" if docs == {"receipt"} else "Gift documents"
+    title = "Gift note cards" if docs == {"cards"} else "Gift receipt" if docs == {"receipt"} else "Gift documents"
     return (f'<!doctype html><html lang="en"><head><meta charset="utf-8"><title>{title} · '
             f'{esc(", ".join(names[:3]))}</title><style>{PAGE_CSS}</style></head><body>{body}</body></html>')
 

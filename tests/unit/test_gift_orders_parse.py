@@ -80,3 +80,18 @@ def test_direct_mode_wrap_is_recorded_and_wrap_lines_are_not_gift_lines():
                                   attrs={"Gift wrap": "Gold", "_giftsense_mode": "direct"}))
     assert p.wrap == "Gold" and p.gift_lines == 1 and p.gift_revenue == 30.0
     assert go.metafield_value(p)["wrap"] == "Gold"
+
+
+def test_delivery_mode_is_implied_without_the_old_attribute():
+    """Since 2026-10-01 the widget no longer writes _giftsense_mode (fewer
+    fields cluttering the order in Shopify admin)."""
+    direct = go.parse_gift_order(order([line(props={"_giftsense_gift": "order"})],
+                                       attrs={"_giftsense_sid": SID, "Gift note": "Happy anniversary"}))
+    assert direct.delivery_mode == "direct"
+    groups = '[{"id":"g1","label":"Mom"}]'
+    self_mode = go.parse_gift_order(order([line(props={"_giftsense_gift": "g1", "Gift for": "Mom"})],
+                                          attrs={"_giftsense_sid": SID, "_giftsense_gifts": groups}))
+    assert self_mode.delivery_mode == "self"
+    legacy = go.parse_gift_order(order([line(props={"_giftsense_gift": "order"})],
+                                       attrs={"_giftsense_mode": "self"}))
+    assert legacy.delivery_mode == "self"                     # older carts still parse the same

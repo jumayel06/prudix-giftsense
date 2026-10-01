@@ -45,7 +45,7 @@ FEATURE_LABELS = {
     "gift_groups":           "Several gifts in one order",
     "gift_wrap":             "Gift wrap",
     "arrive_by":             "Arrive-by dates",
-    "gift_cards_print":      "Printable gift cards and tags",
+    "gift_cards_print":      "Printable gift note cards",
     "gift_receipt":          "Gift receipt (hide prices)",
     "voice_messages":        "Voice messages",
     "video_messages":        "Video messages",

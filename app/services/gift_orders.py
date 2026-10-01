@@ -103,7 +103,9 @@ def parse_gift_order(payload: dict) -> ParsedGiftOrder | None:
     note = (attrs.get("Gift note") or "").strip()[:MAX_NOTE] or None
     if not (gift_lines or sid or note or groups):
         return None
-    mode = attrs.get("_giftsense_mode")
+    # Gift groups mean "I'll give it to them"; otherwise one gift shipped
+    # straight to the recipient. (_giftsense_mode: carts from before 2026-10-01.)
+    mode = attrs.get("_giftsense_mode") or ("self" if groups else "direct")
     return ParsedGiftOrder(
         order_id=str(payload.get("id")),
         order_gid=str(payload.get("admin_graphql_api_id") or f"gid://shopify/Order/{payload.get('id')}"),

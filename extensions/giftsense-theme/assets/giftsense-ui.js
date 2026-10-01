@@ -119,7 +119,7 @@
     fetch(root() + 'cart/add.js', {
       method: 'POST', credentials: 'same-origin', headers: json,
       body: JSON.stringify({ items: [{ id: variantId, quantity: 1,
-        properties: { _giftsense_sid: ctx.sid, _giftsense_gift: '1' } }] })
+        properties: { _giftsense_gift: '1' } }] })
     }).then(function (r) {
       if (!r.ok) throw new Error('add');
       return fetch(root() + 'cart/update.js', {
@@ -502,7 +502,7 @@
       fetch(root() + 'cart/update.js', {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ attributes: { 'Gift note': note, _giftsense_mode: 'direct', _giftsense_sid: ctx.sid } })
+        body: JSON.stringify({ attributes: { 'Gift note': note, _giftsense_sid: ctx.sid } })
       }).then(function (r) {
         if (!r.ok) throw new Error('update');
         clear(els.body);
@@ -699,8 +699,11 @@
       var groups = [];
       try { groups = JSON.parse(attrs._giftsense_gifts || '[]'); } catch (e) { groups = []; }
       if (!Array.isArray(groups)) groups = [];
-      var props = { _giftsense_sid: ctx.sid };
-      var update = { _giftsense_sid: ctx.sid, _giftsense_mode: g.mode };
+      // Merchants see every order field in Shopify admin, so keep them few: the
+      // session id once on the order (attribution) and a gift marker per item.
+      // Delivery mode is implied: gift groups (_giftsense_gifts) mean "to me".
+      var props = {};
+      var update = { _giftsense_sid: ctx.sid };
       var items = [{ id: variantId, quantity: 1, properties: props }];
       // One wrap line per gift group (direct mode: one for the whole order),
       // linked by _giftsense_wrap_for. A group that already has wrap keeps it.

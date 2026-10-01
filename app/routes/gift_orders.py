@@ -2,7 +2,7 @@
 
 Reads our own gift_orders rows (order facts only: no customer, no note text),
 newest first, 25 per page. Each row links to the Shopify order, where
-Print → GiftSense gift cards prints cards and receipts.
+Print → GiftSense gift notes prints note cards and receipts.
 """
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select

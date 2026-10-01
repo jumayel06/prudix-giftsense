@@ -19,7 +19,7 @@ from app.services.gift_settings import NOTE_TONES
 
 logger = structlog.get_logger()
 
-PROMPT_VERSION = "note-v1"
+PROMPT_VERSION = "note-v2"
 NOTE_TIMEOUT_SECS = 8.0
 
 ChatFn = Callable[..., Awaitable[LLMResponse]]
@@ -32,7 +32,7 @@ TONE_GUIDE = {
     "formal": "formal and polite, suitable for colleagues or clients",
 }
 
-SYSTEM_PROMPT = """You write the short message that goes on a gift card.
+SYSTEM_PROMPT = """You write the short message that goes on a printed gift note.
 
 Write in a {tone} tone, at most {max_chars} characters. Write to the recipient
 (use their name if given). Mention the occasion; you may nod to the gift, using

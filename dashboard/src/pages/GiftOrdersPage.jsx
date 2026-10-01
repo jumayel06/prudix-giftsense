@@ -28,8 +28,8 @@ export default function GiftOrdersPage() {
 
   const help = (
     <Text as="p" tone="subdued">
-      To print gift cards or a price-free gift receipt, open an order and choose Print → GiftSense gift cards.
-      To print several at once, select orders in your Orders list and choose Print → GiftSense gift cards (bulk).
+      To print gift note cards or a price-free gift receipt, open an order and choose Print → GiftSense gift notes.
+      To print several at once, select orders in your Orders list and choose Print → GiftSense gift notes (bulk).
     </Text>
   )
 

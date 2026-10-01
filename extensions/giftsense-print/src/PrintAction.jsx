@@ -1,6 +1,6 @@
 /**
- * Print menu → "GiftSense gift cards", on the order page and (bulk) the orders
- * list. The merchant picks gift cards and/or a price-free gift receipt; the
+ * Print menu → "GiftSense gift notes", on the order page and (bulk) the orders
+ * list. The merchant picks gift note cards and/or a price-free gift receipt; the
  * page is served by our backend (GET /print/gifts, app/routes/print_cards.py).
  * The src is a relative path, so Shopify loads it from the app URL with a
  * session token.
@@ -27,7 +27,7 @@ function Extension() {
       <s-stack gap="base">
         <s-text>{ids.length > 1 ? `Print for ${ids.length} orders:` : 'Print for this order:'}</s-text>
         <s-checkbox
-          label="Gift cards (one per gift, with its note)"
+          label="Gift note cards (one per gift, with its note)"
           checked={cards}
           onChange={e => setCards(e.currentTarget.checked)}
         />
