@@ -97,7 +97,7 @@ export default function GiftWrapPage() {
 
         <Layout.AnnotatedSection
           title="Wrap styles"
-          description="GiftSense creates one hidden “Gift wrap” product in your store, with a variant per style. It never appears in your collections or search. Shoppers choose wrap themselves; it's never pre-selected."
+          description="GiftSense creates one hidden “Gift wrap” product in your store, with a variant per style. It never appears in your collections or search. Shoppers choose wrap themselves; it's never pre-selected. If you uninstall GiftSense, this product stays in your Products list, and you can delete it there."
         >
           <Card>
             <BlockStack gap="400">
