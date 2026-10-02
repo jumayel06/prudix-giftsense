@@ -34,6 +34,9 @@ def _row(o: GiftOrder) -> dict:
         "note_source": o.note_source,
         "from_finder": o.sid is not None,
         "annotated": bool(o.annotated),
+        "arrive_by": o.arrive_by.isoformat() if o.arrive_by else None,
+        "ship_by": o.ship_by.isoformat() if o.ship_by else None,
+        "hold_status": o.hold_status,
     }
 
 

@@ -12,6 +12,30 @@ function money(amount, currency) {
 
 const NOTE_LABEL = { ai_accepted: 'AI note', ai_edited: 'AI note, edited', manual: 'Own note' }
 
+function short(iso) {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+// Arrive-by cell: the requested date, when it ships, and the hold state.
+function ArriveBy({ o }) {
+  if (!o.arrive_by) return <Text as="span" tone="subdued">Any time</Text>
+  const status = {
+    pending: <Badge tone="attention">Scheduling…</Badge>,
+    held: <Badge tone="info">{`On hold until ${short(o.ship_by)}`}</Badge>,
+    released: <Badge tone="success">Ready to ship</Badge>,
+    late: <Badge tone="critical">Ship ASAP</Badge>,
+    none: <Badge>{`Ship by ${short(o.ship_by)}`}</Badge>,
+    failed: <Badge tone="warning">{`Ship by ${short(o.ship_by)}`}</Badge>,
+  }[o.hold_status]
+  return (
+    <BlockStack gap="050">
+      <Text as="span">{short(o.arrive_by)}</Text>
+      {status}
+    </BlockStack>
+  )
+}
+
 // Opens the order in Shopify admin (App Bridge handles shopify:// links).
 const adminOrderUrl = id => `shopify://admin/orders/${id}`
 
@@ -58,6 +82,7 @@ export default function GiftOrdersPage() {
       </IndexTable.Cell>
       <IndexTable.Cell>{o.has_note ? NOTE_LABEL[o.note_source] || 'Note' : <Text as="span" tone="subdued">None</Text>}</IndexTable.Cell>
       <IndexTable.Cell>{o.wraps.length ? o.wraps.join(', ') : <Text as="span" tone="subdued">None</Text>}</IndexTable.Cell>
+      <IndexTable.Cell><ArriveBy o={o} /></IndexTable.Cell>
       <IndexTable.Cell>
         <Text as="span" alignment="end" numeric>{money(o.gift_revenue, o.currency)}</Text>
       </IndexTable.Cell>
@@ -87,7 +112,7 @@ export default function GiftOrdersPage() {
               itemCount={data.orders.length}
               selectable={false}
               headings={[
-                { title: 'Order' }, { title: 'Gift for' }, { title: 'Note' }, { title: 'Wrap' },
+                { title: 'Order' }, { title: 'Gift for' }, { title: 'Note' }, { title: 'Wrap' }, { title: 'Arrive by' },
                 { title: 'Gift value', alignment: 'end' }, { title: '' },
               ]}
               pagination={{

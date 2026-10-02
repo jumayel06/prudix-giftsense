@@ -5,17 +5,11 @@
  * never hardcoded here. Remove an entry when its real page ships.
  */
 import {
-  CalendarIcon, MicrophoneIcon, ReplaceIcon,
+  MicrophoneIcon, ReplaceIcon,
   ListBulletedIcon,
 } from '@shopify/polaris-icons'
 
 export const UPCOMING = [
-  {
-    path: '/delivery', label: 'Arrive-by dates', section: 'gifting', icon: CalendarIcon,
-    title: 'Arrive-by dates',
-    intro: 'Let shoppers pick when a gift should arrive, for birthdays and holidays.',
-    items: [{ feature: 'arrive_by', text: 'Delivery-date rules and automatic shipping holds until it is time to send' }],
-  },
   {
     path: '/messages', label: 'Voice & video', section: 'gifting', icon: MicrophoneIcon,
     title: 'Voice and video messages',

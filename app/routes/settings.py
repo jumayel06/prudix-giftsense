@@ -14,7 +14,7 @@ from app.ai_models import AI_TIERS, ai_tier_for, tier_models_for_shop
 from app.config import PLANS
 from app.jobs import enqueue
 from app.services.wrap import WrapUpdate, update_wrap_settings, wrap_settings
-from app.services.delivery import DeliveryUpdate, delivery_settings, update_delivery_settings
+from app.services.delivery import DeliveryUpdate, date_window, delivery_settings, update_delivery_settings
 from app.services.gift_settings import NOTE_TONES, GiftNotesUpdate, note_settings, update_note_settings
 from core.db.models import Shop
 from core.db.session import get_db
@@ -40,6 +40,8 @@ async def get_settings(
         "gift_notes": note_settings(shop_record),
         "gift_wrap": wrap_settings(shop_record),
         "delivery": delivery_settings(shop_record),
+        # Preview for the Arrive-by page: what a shopper ordering now could pick.
+        "delivery_window": date_window(delivery_settings(shop_record), shop_record.store_timezone),
         "store_timezone": shop_record.store_timezone or "UTC",
         "note_tones": [{"value": k, "label": v} for k, v in NOTE_TONES.items()],
         "features": plan["features"],

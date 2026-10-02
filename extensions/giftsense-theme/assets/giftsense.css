@@ -84,3 +84,6 @@ a.gs-name:hover { text-decoration: underline; }
 .gs-small-chip { padding: 4px 10px; font-size: 12px; }
 input.gs-note { margin-top: 8px; }
 a.gs-primary, a.gs-secondary { text-decoration: none; display: inline-block; }
+/* Arrive-by date picker */
+.gs-date { max-width: 220px; display: block; }
+.gs-hint-left { display: block; text-align: left; }

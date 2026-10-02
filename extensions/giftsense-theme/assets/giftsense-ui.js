@@ -489,10 +489,18 @@
     var section = noteSection(g, null);
     els.body.appendChild(section);
     var textarea = section.querySelector('textarea');
+    var dateHolder = el('div');
+    els.body.appendChild(dateHolder);
     fetch(root() + 'cart.js', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (cart) {
-      var existing = cart && cart.attributes && cart.attributes['Gift note'];
+      var attrs = (cart && cart.attributes) || {};
+      var existing = attrs['Gift note'];
       if (existing && !textarea.value) { textarea.value = g.note = existing; textarea.dispatchEvent(new Event('input')); }
-    }).catch(function () {});
+      var dateChoice = dateSection(g, attrs['Arrive by']);
+      if (dateChoice) dateHolder.appendChild(dateChoice);
+    }).catch(function () {
+      var dateChoice = dateSection(g);
+      if (dateChoice) dateHolder.appendChild(dateChoice);
+    });
     var row = el('div', 'gs-actions');
     var save = el('button', 'gs-primary', 'Save gift note');
     save.type = 'button';
@@ -502,7 +510,7 @@
       fetch(root() + 'cart/update.js', {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ attributes: { 'Gift note': note, _giftsense_sid: ctx.sid } })
+        body: JSON.stringify({ attributes: { 'Gift note': note, 'Arrive by': g.arriveBy || '', _giftsense_sid: ctx.sid } })
       }).then(function (r) {
         if (!r.ok) throw new Error('update');
         clear(els.body);
@@ -646,6 +654,8 @@
     els.body.appendChild(noteSection(g, pick.product_id));
     var wrapChoice = wrapSection(g);
     if (wrapChoice) els.body.appendChild(wrapChoice);
+    var dateChoice = dateSection(g);
+    if (dateChoice) els.body.appendChild(dateChoice);
 
     var row = el('div', 'gs-actions');
     var addBtn = el('button', 'gs-primary', 'Add gift to cart');
@@ -667,6 +677,34 @@
 
   // Gift wrap: merchant styles from /config. "No wrap" is the default (never
   // pre-select a paid add-on) and every style shows its price.
+  // Arrive-by (Growth+): a date picker limited to what the store can make
+  // (/config delivery.earliest..latest, store time). One date per order.
+  function dateSection(g, existing) {
+    var d = ctx.config.delivery;
+    if (!d || !d.earliest) return null;
+    var box = el('label', 'gs-group');
+    box.appendChild(el('span', 'gs-label', 'When should it arrive? (optional)'));
+    var input = el('input', 'gs-note gs-date');
+    input.type = 'date';
+    input.min = d.earliest;
+    input.max = d.latest;
+    if (existing && existing >= d.earliest && existing <= d.latest) input.value = g.arriveBy = existing;
+    var hint = el('span', 'gs-hint gs-hint-left', 'Estimated delivery. Applies to the whole order.');
+    input.addEventListener('change', function () {
+      var v = input.value;
+      if (v && (v < d.earliest || v > d.latest)) {
+        hint.textContent = 'Please pick a date between ' + d.earliest + ' and ' + d.latest + '.';
+        g.arriveBy = '';
+        return;
+      }
+      g.arriveBy = v;
+      hint.textContent = 'Estimated delivery. Applies to the whole order.';
+    });
+    box.appendChild(input);
+    box.appendChild(hint);
+    return box;
+  }
+
   function wrapSection(g) {
     var styles = ctx.config.wrap || [];
     if (!styles.length) return null;
@@ -730,6 +768,7 @@
         addWrap('order', 'Your gift', attrs['Gift wrap']);
         if (g.wrap && !attrs['Gift wrap']) update['Gift wrap'] = g.wrap.name;
       }
+      if (g.arriveBy) update['Arrive by'] = g.arriveBy;
       if (items.length > 1) track('wrap_added', pick.product_id);
       return fetch(root() + 'cart/add.js', {
         method: 'POST', credentials: 'same-origin', headers: json,
