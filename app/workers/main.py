@@ -20,7 +20,7 @@ from sqlalchemy import delete, select
 from app.config import GRACE_PERIOD_DAYS, derive_tier_from_subscription_name
 from app.jobs import enqueue
 from app.purge import purge_shop_data
-from app.workers.orders import annotate_gift_order, sync_wrap
+from app.workers.orders import annotate_gift_order, release_due_holds, sync_wrap
 from app.workers.theme import check_theme
 from app.workers.catalog import (
     catalog_analyze_shop, catalog_finish_bulk, catalog_start_sync, catalog_sync_product, kick_catalog_syncs,
@@ -354,6 +354,8 @@ class WorkerSettings:
         cron(reconcile_trial_conversions, minute=40),
         cron(purge_uninstalled_shops, hour=3, minute=0),
         cron(purge_old_gift_events, hour=3, minute=30),
+        # Arrive-by: release fulfillment holds on their ship-by day. Hourly at :05.
+        cron(release_due_holds, minute=5, timeout=600),
         # First catalog sync for newly active shops + missed bulk_operations/finish.
         cron(kick_catalog_syncs, minute=set(range(0, 60, 5)), timeout=3600),
         # Nightly full re-export (missed product webhooks, deletions, upgrades).

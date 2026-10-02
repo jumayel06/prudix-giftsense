@@ -10,7 +10,7 @@ import hashlib
 import hmac
 import json
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 import structlog
@@ -27,6 +27,7 @@ from app.config import (
     PLANS,
 )
 from app.jobs import enqueue
+from app.services import delivery
 from app.services.gift_orders import metafield_value, note_source, parse_gift_order
 from core.config import settings
 from core.db.models import (
@@ -672,16 +673,26 @@ async def _handle_order_created(shop_domain: str, payload: dict, db: AsyncSessio
         final = parsed.note or next(g["note"] for g in parsed.groups if g.get("note"))
         source = note_source(final, draft)
 
+    # Arrive-by (Growth+): ship-by date now; the job places the hold.
+    shipment = None
+    if parsed.arrive_by and "arrive_by" in PLANS.get(shop.plan_tier, PLANS["starter"])["features"]:
+        shipment = delivery.plan_shipment(delivery.delivery_settings(shop), shop.store_timezone, parsed.arrive_by)
     db.add(GiftOrder(
         shop_id=shop.id, order_id=parsed.order_id, order_name=parsed.order_name, sid=parsed.sid,
         delivery_mode=parsed.delivery_mode, gift_lines=parsed.gift_lines, gift_revenue=parsed.gift_revenue,
         order_total=parsed.order_total, currency=parsed.currency, note_source=source,
         groups=_stored_groups(parsed),
+        arrive_by=date.fromisoformat(shipment["arrive_by"]) if shipment else None,
+        ship_by=date.fromisoformat(shipment["ship_by"]) if shipment else None,
+        hold_status=("late" if shipment["late"] else "pending") if shipment else None,
     ))
     try:
         await db.commit()
     except IntegrityError:          # the same order redelivered concurrently
         await db.rollback()
         return
-    await enqueue("annotate_gift_order", shop_domain, parsed.order_gid, metafield_value(parsed),
+    value = metafield_value(parsed)
+    if shipment:
+        value.update(arrive_by=shipment["arrive_by"], ship_by=shipment["ship_by"])
+    await enqueue("annotate_gift_order", shop_domain, parsed.order_gid, value,
                   _job_id=f"gift-order:{shop.id}:{parsed.order_id}")

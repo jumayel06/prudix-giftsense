@@ -271,7 +271,8 @@ class GiftOrder(Base):
     order). `sid` links to the gift_sessions row for attribution. Registered in
     app/services/gdpr.py (order id) and deleted with the shop (app/purge.py)."""
     __tablename__ = "gift_orders"
-    __table_args__ = (UniqueConstraint("shop_id", "order_id", name="uq_gift_orders_shop_order"),)
+    __table_args__ = (UniqueConstraint("shop_id", "order_id", name="uq_gift_orders_shop_order"),
+                      Index("ix_gift_orders_hold_due", "hold_status", "ship_by"))
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     shop_id: Mapped[uuid.UUID] = mapped_column(
@@ -288,6 +289,12 @@ class GiftOrder(Base):
     groups: Mapped[list] = mapped_column(JSON, nullable=False, default=list)     # labels/wrap/message, no notes
     note_source: Mapped[str | None] = mapped_column(String, nullable=True)      # ai_accepted | ai_edited | manual
     annotated: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    # Arrive-by (Growth+): requested date, the ship-by date we computed, and the
+    # fulfillment hold: held | released | late (couldn't be met, not held) |
+    # none (nothing we could hold, e.g. 3PL) | failed.
+    arrive_by: Mapped[date | None] = mapped_column(Date, nullable=True)
+    ship_by: Mapped[date | None] = mapped_column(Date, nullable=True)
+    hold_status: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 

@@ -29,7 +29,7 @@ from app.ai_models import model_for_shop
 from app.config import PLANS
 from app.llm import chat, moderate
 from app.plan_guard import may_generate
-from app.services import catalog_index, metering, rate_limit, wrap
+from app.services import catalog_index, delivery, metering, rate_limit, wrap
 from app.services.gift_settings import NOTE_TONES, Tone, note_settings
 from app.services.gifting import vocab
 from app.services.gifting.brief import GiftBrief, intake_options
@@ -60,6 +60,11 @@ def _no_store(payload: dict) -> JSONResponse:
     return JSONResponse(payload, headers={"Cache-Control": "no-store"})
 
 
+def _delivery_window(shop: Shop) -> dict | None:
+    settings = delivery.delivery_settings(shop)
+    return delivery.date_window(settings, shop.store_timezone) if settings["enabled"] else None
+
+
 @router.get("/config")
 async def widget_config(shop: Shop = Depends(storefront_shop)):
     if not may_generate(shop):
@@ -75,6 +80,8 @@ async def widget_config(shop: Shop = Depends(storefront_shop)):
                   "tones": [{"value": k, "label": v} for k, v in NOTE_TONES.items()]},
         # Offered in the gift panel, never pre-selected, price always shown.
         "wrap": wrap.storefront_styles(shop) if "gift_wrap" in features else [],
+        # Arrive-by date picker (Growth+): the pickable range in store time.
+        "delivery": _delivery_window(shop) if "arrive_by" in features else None,
     })
 
 

@@ -14,6 +14,7 @@ from app.ai_models import AI_TIERS, ai_tier_for, tier_models_for_shop
 from app.config import PLANS
 from app.jobs import enqueue
 from app.services.wrap import WrapUpdate, update_wrap_settings, wrap_settings
+from app.services.delivery import DeliveryUpdate, delivery_settings, update_delivery_settings
 from app.services.gift_settings import NOTE_TONES, GiftNotesUpdate, note_settings, update_note_settings
 from core.db.models import Shop
 from core.db.session import get_db
@@ -38,6 +39,8 @@ async def get_settings(
         "ai_tier_models": tier_models_for_shop(shop_record),
         "gift_notes": note_settings(shop_record),
         "gift_wrap": wrap_settings(shop_record),
+        "delivery": delivery_settings(shop_record),
+        "store_timezone": shop_record.store_timezone or "UTC",
         "note_tones": [{"value": k, "label": v} for k, v in NOTE_TONES.items()],
         "features": plan["features"],
         "plan_tier": plan_tier,
@@ -74,6 +77,7 @@ class SaveSettingsRequest(BaseModel):
     digest_email_opt_in: bool | None = None
     gift_notes: GiftNotesUpdate | None = None
     gift_wrap: WrapUpdate | None = None
+    delivery: DeliveryUpdate | None = None
 
 
 @router.put("/api/settings")
@@ -96,6 +100,14 @@ async def save_settings(
         shop_record.digest_email_opt_in = payload.digest_email_opt_in
     if payload.gift_notes is not None:
         update_note_settings(shop_record, payload.gift_notes)
+    if payload.delivery is not None:
+        plan = PLANS.get(shop_record.plan_tier, PLANS["starter"])
+        if payload.delivery.enabled and "arrive_by" not in plan["features"]:
+            raise HTTPException(status_code=403, detail={
+                "code": "feature_not_available",
+                "message": f"Arrive-by dates aren't available on the {plan['name']} plan. Upgrade to Growth to use them.",
+            })
+        update_delivery_settings(shop_record, payload.delivery)
     resync_wrap = False
     if payload.gift_wrap is not None:
         update_wrap_settings(shop_record, payload.gift_wrap)
