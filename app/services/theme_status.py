@@ -18,6 +18,7 @@ Any failure → "unknown" (the page then shows the setup steps, never an error).
 """
 import json
 import re
+from datetime import datetime, timezone
 
 import structlog
 
@@ -142,3 +143,33 @@ async def fetch_embed_status(shop_domain: str, token: str, gql=shopify_graphql_p
     except Exception as e:  # noqa: BLE001 — setup hint only, never an error
         logger.warning("theme_status_failed", shop=shop_domain, error=str(e)[:200])
         return {"embed": "unknown", "theme_name": None, "blocks": None}
+
+
+def remember(shop, result: dict) -> None:
+    """Store the latest live-theme check on the shop (gift_settings["theme_check"])
+    for the dashboard-wide warning. `theme_changed` / `blocks_lost`: the live
+    theme differs from the last check, and sections placed on the old one are
+    missing from it (app embeds and blocks are saved per theme)."""
+    if result.get("embed") == "unknown":
+        return
+    prev = (shop.gift_settings or {}).get("theme_check") or {}
+    same_theme = prev.get("theme_name") == result.get("theme_name")
+    switched = bool(prev.get("theme_name")) and not same_theme      # a different theme went live
+    had = any((prev.get("blocks") or {}).values())
+    has = any((result.get("blocks") or {}).values())
+    # Both flags stick across re-checks of the same theme until it's fixed.
+    theme_changed = switched or (same_theme and prev.get("theme_changed", False) and result["embed"] != "on")
+    blocks_lost = (switched and had and not has) or (same_theme and prev.get("blocks_lost", False) and not has)
+    check = {"embed": result["embed"], "theme_name": result.get("theme_name"), "blocks": result.get("blocks") or {},
+             "theme_changed": theme_changed, "blocks_lost": blocks_lost,
+             "checked_at": datetime.now(timezone.utc).isoformat()}
+    shop.gift_settings = {**(shop.gift_settings or {}), "theme_check": check}
+
+
+def warning(shop) -> dict | None:
+    """What the dashboard banner shows, or None when GiftSense is on in the live theme."""
+    check = (shop.gift_settings or {}).get("theme_check") or {}
+    if check.get("embed") not in ("off", "missing"):
+        return None
+    return {"theme_name": check.get("theme_name"), "theme_changed": bool(check.get("theme_changed")),
+            "blocks_lost": bool(check.get("blocks_lost"))}

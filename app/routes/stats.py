@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services import theme_status
 from app.ai_models import AI_TIERS, ai_tier_for, model_for_shop, model_label
 from app.config import CYCLE_DAYS, PLANS
 from app.plan_guard import effective_cycle_start
@@ -126,5 +127,7 @@ async def get_stats(
         "review_prompt_url": review_prompt_url,
         "access_until": access_until,
         "shop_domain": shop_record.shop_domain,
+        # GiftSense switched off in the live theme (e.g. after a theme change).
+        "theme_warning": theme_status.warning(shop_record),
         **trial_info,
     }

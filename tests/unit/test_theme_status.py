@@ -106,3 +106,42 @@ def test_other_apps_blocks_are_ignored():
 ])
 def test_page_labels(filename, label):
     assert page_label(filename) == label
+
+
+# ── Remembered checks → dashboard warning (theme changes) ────────────────────
+
+from tests.conftest import make_shop  # noqa: E402
+
+
+def result(embed, theme, finder=()):
+    return {"embed": embed, "theme_name": theme, "blocks": {"gift-finder": list(finder), "gift-options": []}}
+
+
+def test_no_warning_while_the_embed_is_on():
+    shop = make_shop()
+    ts.remember(shop, result("on", "Dawn", ["Home page"]))
+    assert ts.warning(shop) is None
+
+
+def test_switching_theme_warns_and_notes_lost_sections():
+    shop = make_shop()
+    ts.remember(shop, result("on", "Dawn", ["Home page"]))
+    ts.remember(shop, result("missing", "Sense"))
+    assert ts.warning(shop) == {"theme_name": "Sense", "theme_changed": True, "blocks_lost": True}
+    ts.remember(shop, result("missing", "Sense"))                  # re-checked, still not fixed
+    assert ts.warning(shop)["theme_changed"] is True and ts.warning(shop)["blocks_lost"] is True
+    ts.remember(shop, result("on", "Sense"))                       # merchant switched it on
+    assert ts.warning(shop) is None
+
+
+def test_never_turned_on_is_a_plain_warning():
+    shop = make_shop()
+    ts.remember(shop, result("missing", "Dawn"))
+    assert ts.warning(shop) == {"theme_name": "Dawn", "theme_changed": False, "blocks_lost": False}
+
+
+def test_unknown_checks_are_not_remembered():
+    shop = make_shop()
+    ts.remember(shop, result("on", "Dawn"))
+    ts.remember(shop, {"embed": "unknown", "theme_name": None, "blocks": None})
+    assert shop.gift_settings["theme_check"]["embed"] == "on"

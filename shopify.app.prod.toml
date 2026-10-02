@@ -21,7 +21,7 @@ api_version = "2026-07"
   # Declarative subscriptions are the SOLE source of truth (see dev toml).
   [[webhooks.subscriptions]]
   uri = "/webhooks"
-  topics = [ "app/uninstalled", "app_subscriptions/update", "products/create", "products/update", "products/delete", "orders/create", "bulk_operations/finish" ]
+  topics = [ "app/uninstalled", "app_subscriptions/update", "products/create", "products/update", "products/delete", "orders/create", "bulk_operations/finish", "themes/publish" ]
 
   [[webhooks.subscriptions]]
   compliance_topics = ["customers/data_request"]

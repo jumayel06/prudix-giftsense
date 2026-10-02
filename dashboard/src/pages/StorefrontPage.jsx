@@ -1,15 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Page, Layout, Card, BlockStack, InlineStack, Text, Button, Banner, Badge, List, SkeletonBodyText } from '@shopify/polaris'
 import { fetchJson } from '../utils/shopifyFetch'
-
-// Theme app extension handles (extensions/giftsense-theme/blocks/*.liquid).
-const EMBED_HANDLE = 'app-embed'
-const BLOCK_HANDLE = 'gift-finder'
-const OPTIONS_HANDLE = 'gift-options'
-
-function editorUrl(shop, params) {
-  return `https://${shop}/admin/themes/current/editor?${new URLSearchParams(params)}`
-}
+import { EMBED_HANDLE, BLOCK_HANDLE, OPTIONS_HANDLE, openThemeEditor } from '../utils/themeEditor'
 
 const EMBED_BADGE = {
   on: <Badge tone="success">On</Badge>,
@@ -67,7 +59,7 @@ export default function StorefrontPage() {
   const optionsPages = theme?.blocks?.[OPTIONS_HANDLE] || []
 
   // Theme editor lives outside the embedded app: open it in the top window.
-  const openEditor = params => window.open(editorUrl(shop, params), '_top')
+  const openEditor = params => openThemeEditor(shop, params)
 
   if (!shop) {
     return (

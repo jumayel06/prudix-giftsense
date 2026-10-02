@@ -1030,3 +1030,30 @@ class TestWebhookIdFallbackDeterministic:
             second = client.post("/webhooks", content=body, headers=headers).json()
         assert first.get("duplicate") is not True
         assert second.get("duplicate") is True
+
+
+# ── Topics: toml subscriptions ↔ handler branches ────────────────────────────
+
+def test_every_subscribed_topic_has_a_handler():
+    import re
+    import tomllib
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[2]
+    source = (root / "app/routes/webhooks.py").read_text()
+    for toml in ("shopify.app.dev.toml", "shopify.app.prod.toml"):
+        subs = tomllib.loads((root / toml).read_text())["webhooks"]["subscriptions"]
+        topics = {t for s in subs for t in s.get("topics", [])}
+        assert "themes/publish" in topics
+        for t in topics:
+            assert re.search(rf'"{re.escape(t)}"', source), f"{toml}: no handler for {t}"
+
+
+@pytest.mark.asyncio
+async def test_theme_publish_queues_a_theme_check(db_session, job_pool):
+    import json as _json
+    db_session.add(make_shop())
+    await db_session.commit()
+    body = _json.dumps({"id": 1, "name": "Sense", "role": "main"}).encode()
+    for client in _make_client(db_session):
+        assert client.post("/webhooks", content=body, headers=_headers(body, "themes/publish")).status_code == 200
+    assert job_pool.names() == ["check_theme"]

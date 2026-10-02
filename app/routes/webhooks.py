@@ -108,6 +108,10 @@ async def handle_webhook(
         await _handle_bulk_finished(shop_domain, payload, db)
     elif topic == "orders/create":
         await _handle_order_created(shop_domain, payload, db)
+    elif topic == "themes/publish":
+        # The new live theme starts without our embed/sections: re-check it.
+        # Deferred a little: a just-published theme can still be processing.
+        await enqueue("check_theme", shop_domain, _job_id=f"check-theme:{shop_domain}", _defer_by=15)
 
     return {"ok": True}
 

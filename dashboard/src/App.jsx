@@ -25,6 +25,7 @@ import GiftWrapPage from './pages/GiftWrapPage'
 import GiftOrdersPage from './pages/GiftOrdersPage'
 import { UPCOMING } from './utils/upcoming'
 import { navBadge } from './utils/planBadge'
+import ThemeWarningBanner from './components/ThemeWarningBanner'
 
 const APP_NAME = 'Prudix GiftSense'
 
@@ -234,6 +235,9 @@ function AppShell() {
         </div>
       )}
       <div className="prudix-app-body">
+        {stats?.theme_warning && planStatus !== 'pending' && (
+          <ThemeWarningBanner warning={stats.theme_warning} shop={stats.shop_domain} onNavigate={navigate} />
+        )}
         <div className="prudix-route-container">
           <Routes>
             <Route path="/" element={<HomePage stats={stats} />} />

@@ -21,6 +21,7 @@ from app.config import GRACE_PERIOD_DAYS, derive_tier_from_subscription_name
 from app.jobs import enqueue
 from app.purge import purge_shop_data
 from app.workers.orders import annotate_gift_order, sync_wrap
+from app.workers.theme import check_theme
 from app.workers.catalog import (
     catalog_analyze_shop, catalog_finish_bulk, catalog_start_sync, catalog_sync_product, kick_catalog_syncs,
     reconcile_catalogs,
@@ -340,6 +341,7 @@ class WorkerSettings:
         func(catalog_analyze_shop, timeout=3600, keep_result=0),
         func(annotate_gift_order, timeout=60),
         func(sync_wrap, timeout=120),
+        func(check_theme, timeout=60, keep_result=0),
     ]
 
     cron_jobs = [
