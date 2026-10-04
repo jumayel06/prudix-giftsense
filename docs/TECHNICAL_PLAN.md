@@ -125,7 +125,7 @@ The first app's Concierge is per-product Q&A. GiftSense's is catalog-wide recomm
 
 ### 4.2 Gift-profile enrichment (LLM, once per product version)
 
-Claude Haiku 4.5 gets the product facts and returns structured JSON (structured outputs, strict schema):
+The `catalog_analysis` slot's model (GPT-6 Luna, `app/ai_models.py`) gets the product facts and returns JSON (JSON mode, validated against fixed vocabularies):
 
 ```json
 {
@@ -142,7 +142,7 @@ Claude Haiku 4.5 gets the product facts and returns structured JSON (structured 
 
 - **Fixed vocabularies** for recipients, occasions, and vibes match the intake options exactly, so the tag overlap in §4.4 is exact matching rather than fuzzy.
 - **Bias guard:** the prompt forbids inferring recipients from gender stereotypes unless the product copy states it. Merchants can edit any profile in the dashboard (`merchant_overrides` wins over the LLM).
-- **Cost:** about 1.5k input / 250 output tokens, roughly $0.003 per product. Initial sync uses the **Message Batches API (50% off)**, so a 2,000-product store costs about $1.40 one-time. Real-time path for webhook updates.
+- **Cost:** about 1.5k input / 250 output tokens. On GPT-6 Luna (the `catalog_analysis` slot) that's ~$0.00014 per product, so a 2,000-product store costs about $0.29 one-time. Initial sync and webhook updates both use real-time calls: a batch API would save ~$0.07 per 1,000 products once, but batches can take up to 24h and would stall onboarding (decided 2026-10-04; revisit if the slot moves to a much pricier model).
 - `facts[]` is the only source the reason-writer in §4.5 may cite, which makes grounding checkable.
 
 ### 4.3 Embedding
@@ -179,7 +179,7 @@ Input: the intake `{recipient, occasion, budget_band, vibes[2–3], age_band?, f
 
 ### 4.7 Latency budget
 
-Target p95 < 4 s end to end: proxy overhead about 150 ms, query embedding about 100 ms, SQL about 20 ms, Haiku rerank 1.5–2.5 s. The widget shows **skeleton cards immediately**. (Optional later: return the vector-stage products first and stream the reasons in.)
+Target p95 < 4 s end to end: proxy overhead about 150 ms, query embedding about 100 ms, SQL about 20 ms, rerank on the shop's AI tier model 1.5–5 s. The widget shows a loading state with progress text, then the AI's picks. (Optional later: return the vector-stage products first and stream the reasons in.)
 
 ---
 
@@ -259,9 +259,9 @@ Two capture paths, both ending in a QR code on the card.
 
 **A. In the gift panel:** `MediaRecorder` in the browser. Voice up to 120 s; video (Pro) up to 60 s at 720p. Before recording, the shopper sees a consent line: "Anyone with the QR code or link can watch or listen to this." `POST /media/upload-url` returns an R2 presigned PUT (type allow-list, ≤ 30 MB, 10-minute expiry). The browser uploads directly, then `POST /media/confirm` returns a `media_token` stored on the gift group. Recordings never linked to an order are deleted after 7 days.
 
-**B. After checkout:** a **Thank-you page checkout UI extension** (all plans) links to `/r/{order_token}`, a mobile recorder page hosted by us. `order_token` is an HMAC over (shop, order id), valid until `ship_by` or 7 days. **No GiftSense branding in this extension** (App Store rule 5.6.3).
+**B. After checkout (deferred 2026-10-04, not in v1):** a **Thank-you page checkout UI extension** (all plans) links to `/r/{order_token}`, a mobile recorder page hosted by us. `order_token` is an HMAC over (shop, order id), valid until `ship_by` or 7 days. **No GiftSense branding in this extension** (App Store rule 5.6.3).
 
-**Delivery:** an unguessable `view_token` (128-bit) and a `segno` QR PNG in R2, both written to the gift's entry in the `giftsense.gifts` metafield. The recipient page `/m/{view_token}` is merchant-branded and `noindex`. **Retention:** deleted N days after `arrive_by` (default 90), on `customers/redact` for listed orders, and on shop purge. *Test early whether Safari plays Chrome-recorded webm; add an ffmpeg transcode job if not.*
+**Delivery:** an unguessable `view_token` (128-bit, separate from the cart `token`); its link (`message_url`) is written to the gift's entry in the `giftsense.gifts` metafield. The recipient page is served through the App Proxy at `https://{store}/apps/giftsense/m/{view_token}` as Liquid (`{% layout none %}`): the store's name, no GiftSense branding, `noindex`, playing from a 6-hour presigned R2 GET. The QR code is drawn at print time (`segno`, inline SVG on the gift card), so nothing extra is stored (built 2026-10-04). **Retention:** deleted N days after `arrive_by` (default 90), on `customers/redact` for listed orders, and on shop purge. *Test early whether Safari plays Chrome-recorded webm; add an ffmpeg transcode job if not.*
 
 ### 6.7 Printing (admin print action)
 
@@ -269,7 +269,10 @@ An Admin **order print action** (plus bulk print from the order list) renders:
 - **one gift card or tag per gift group**: label, note, QR, never prices (4×6 in, A6, small tag);
 - a **price-free gift packing slip** when `Gift receipt` is set. This replaces asking merchants to edit their packing-slip template (App Store rule 5.1.1: no manual code edits).
 
-### 6.8 Recipient's choice (Pro)
+### 6.8 Recipient's choice (deferred 2026-10-04: not in v1)
+
+**Decision:** moved to after launch, built only if apparel/shoe merchants ask for it. Most catalogs have no size or color to choose; it depends on the recipient acting within days; holds can't stop 3PL-fulfilled items; order edits drop line properties; and the price-free gift receipt already covers exchanges. `write_order_edits` was removed from the scopes. The design below is kept for when it comes back (the choice link would be created at add-to-cart and shown as a visible line property, since the Thank-you extension is deferred too).
+
 
 - The buyer ticks "Let them choose size or color" on an item. After checkout, the Thank-you extension shows a private link (`/c/{token}`) for the buyer to share. We send no emails.
 - The recipient sees the product without a price and picks a variant **at the same price**. The app edits the order (`orderEditBegin` → `orderEditAddVariant` + `orderEditSetQuantity 0` → `orderEditCommit`, scope `write_order_edits`), then releases our fulfillment hold.
@@ -282,6 +285,7 @@ An Admin **order print action** (plus bulk print from the order list) renders:
 - "Add to registry" on PDPs. A registry page is served through the App Proxy (Liquid response) with wanted/bought status. Purchases are tracked via a `_giftsense_registry` line property on `orders/create`.
 - Guests buying from a registry get the gift panel automatically. **There's no "ship to owner" address**: guests enter the address in Shopify checkout.
 - AI suggestions for the owner reuse the §4 pipeline, seeded from the registry's items. Each refresh uses generations like a gift search, and results are cached per registry per day.
+- **Built 2026-10-04:** one registry per customer per shop (created on the first add). Owner page `/apps/giftsense/registry`, guest page `/apps/giftsense/registry/{share_token}`, both Liquid rendered inside the theme layout; all shopper/merchant text HTML-escaped with `{`/`}` neutralized (Liquid injection). Guests' lines carry `_giftsense_registry = token:item_id` and a visible `Registry` property; `gift_orders.registry_id` / `registry_revenue` feed the dashboard's Registries page. No "gift panel automatically" for guests yet: they buy like any shopper.
 
 ## 7. Merchant dashboard (React + Polaris, same shell as Commerce)
 
@@ -300,7 +304,7 @@ An Admin **order print action** (plus bulk print from the order list) renders:
 
 Events are sent from `giftsense.js` via a batched `POST /events` beacon: `widget_open`, `intake_start`, `intake_complete`, `pick_view`, `pick_click`, `pick_atc`, `refine`, `panel_open`, `note_drafted`, `panel_submit`. Raw events are kept 90 days; a nightly rollup writes `analytics_daily`.
 
-Metrics shown: concierge sessions, **completion rate**, **concierge→order conversion** (sessions with an order carrying the same `sid`), attributed revenue, **note acceptance rate**, wrap/note/video **attach rate** on gift orders, top occasions and budgets, and "gift orders vs. all orders" (from an `orders/create` count). That's enough to show the app paying for itself, which is what the spec requires.
+Built 2026-10-04 (`app/services/analytics.py`): basic = last 30 days for all plans; full (Growth+) = 7/30/90 days with the previous period for comparison and the breakdowns below; the weekly email (Mondays 13:00 UTC, `app/workers/digest.py`) reuses it for 7 vs 7 days. Metrics shown: concierge sessions, **completion rate**, **concierge→order conversion** (sessions with an order carrying the same `sid`), attributed revenue, **note acceptance rate**, wrap/note/video **attach rate** on gift orders, top occasions and budgets, and "gift orders vs. all orders" (from an `orders/create` count). That's enough to show the app paying for itself, which is what the spec requires.
 
 ---
 
@@ -311,7 +315,7 @@ Metrics shown: concierge sessions, **completion rate**, **concierge→order conv
 | | Starter | Growth | Pro |
 |---|---|---|---|
 | Price (monthly) | $19 | $49 | $99 |
-| `features` | finder, catalog, placements, language, notes, gift groups, wrap, cards, gift receipt, basic analytics | + arrive-by, voice, full analytics + weekly email, hide badge | + video, recipient's choice, registries, priority support |
+| `features` | finder, catalog, placements, language, notes, gift groups, wrap, cards, gift receipt, basic analytics | + arrive-by, voice, full analytics + weekly email, hide badge | + video, registries, priority support |
 | `ai_tiers` | standard | + advanced | + premium |
 | `PLAN_DEFAULT_AI_TIER` | standard | advanced | premium |
 | `generation_limit` / month | 600 | 1,750 | 4,500 |
@@ -361,7 +365,7 @@ First month with the one-time catalog read at the product limit: 90.8% / 85.2% /
 ## 9. Shopify integration details
 
 **Scopes (keep minimal; every change forces re-auth):**
-`read_products, write_products` (catalog, wrap product) · `read_orders, write_orders` (order metafields and tags) · `write_order_edits` (recipient's choice) · `write_merchant_managed_fulfillment_orders` (arrive-by holds) · `read_themes` (detect whether the app embed is enabled, same as Commerce). `write_publications` (publish the hidden wrap product). **No customer scopes.** None of these is on the App Store's restricted-scope list (3.2.x), checked 2026-09-27.
+`read_products, write_products` (catalog, wrap product) · `read_orders, write_orders` (order metafields and tags) · `write_merchant_managed_fulfillment_orders` (arrive-by holds) · `read_themes` (detect whether the app embed is enabled, same as Commerce). `write_publications` (publish the hidden wrap product). **No customer scopes.** None of these is on the App Store's restricted-scope list (3.2.x), checked 2026-09-27.
 
 **Protected customer data:** subscribing to `orders/create` requires PCD **Level 1** approval (Commerce already went through this). We **never read or store** customer name, email, phone, or address, which keeps us out of Level 2. Registries store only `logged_in_customer_id`. Level 1 duties: data minimization, merchant disclosure, retention periods, encryption at rest and in transit.
 
@@ -461,7 +465,7 @@ The same harness runs every model in §8.2 (a model that misses the bar isn't of
 | 4 | Gift panel, gift groups, AI notes, `orders/create` → metafields/tags/`gift_orders`, print actions | Multi-gift order prints one card per group |
 | 5 | Wrap, arrive-by + holds, gift receipt slip, basic analytics | Hold placed and released on schedule |
 | 6 | Voice/video: recorder, R2, QR, recipient page, Thank-you extension | End-to-end video gift on iOS Safari and Chrome Android |
-| 7 | Recipient's choice | Order edited to the chosen variant before shipping |
+| 7 | ~~Recipient's choice~~ deferred (2026-10-04); voice/video finished instead | — |
 | 8 | Registries + AI suggestions | Guest purchase marks item bought |
 | 9 | Full analytics, weekly email, languages, Lighthouse pass, 5-theme QA | ≤ 10-point Lighthouse drop |
 | 10 | App Store readiness: review self-check, listing, demo store (storefront password in reviewer notes), screencast, submit | Submitted |
@@ -476,7 +480,7 @@ The same harness runs every model in §8.2 (a model that misses the bar isn't of
 4. **Plans:** $19 / $49 / $99, monthly only (revisable later), with Commerce-style model access and generations (§8). 7-day trial with per-plan trial generations; one trial per store.
 5. **Gift groups:** `direct` or `self` delivery mode (§6.2).
 6. **Media:** voice on Growth, video on Pro, stored in Cloudflare R2.
-7. **Review-driven rules:** Level 1 customer data only; wrap never pre-selected; unbranded Thank-you extension; gift receipt via our print action (no template edits); recipient's choice only for shop-currency orders; no fulfillment holds for 3PL items.
+7. **Review-driven rules:** Level 1 customer data only; wrap never pre-selected; unbranded Thank-you extension; gift receipt via our print action (no template edits); no fulfillment holds for 3PL items.
 
 ## 14. Items to verify early (spikes in weeks 1–3)
 

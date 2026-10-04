@@ -20,8 +20,10 @@ from sqlalchemy import delete, select
 from app.config import GRACE_PERIOD_DAYS, derive_tier_from_subscription_name
 from app.jobs import enqueue
 from app.purge import purge_shop_data
+from app.services import media
 from app.workers.orders import annotate_gift_order, release_due_holds, sync_wrap
 from app.workers.theme import check_theme
+from app.workers.digest import send_weekly_digests
 from app.workers.catalog import (
     catalog_analyze_shop, catalog_finish_bulk, catalog_start_sync, catalog_sync_product, kick_catalog_syncs,
     reconcile_catalogs,
@@ -155,6 +157,14 @@ async def purge_old_gift_events(ctx: dict) -> None:
         result = await db.execute(delete(GiftEvent).where(GiftEvent.created_at < cutoff))
         await db.commit()
     logger.info("purge_old_gift_events_complete", deleted=result.rowcount or 0)
+
+
+async def purge_expired_media(ctx: dict) -> None:
+    """Voice/video messages: unlinked after 7 days, linked ones 90 days after
+    delivery (app/services/media.py). Batched; leftovers go on the next run."""
+    async with AsyncSessionLocal() as db:
+        deleted = await media.purge_expired(db)
+    logger.info("purge_expired_media_complete", deleted=deleted)
 
 
 async def purge_uninstalled_shops(ctx: dict) -> None:
@@ -330,6 +340,9 @@ class WorkerSettings:
     job_timeout = 60
     max_tries = 3
     keep_result = 3600
+    # Heartbeat in Redis (arq:queue:health-check) every minute, so /admin/system
+    # can tell a live worker from a stopped one (ARQ's default is hourly).
+    health_check_interval = 60
 
     # Analyzing a catalog is many LLM + embedding calls: allow up to an hour.
     # Product jobs keep no result so a later update to the same product (same
@@ -354,6 +367,9 @@ class WorkerSettings:
         cron(reconcile_trial_conversions, minute=40),
         cron(purge_uninstalled_shops, hour=3, minute=0),
         cron(purge_old_gift_events, hour=3, minute=30),
+        cron(purge_expired_media, hour={3, 15}, minute=45, timeout=600),
+        # Weekly GiftSense email (Growth+), Mondays 13:00 UTC.
+        cron(send_weekly_digests, weekday=0, hour=13, minute=0, timeout=1800),
         # Arrive-by: release fulfillment holds on their ship-by day. Hourly at :05.
         cron(release_due_holds, minute=5, timeout=600),
         # First catalog sync for newly active shops + missed bulk_operations/finish.

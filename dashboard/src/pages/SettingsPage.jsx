@@ -155,6 +155,7 @@ export default function SettingsPage() {
             {hasWeeklyEmail ? (
               <Checkbox
                 label="Send me the weekly sales email"
+                helpText="Mondays: gift finder sessions, gift orders and revenue from the last 7 days, compared with the week before."
                 checked={digestOptIn}
                 onChange={setDigestOptIn}
               />

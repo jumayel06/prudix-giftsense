@@ -6,6 +6,9 @@
                                   phase "ai" (metered, app/services/metering.py)
     POST /api/storefront/note/draft  metered AI gift-note draft (3 rewrites per gift)
     POST /api/storefront/events      batched widget events (analytics)
+    POST /api/storefront/media/upload-url  presigned R2 PUT for a voice/video message
+    POST /api/storefront/media/confirm     check the upload landed; returns its token
+    GET  /api/storefront/m/{view_token}    the recipient's page (QR on the gift card)
 
 Trust: Shopify's proxy signature (app/services/proxy_auth.py); the shop is
 the signed `shop` param, never anything in the body. Shoppers always get
@@ -15,11 +18,13 @@ Abuse limits: 10 searches/hour per widget session and 30 per shopper-IP hash
 (app/services/rate_limit.py, 429), plus metering's per-shop hourly cap
 (template picks, never an error).
 """
+import html
+import re
 import uuid
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -29,7 +34,7 @@ from app.ai_models import model_for_shop
 from app.config import PLANS
 from app.llm import chat, moderate
 from app.plan_guard import may_generate
-from app.services import catalog_index, delivery, metering, rate_limit, wrap
+from app.services import catalog_index, delivery, media, metering, rate_limit, registry, wrap
 from app.services.gift_settings import NOTE_TONES, Tone, note_settings
 from app.services.gifting import vocab
 from app.services.gifting.brief import GiftBrief, intake_options
@@ -82,6 +87,11 @@ async def widget_config(shop: Shop = Depends(storefront_shop)):
         "wrap": wrap.storefront_styles(shop) if "gift_wrap" in features else [],
         # Arrive-by date picker (Growth+): the pickable range in store time.
         "delivery": _delivery_window(shop) if "arrive_by" in features else None,
+        # Voice (Growth+) / video (Pro) messages; empty until R2 is configured.
+        "media": {"kinds": media.enabled_kinds(shop),
+                  "max_secs": {k: v[1] for k, v in media.KINDS.items()}},
+        # "Add to registry" on product pages (Pro).
+        "registry": registry.available(shop),
     })
 
 
@@ -104,7 +114,7 @@ async def _session(db: AsyncSession, shop: Shop, sid: uuid.UUID) -> GiftSession 
 
 async def _record_session(db: AsyncSession, shop: Shop, body: "SearchRequest", pick_ids: list[str]) -> None:
     """Upsert the widget session's last brief and final picks (AI phase only)."""
-    intake = body.model_dump(mode="json", exclude={"sid", "phase", "exclude_ids", "refine"})
+    intake = body.model_dump(mode="json", exclude={"sid", "phase", "exclude_ids", "refine", "locale"})
     session = await _session(db, shop, body.sid)
     if session is None:
         session = GiftSession(shop_id=shop.id, sid=body.sid, searches=0, refines=0)
@@ -157,7 +167,7 @@ async def gift_search(body: SearchRequest, request: Request, shop: Shop = Depend
         "picks": [{
             "product_id": p.product.product_id, "title": p.product.title, "url": p.product.url,
             "image_url": p.product.image_url, "price_min": p.product.price_min, "price_max": p.product.price_max,
-            "reason": p.reason,
+            "reason": p.reason, "wrap": wrap.wrappable(p.product.tags),
         } for p in picks],
     })
 
@@ -177,6 +187,13 @@ class NoteDraftRequest(BaseModel):
     tone: Optional[Tone] = None
     # Recipient's first name as typed by the shopper: letters, spaces, . ' - only.
     name: str = Field(default="", max_length=40, pattern=r"^[\w .'\-]*$")
+    # Storefront language: the note is written in it.
+    locale: Optional[str] = None
+
+    @field_validator("locale", mode="before")
+    @classmethod
+    def _locale(cls, v):
+        return GiftBrief._locale(v)
 
     @field_validator("recipient")
     @classmethod
@@ -225,7 +242,7 @@ async def note_draft(body: NoteDraftRequest, request: Request, shop: Shop = Depe
         recipient=body.recipient or intake.get("recipient"), occasion=body.occasion or intake.get("occasion"),
         tone=tone, max_chars=settings["max_chars"], banned_words=settings["banned_words"], name=body.name.strip(),
         product_title=product.title if product else "", product_pitch=profile.get("gift_pitch", ""),
-        product_facts=profile.get("facts", []),
+        product_facts=profile.get("facts", []), locale=body.locale,
     )
 
     if session is None:
@@ -245,7 +262,7 @@ async def note_draft(body: NoteDraftRequest, request: Request, shop: Shop = Depe
 # ── Analytics beacon ─────────────────────────────────────────────────────────
 
 EVENT_TYPES = {"widget_open", "intake_complete", "pick_click", "pick_atc", "refine",
-               "panel_open", "note_drafted", "panel_submit", "wrap_added"}
+               "panel_open", "note_drafted", "panel_submit", "wrap_added", "message_added"}
 EVENTS_PER_SID_PER_HOUR = 300
 
 
@@ -270,3 +287,99 @@ async def events(body: EventBatch, shop: Shop = Depends(storefront_shop), db: As
     else:
         keep = []
     return _no_store({"stored": len(keep)})
+
+
+# ── Voice and video messages ────────────────────────────────────────────────
+
+MEDIA_UPLOADS_PER_SID_PER_HOUR = 10
+MEDIA_UPLOADS_PER_IP_PER_HOUR = 30
+
+
+class MediaUploadRequest(BaseModel):
+    sid: uuid.UUID
+    kind: Literal["voice", "video"]
+    mime: str = Field(max_length=100)
+    size: int = Field(ge=1)
+    duration_s: int = Field(ge=1)
+
+
+class MediaConfirmRequest(BaseModel):
+    sid: uuid.UUID
+    token: str = Field(min_length=10, max_length=40, pattern=r"^[A-Za-z0-9_-]+$")
+
+
+@router.post("/media/upload-url")
+async def media_upload_url(body: MediaUploadRequest, request: Request, shop: Shop = Depends(storefront_shop),
+                           db: AsyncSession = Depends(get_db)):
+    ip = rate_limit.shopper_ip(request.headers.get("x-forwarded-for"))
+    if not await rate_limit.hit(f"media:sid:{shop.id}:{body.sid}", MEDIA_UPLOADS_PER_SID_PER_HOUR, rate_limit.HOUR) or (
+            ip and not await rate_limit.hit(f"media:ip:{shop.id}:{rate_limit.ip_hash(ip)}",
+                                            MEDIA_UPLOADS_PER_IP_PER_HOUR, rate_limit.HOUR)):
+        raise HTTPException(429, SLOW_DOWN)
+    try:
+        ticket = await media.issue_upload(db, shop, body.sid, body.kind, body.mime, body.size, body.duration_s)
+    except media.MediaError as e:
+        raise HTTPException(422, str(e))
+    return _no_store({"token": ticket.token, "upload_url": ticket.upload_url, "headers": ticket.headers})
+
+
+@router.post("/media/confirm")
+async def media_confirm(body: MediaConfirmRequest, shop: Shop = Depends(storefront_shop),
+                        db: AsyncSession = Depends(get_db)):
+    try:
+        row = await media.confirm_upload(db, shop, body.sid, body.token)
+    except media.MediaError as e:
+        raise HTTPException(422, str(e))
+    return _no_store({"token": row.token, "kind": row.kind})
+
+
+# ── Recipient page (/apps/giftsense/m/{view_token}) ──────────────────────────
+# Rendered by Shopify as Liquid on the store's own domain: the store's name,
+# no GiftSense branding, noindex, and only the one recording. The file plays
+# from a short-lived presigned R2 URL; nothing else about the order is shown.
+
+_PAGE = """{%% layout none %%}<!doctype html>
+<html lang="{{ request.locale.iso_code | default: 'en' }}"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer"><title>%(title)s · {{ shop.name | escape }}</title>
+<style>
+:root { color-scheme: light dark; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
+       font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f5f2; color: #1f2937; }
+@media (prefers-color-scheme: dark) { body { background: #16181d; color: #e5e7eb; } }
+main { width: 100%%; max-width: 560px; text-align: center; display: grid; gap: 16px; }
+h1 { font-size: 22px; margin: 0; } p { margin: 0; opacity: .75; }
+video, audio { width: 100%%; border-radius: 12px; } video { background: #000; max-height: 70vh; }
+a { color: inherit; }
+</style></head><body><main>
+<p>{{ shop.name | escape }}</p>
+%(body)s
+</main></body></html>"""
+
+_GONE_PAGE = _PAGE % {"title": "Message unavailable", "body": (
+    "<h1>This message isn't available</h1><p>It may have expired. Messages are kept for a limited time "
+    "after the gift arrives.</p>")}
+
+
+def _liquid(page: str, status: int = 200) -> HTMLResponse:
+    return HTMLResponse(page, status_code=status, media_type="application/liquid",
+                        headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow"})
+
+
+@router.get("/m/{view_token}")
+async def recipient_page(view_token: str, shop: Shop = Depends(storefront_shop), db: AsyncSession = Depends(get_db)):
+    if not re.fullmatch(r"[A-Za-z0-9_-]{16,40}", view_token) or not media.configured():
+        return _liquid(_GONE_PAGE, 404)
+    row = await media.for_viewing(db, shop.id, view_token)
+    if row is None:
+        return _liquid(_GONE_PAGE, 404)
+    src = html.escape(media.playback_url(row), quote=True)
+    if row.kind == "video":
+        player = f'<video controls playsinline preload="metadata" src="{src}"></video>'
+        heading = "Someone sent you a video message"
+    else:
+        player = f'<audio controls preload="metadata" src="{src}"></audio>'
+        heading = "Someone sent you a voice message"
+    return _liquid(_PAGE % {"title": heading, "body": (
+        f"<h1>{heading} 🎁</h1>{player}"
+        f'<p><a href="{src}" download>Can\'t play it? Download the message</a></p>')})

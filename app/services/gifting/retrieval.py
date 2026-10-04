@@ -35,6 +35,7 @@ class Intake:
     age_band: str | None = None
     free_text: str = ""
     exclude_ids: list[str] = field(default_factory=list)
+    locale: str | None = None          # storefront language: reasons are written in it
 
 
 @dataclass

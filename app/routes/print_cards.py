@@ -3,7 +3,8 @@
 The printable page behind the admin Print actions (extensions/giftsense-print,
 order page and orders-list bulk print):
   cards   one card per gift group ("For Mom", her note, her items) in "I'll give
-          it to them" orders, or one card with the order's gift note otherwise
+          it to them" orders, or one card with the order's gift note otherwise;
+          a QR code to the recipient page when the gift has a voice/video message
   receipt a price-free gift receipt per order (plan §6.7: replaces editing the
           packing-slip template); gift items grouped by recipient, no prices
 
@@ -23,7 +24,8 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.gift_orders import parse_gift_order
+from app.services import media
+from app.services.gift_orders import message_tokens, parse_gift_order
 from core.config import settings
 from core.db.models import Shop
 from core.db.session import get_db
@@ -130,11 +132,20 @@ def _receipt_lines(order: dict, gift_id: str | None) -> list[tuple[str, str, int
     return out
 
 
-def _card(heading: str, note: str | None, items: list[str], shop_name: str) -> str:
+def _qr(message: tuple[str, str] | None) -> str:
+    if not message:
+        return ""
+    url, kind = message
+    verb = "watch" if kind == "video" else "listen to"
+    return f'<div class="qr">{media.qr_svg(url)}<p>Scan to {verb} your message</p></div>'
+
+
+def _card(heading: str, note: str | None, items: list[str], shop_name: str,
+          message: tuple[str, str] | None = None) -> str:
     esc = html.escape
     note_html = f'<p class="note">{esc(note)}</p>' if note else '<p class="note empty">&nbsp;</p>'
     items_html = ("<ul class=\"items\">" + "".join(f"<li>{esc(i)}</li>" for i in items) + "</ul>") if items else ""
-    return (f'<section class="card"><p class="for">{esc(heading)}</p>{note_html}{items_html}'
+    return (f'<section class="card"><p class="for">{esc(heading)}</p>{note_html}{_qr(message)}{items_html}'
             f'<p class="from">{esc(shop_name)}</p></section>')
 
 
@@ -150,6 +161,8 @@ body { margin: 0; font-family: Georgia, "Times New Roman", serif; color: #1f2937
 .note { font-size: 18pt; line-height: 1.5; font-style: italic; margin: 0 0 .3in; white-space: pre-wrap; }
 .items { list-style: none; padding: 0; margin: 0 0 .3in; font-size: 10pt; color: #6b7280; }
 .from { font-size: 10pt; color: #9ca3af; margin: 0; }
+.qr { margin: 0 auto .3in; } .qr svg { width: 1.1in; height: 1.1in; display: block; margin: 0 auto .06in; }
+.qr p { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 9pt; color: #6b7280; margin: 0; }
 .receipt { page: receipt; page-break-after: always; break-after: page; color: #1f2937;
            font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 11pt; }
 .receipt:last-child { page-break-after: auto; break-after: auto; }
@@ -175,12 +188,13 @@ body { margin: 0; font-family: Georgia, "Times New Roman", serif; color: #1f2937
 """
 
 
-def _cards(order: dict, parsed, shop_name: str) -> list[str]:
+def _cards(order: dict, parsed, shop_name: str, messages: dict[str, tuple[str, str]]) -> list[str]:
     items = _items_by_group(order)
     if parsed.groups:
         return [_card(f"For {g['label']}" if g["label"] else "A gift for you", g.get("note"),
-                      items.get(g["id"], []), shop_name) for g in parsed.groups]
-    return [_card("A gift for you", parsed.note, [], shop_name)]
+                      items.get(g["id"], []), shop_name, messages.get(g.get("message") or ""))
+                for g in parsed.groups]
+    return [_card("A gift for you", parsed.note, [], shop_name, messages.get(parsed.message or ""))]
 
 
 def _items_table(rows: list[tuple[str, str, int]]) -> str:
@@ -223,7 +237,9 @@ def _receipt(order: dict, parsed, store: StoreInfo) -> str:
             f'<p class="r-foot">This gift receipt does not show prices.</p></section>')
 
 
-def render_documents(orders: list[dict], store: StoreInfo | str, docs: set[str]) -> str:
+def render_documents(orders: list[dict], store: StoreInfo | str, docs: set[str],
+                     messages: dict[str, tuple[str, str]] | None = None) -> str:
+    """`messages`: {cart message token: (recipient page url, kind)}."""
     store = store if isinstance(store, StoreInfo) else StoreInfo(name=store)
     shop_name = store.name
     esc = html.escape
@@ -235,7 +251,7 @@ def render_documents(orders: list[dict], store: StoreInfo | str, docs: set[str])
         if parsed is None:
             continue
         if "cards" in docs:
-            parts.extend(_cards(order, parsed, shop_name))
+            parts.extend(_cards(order, parsed, shop_name, messages or {}))
         if "receipt" in docs:
             parts.append(_receipt(order, parsed, store))
     body = "".join(parts) or (f'<p class="empty-page">{esc(", ".join(n for n in names if n) or "This order")} has no '
@@ -264,6 +280,11 @@ async def print_gifts(orderIds: str = Query(..., max_length=MAX_ORDERS * 40),  #
     s = data.get("shop") or {}
     store = StoreInfo(name=s.get("name") or shop.shop_domain, host=(s.get("primaryDomain") or {}).get("host") or "",
                       email=s.get("contactEmail") or "", timezone=shop.store_timezone or "UTC")
-    page = render_documents(orders, store, wanted)
+    messages = {}
+    if "cards" in wanted:
+        tokens = [t for o in orders if (p := parse_gift_order(_as_webhook_shape(o))) for t in message_tokens(p)]
+        found = await media.messages_for(db, shop.id, tokens)
+        messages = {t: (media.view_url(store.host or shop.shop_domain, m.view_token), m.kind) for t, m in found.items()}
+    page = render_documents(orders, store, wanted, messages)
     return HTMLResponse(page, headers={"Access-Control-Allow-Origin": ADMIN_ORIGIN, "Vary": "Origin",
                                        "Cache-Control": "no-store"})

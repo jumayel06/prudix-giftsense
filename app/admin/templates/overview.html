@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Overview · GiftSense admin{% endblock %}
+{% block content %}
+<h1 class="page-title">Overview</h1>
+<p class="page-subtitle">Live from the database. "This month" is the calendar month in UTC.</p>
+<div class="grid grid-4">
+  <div class="card card-brand"><div class="card-title">Monthly revenue</div>
+    <div class="kpi-value brand">${{ "%.0f"|format(k.mrr) }}</div><div class="kpi-sub">Paying shops × plan price</div></div>
+  <div class="card card-indigo"><div class="card-title">AI cost this month</div>
+    <div class="kpi-value indigo mono">${{ "%.2f"|format(k.ai_cost_mtd) }}</div><div class="kpi-sub">+ ${{ "%.0f"|format(k.infra) }} hosting</div></div>
+  <div class="card {% if k.profit < 0 %}card-rose{% else %}card-emerald{% endif %}"><div class="card-title">Profit this month</div>
+    <div class="kpi-value mono">${{ "%.0f"|format(k.profit) }}</div><div class="kpi-sub">Revenue − AI − hosting</div></div>
+  <div class="card {% if k.margin_pct is not none and k.margin_pct < 80 %}card-rose{% else %}card-emerald{% endif %}"><div class="card-title">Margin</div>
+    <div class="kpi-value mono">{% if k.margin_pct is none %}—{% else %}{{ "%.0f"|format(k.margin_pct) }}%{% endif %}</div><div class="kpi-sub">Target ≥ 80%</div></div>
+</div>
+<div class="section"><h2>Shops</h2>
+<div class="grid grid-4">
+  <div class="card card-sky"><div class="card-title">Ever installed</div><div class="kpi-value">{{ k.total_shops }}</div><div class="kpi-sub">{{ k.installs_7d }} in the last 7 days</div></div>
+  <div class="card"><div class="card-title">Paying</div><div class="kpi-value">{{ k.by_status.get('active', 0) }}</div><div class="kpi-sub">{{ k.by_status.get('trial_active', 0) }} on trial</div></div>
+  <div class="card"><div class="card-title">By plan (live)</div><div class="kpi-sub">{% for t in ('starter','growth','pro') %}{{ t }} <strong>{{ k.by_plan.get(t, 0) }}</strong>{% if not loop.last %} · {% endif %}{% endfor %}</div></div>
+  <div class="card"><div class="card-title">Gone</div><div class="kpi-value">{{ k.by_status.get('uninstalled', 0) + k.by_status.get('purged', 0) }}</div><div class="kpi-sub">uninstalled or purged</div></div>
+</div></div>
+<div class="section"><h2>Activity</h2>
+<div class="grid grid-4">
+  <div class="card"><div class="card-title">AI generations, 24 h</div><div class="kpi-value mono">{{ k.generations_24h }}</div></div>
+  <div class="card"><div class="card-title">Gift orders, 30 days</div><div class="kpi-value mono">{{ k.gift_orders_30d }}</div></div>
+  <div class="card"><div class="card-title">Registries / messages</div><div class="kpi-value mono">{{ k.registries }} / {{ k.messages }}</div></div>
+  <div class="card {% if k.open_tickets %}card-rose{% endif %}"><div class="card-title">Open support tickets</div><div class="kpi-value"><a href="/admin/support">{{ k.open_tickets }}</a></div></div>
+</div></div>
+{% endblock %}

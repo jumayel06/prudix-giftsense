@@ -129,8 +129,19 @@ async def test_review_prompt_shown_exactly_once(db_session, monkeypatch):
     await db_session.commit()
     await add_usage(db_session, shop, generations=2)
 
+    # Other screens' /api/stats calls (App shell, Plans) don't consume it…
     first = _get(db_session)
     second = _get(db_session)
-    assert first["show_review_prompt"] is True
+    assert first["show_review_prompt"] is True and second["show_review_prompt"] is True
     assert "apps.shopify.com/prudix-giftsense" in first["review_prompt_url"]
-    assert second["show_review_prompt"] is False
+    await db_session.refresh(shop)
+    assert shop.review_prompt_shown is False
+
+    # …only Home reporting the banner as seen does, exactly once.
+    from app.routes.stats import mark_review_prompt_seen
+    assert await mark_review_prompt_seen(shop, db_session) == {"ok": True, "first": True}
+    assert await mark_review_prompt_seen(shop, db_session) == {"ok": True, "first": False}
+    await db_session.refresh(shop)
+    assert shop.review_prompt_shown is True
+    after = _get(db_session)
+    assert after["show_review_prompt"] is False and after["review_prompt_url"] is None

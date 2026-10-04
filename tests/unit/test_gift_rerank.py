@@ -53,7 +53,7 @@ async def test_invented_and_duplicate_products_are_dropped_and_topped_up():
         {"product_id": "a", "fact": "soy wax", "reason": "Lavender scent to unwind."},
         {"product_id": "a", "fact": "soy wax", "reason": "Duplicate."},
     ]})
-    result = await rerank(INTAKE, CANDS, model="claude-haiku-4-5", chat_fn=chat)
+    result = await rerank(INTAKE, CANDS, model="gpt-6-luna", chat_fn=chat)
     ids = [p.product.product_id for p in result.picks]
     assert "zzz" not in ids and ids.count("a") == 1
     assert len(ids) >= 3                       # topped up from the shortlist
@@ -64,7 +64,7 @@ async def test_invented_and_duplicate_products_are_dropped_and_topped_up():
 @pytest.mark.asyncio
 async def test_llm_failure_returns_template_picks():
     chat = AsyncMock(side_effect=RuntimeError("overloaded"))
-    result = await rerank(INTAKE, CANDS, model="claude-haiku-4-5", chat_fn=chat)
+    result = await rerank(INTAKE, CANDS, model="gpt-6-luna", chat_fn=chat)
     assert result.used_fallback is True
     assert [p.product.product_id for p in result.picks] == ["a", "b", "c", "d", "e"]
     assert all(p.source == "template" and p.reason for p in result.picks)
@@ -72,14 +72,14 @@ async def test_llm_failure_returns_template_picks():
 
 @pytest.mark.asyncio
 async def test_unparseable_output_returns_template_picks():
-    result = await rerank(INTAKE, CANDS, model="claude-haiku-4-5", chat_fn=llm("sorry, I can't"))
+    result = await rerank(INTAKE, CANDS, model="gpt-6-luna", chat_fn=llm("sorry, I can't"))
     assert result.used_fallback is True and len(result.picks) == 5
 
 
 @pytest.mark.asyncio
 async def test_no_llm_call_when_generation_budget_disallows():
     chat = llm({"picks": []})
-    result = await rerank(INTAKE, CANDS, model="claude-haiku-4-5", chat_fn=chat, use_llm=False)
+    result = await rerank(INTAKE, CANDS, model="gpt-6-luna", chat_fn=chat, use_llm=False)
     chat.assert_not_awaited()
     assert result.used_fallback is True and len(result.picks) == 5
 
@@ -87,7 +87,7 @@ async def test_no_llm_call_when_generation_budget_disallows():
 @pytest.mark.asyncio
 async def test_empty_shortlist_returns_no_picks_without_calling_llm():
     chat = llm({"picks": []})
-    result = await rerank(INTAKE, [], model="claude-haiku-4-5", chat_fn=chat)
+    result = await rerank(INTAKE, [], model="gpt-6-luna", chat_fn=chat)
     chat.assert_not_awaited()
     assert result.picks == []
 
@@ -117,7 +117,7 @@ def test_prompt_tells_model_to_use_only_given_facts():
 @pytest.mark.asyncio
 async def test_rerank_uses_a_short_timeout_for_shoppers():
     chat = llm({"picks": []})
-    await rerank(INTAKE, CANDS, model="claude-haiku-4-5", chat_fn=chat)
+    await rerank(INTAKE, CANDS, model="gpt-6-luna", chat_fn=chat)
     from app.services.gifting.rerank import RERANK_TIMEOUT_SECS
     assert chat.await_args.kwargs["timeout"] == RERANK_TIMEOUT_SECS <= 10
 
@@ -141,7 +141,7 @@ async def test_reason_that_borrows_the_shoppers_note_unsupported_gets_a_template
         {"product_id": "r", "fact": "compression fit", "reason": "Compression socks built for marathon training recovery."},
         {"product_id": "b", "fact": "soy wax", "reason": "A plush robe for slow mornings."},
     ]})
-    result = await rerank(intake, [CANDS[0], run_cand, CANDS[1]], model="claude-haiku-4-5", chat_fn=chat)
+    result = await rerank(intake, [CANDS[0], run_cand, CANDS[1]], model="gpt-6-luna", chat_fn=chat)
     by_id = {p.product.product_id: p for p in result.picks}
     assert by_id["a"].source == "template" and "marathon" not in by_id["a"].reason
     assert by_id["r"].source == "ai" and by_id["b"].source == "ai"
@@ -172,7 +172,7 @@ async def test_reason_must_rest_on_a_fact_from_the_listing():
         {"product_id": "b", "fact": "hand-painted", "reason": "A hand-painted robe she'll treasure."},
         {"product_id": "c", "reason": "A tea sampler for quiet afternoons."},
     ]})
-    result = await rerank(INTAKE, CANDS, model="claude-haiku-4-5", chat_fn=chat)
+    result = await rerank(INTAKE, CANDS, model="gpt-6-luna", chat_fn=chat)
     assert [(p.product.product_id, p.source) for p in result.picks] == [("a", "ai"), ("b", "template"), ("c", "template")]
 
 

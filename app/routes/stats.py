@@ -69,24 +69,16 @@ async def get_stats(
             "trial_plan_name": plan["name"],
         }
 
-    # One-time App Store review prompt after the first AI use. Gated on the
-    # listing slug so dev/staging never burn the per-shop flag on a broken link.
-    # Atomic UPDATE … WHERE review_prompt_shown = false so two concurrent loads
-    # can't both show it.
-    show_review_prompt = False
-    review_prompt_url = None
+    # One-time App Store review prompt after the first AI use, until Home
+    # reports it was shown (POST /api/review-prompt/seen). /api/stats only
+    # REPORTS eligibility: several screens call it per load (App shell, Home,
+    # Plans), and Commerce found (prod 2026-10-03) that flipping the flag here
+    # let a screen that never renders the banner consume it. Gated on the
+    # listing slug so dev/staging never offer a broken link.
     listing_slug = settings.app_store_listing_slug.strip()
-    if listing_slug and total_used >= 1 and not shop_record.review_prompt_shown:
-        flip = await db.execute(
-            update(Shop)
-            .where(Shop.id == shop_record.id, Shop.review_prompt_shown.is_(False))
-            .values(review_prompt_shown=True)
-        )
-        await db.commit()
-        if flip.rowcount == 1:
-            shop_record.review_prompt_shown = True
-            show_review_prompt = True
-            review_prompt_url = f"https://apps.shopify.com/{listing_slug}#modal-show=ReviewListingModal"
+    show_review_prompt = bool(listing_slug) and total_used >= 1 and not shop_record.review_prompt_shown
+    review_prompt_url = (f"https://apps.shopify.com/{listing_slug}#modal-show=ReviewListingModal"
+                         if show_review_prompt else None)
 
     # Cancelled shops: the date access actually ends (end of the paid month,
     # then the 7-day read-only grace).
@@ -131,3 +123,19 @@ async def get_stats(
         "theme_warning": theme_status.warning(shop_record),
         **trial_info,
     }
+
+
+@router.post("/api/review-prompt/seen")
+async def mark_review_prompt_seen(
+    shop_record: Shop = Depends(get_current_shop),
+    db: AsyncSession = Depends(get_db),
+):
+    """Home calls this once the review banner is on screen, so it shows once
+    per shop. Atomic UPDATE … WHERE review_prompt_shown = false: two tabs
+    reporting at once still flip it exactly once (ported from Commerce)."""
+    flip = await db.execute(
+        update(Shop).where(Shop.id == shop_record.id, Shop.review_prompt_shown.is_(False))
+        .values(review_prompt_shown=True)
+    )
+    await db.commit()
+    return {"ok": True, "first": flip.rowcount == 1}

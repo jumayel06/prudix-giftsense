@@ -11,10 +11,14 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.routes import analytics, auth, billing, catalog, gift_orders, onboarding, print_cards, storefront, theme, webhooks
+from app.routes import (
+    analytics, auth, billing, catalog, gift_orders, home, messages, onboarding, print_cards, registries_admin, registry,
+    qr, storefront, support, theme, webhooks,
+)
 from app.routes import settings as settings_routes
 from app.routes import stats
 from app.admin.auth import require_admin
+from app.admin.router import router as admin_router
 from core.config import settings
 
 # ── Logging configuration ────────────────────────────────────────────────────
@@ -187,6 +191,13 @@ app.include_router(onboarding.router)
 app.include_router(print_cards.router)
 app.include_router(analytics.router)
 app.include_router(gift_orders.router)
+app.include_router(messages.router)
+app.include_router(home.router)
+app.include_router(registry.router)
+app.include_router(registries_admin.router)
+app.include_router(support.router)
+app.include_router(qr.router)
+app.include_router(admin_router)
 app.include_router(settings_routes.router)
 app.include_router(stats.router)
 app.include_router(webhooks.router)
@@ -243,7 +254,26 @@ async def health():
 _DIST = os.path.join(os.path.dirname(__file__), "..", "dashboard", "dist")
 _INDEX = os.path.join(_DIST, "index.html")
 
-_API_PREFIXES = ("/api/", "/auth", "/admin", "/billing", "/webhooks", "/health", "/debug", "/docs", "/assets")
+_API_PREFIXES = ("/api/", "/auth", "/admin", "/billing", "/webhooks", "/health", "/debug", "/docs", "/assets", "/qr/",
+                 "/print/")
+
+# A page load from Shopify Admin always carries at least one of these (the
+# embedded iframe URL is `/?embedded=1&host=…&shop=…&id_token=…`; OAuth / install
+# links carry `shop` + `hmac`). A bare visit to giftsense.prudix.app has none:
+# there's nothing to show outside Admin (every /api call needs a session token),
+# so send the visitor to the App Store listing instead of an empty shell.
+# Ported from Prudix Commerce (94a55ea).
+_SHOPIFY_CONTEXT_PARAMS = ("shop", "host", "embedded", "id_token", "hmac")
+
+
+def _has_shopify_context(request: Request) -> bool:
+    return any(k in request.query_params for k in _SHOPIFY_CONTEXT_PARAMS)
+
+
+def _listing_redirect() -> RedirectResponse:
+    slug = settings.app_store_listing_slug.strip()
+    return RedirectResponse(f"https://apps.shopify.com/{slug}" if slug else "https://prudix.app", status_code=302)
+
 
 if os.path.isdir(_DIST):
     app.mount("/assets", StaticFiles(directory=os.path.join(_DIST, "assets")), name="assets")
@@ -258,7 +288,9 @@ if os.path.isdir(_DIST):
         file_path = os.path.join(_DIST, path.lstrip("/"))
         if os.path.isfile(file_path):
             return FileResponse(file_path)
-        # All React Router paths → SPA entry point
+        # All React Router paths → SPA entry point (only inside Shopify)
+        if request.method == "GET" and not _has_shopify_context(request):
+            return _listing_redirect()
         return FileResponse(_INDEX)
 
     @app.get("/")
@@ -266,6 +298,8 @@ if os.path.isdir(_DIST):
         params = dict(request.query_params)
         if "shop" in params and not params.get("embedded"):
             return RedirectResponse(f"/auth?{request.url.query}")
+        if not _has_shopify_context(request):
+            return _listing_redirect()
         return FileResponse(_INDEX)
 else:
     @app.get("/")

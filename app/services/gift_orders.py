@@ -22,6 +22,7 @@ logger = structlog.get_logger()
 
 METAFIELD_NAMESPACE = "$app:giftsense"
 METAFIELD_KEY = "gifts"
+PACKING_SLIP_NAMESPACE = "giftsense"
 ORDER_TAG = "GiftSense"
 MAX_GROUPS = 20
 MAX_LABEL = 40
@@ -45,6 +46,9 @@ class ParsedGiftOrder:
     arrive_by: str | None = None
     gift_receipt: bool = False
     wrap: str | None = None                # direct-mode wrap style
+    card: str | None = None                # direct-mode greeting card
+    message: str | None = None             # direct-mode voice/video token (gift_media)
+    registry_lines: list = field(default_factory=list)   # [(_giftsense_registry value, qty, revenue)]
 
 
 def _pairs(items) -> dict:
@@ -83,6 +87,7 @@ def _groups(raw: str | None) -> list[dict]:
             "label": str(g.get("label", ""))[:MAX_LABEL],
             "note": str(g.get("note", ""))[:MAX_NOTE] or None,
             "wrap": str(g.get("wrap", ""))[:40] or None,
+            "card": str(g.get("card", ""))[:40] or None,
             "message": str(g.get("message", ""))[:80] or None,
         })
         if len(out) >= MAX_GROUPS:
@@ -93,15 +98,19 @@ def _groups(raw: str | None) -> list[dict]:
 def parse_gift_order(payload: dict) -> ParsedGiftOrder | None:
     attrs = _pairs(payload.get("note_attributes"))
     gift_lines, revenue, sid = 0, 0.0, _uuid(attrs.get("_giftsense_sid"))
+    registry_lines = []
     for line in payload.get("line_items") or []:
         props = _pairs(line.get("properties"))
         sid = sid or _uuid(props.get("_giftsense_sid"))
-        if "_giftsense_gift" in props or "Gift for" in props:
+        qty = int(line.get("quantity") or 1)
+        if "_giftsense_gift" in props or "Gift for" in props or "_giftsense_registry" in props:
             gift_lines += 1
-            revenue += _money(line.get("price")) * int(line.get("quantity") or 1)
+            revenue += _money(line.get("price")) * qty
+        if props.get("_giftsense_registry"):
+            registry_lines.append((props["_giftsense_registry"][:80], qty, _money(line.get("price")) * qty))
     groups = _groups(attrs.get("_giftsense_gifts"))
     note = (attrs.get("Gift note") or "").strip()[:MAX_NOTE] or None
-    if not (gift_lines or sid or note or groups):
+    if not (gift_lines or sid or note or groups or attrs.get("_giftsense_message")):
         return None
     # Gift groups mean "I'll give it to them"; otherwise one gift shipped
     # straight to the recipient. (_giftsense_mode: carts from before 2026-10-01.)
@@ -121,11 +130,18 @@ def parse_gift_order(payload: dict) -> ParsedGiftOrder | None:
         arrive_by=(attrs.get("Arrive by") or None),
         gift_receipt=(attrs.get("Gift receipt") or "").lower() in ("yes", "true", "1"),
         wrap=(attrs.get("Gift wrap") or "").strip()[:40] or None,
+        card=(attrs.get("Greeting card") or "").strip()[:40] or None,
+        message=(attrs.get("_giftsense_message") or "").strip()[:80] or None,
+        registry_lines=registry_lines,
     )
 
 
 def _normalize(text: str) -> str:
     return " ".join(str(text).lower().split())
+
+
+def message_tokens(p: ParsedGiftOrder) -> list[str]:
+    return [t for t in [p.message, *(g.get("message") for g in p.groups)] if t]
 
 
 def note_source(final: str | None, draft: str | None) -> str | None:
@@ -143,7 +159,8 @@ def note_source(final: str | None, draft: str | None) -> str | None:
 
 def metafield_value(p: ParsedGiftOrder) -> dict:
     return {"version": 1, "mode": p.delivery_mode, "note": p.note, "groups": p.groups,
-            "arrive_by": p.arrive_by, "gift_receipt": p.gift_receipt, "wrap": p.wrap}
+            "arrive_by": p.arrive_by, "gift_receipt": p.gift_receipt, "wrap": p.wrap, "card": p.card,
+            "message": p.message}
 
 
 # ── Shopify writes (run in the worker) ───────────────────────────────────────
@@ -184,10 +201,14 @@ async def annotate_order(shop_domain: str, token: str, order_gid: str, value: di
     r1 = await gql(shop_domain, token, TAG_MUTATION, {"id": order_gid, "tags": [ORDER_TAG]})
     if r1.status_code != 200 or ((r1.json().get("data") or {}).get("tagsAdd") or {}).get("userErrors"):
         ok = False
-    r2 = await gql(shop_domain, token, METAFIELD_MUTATION, {"metafields": [{
-        "ownerId": order_gid, "namespace": METAFIELD_NAMESPACE, "key": METAFIELD_KEY, "type": "json",
-        "value": json.dumps(value),
-    }]})
+    fields = [{"ownerId": order_gid, "namespace": METAFIELD_NAMESPACE, "key": METAFIELD_KEY, "type": "json",
+               "value": json.dumps(value)}]
+    if value.get("messages"):
+        # Plain (not app-reserved) namespace, so the merchant's packing-slip
+        # template can read it: {{ order.metafields.giftsense.messages.value }}.
+        fields.append({"ownerId": order_gid, "namespace": PACKING_SLIP_NAMESPACE, "key": "messages", "type": "json",
+                       "value": json.dumps(value["messages"])})
+    r2 = await gql(shop_domain, token, METAFIELD_MUTATION, {"metafields": fields})
     if r2.status_code != 200 or ((r2.json().get("data") or {}).get("metafieldsSet") or {}).get("userErrors"):
         ok = False
     if not ok:

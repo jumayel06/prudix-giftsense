@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Money · GiftSense admin{% endblock %}
+{% block content %}
+<h1 class="page-title">Money</h1>
+<p class="page-subtitle">Revenue from plan prices; AI cost from usage logs this calendar month (UTC).</p>
+<div class="grid grid-3">
+  <div class="card card-brand"><div class="card-title">Monthly revenue</div><div class="kpi-value">${{ "%.0f"|format(k.mrr) }}</div></div>
+  <div class="card card-indigo"><div class="card-title">AI cost</div><div class="kpi-value mono">${{ "%.2f"|format(k.ai_cost_mtd) }}</div></div>
+  <div class="card"><div class="card-title">Profit after ${{ "%.0f"|format(k.infra) }} hosting</div><div class="kpi-value mono">${{ "%.0f"|format(k.profit) }}</div></div>
+</div>
+<div class="section"><h2>Revenue by plan</h2>
+<table><thead><tr><th>Plan</th><th class="num">Paying shops</th><th class="num">Monthly</th></tr></thead><tbody>
+{% for plan, r in f.revenue_by_plan.items() %}<tr><td>{{ plan }}</td><td class="num">{{ r.shops }}</td><td class="num mono">${{ "%.0f"|format(r.mrr) }}</td></tr>
+{% else %}<tr><td colspan="3" class="text-muted">No paying shops yet.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="section"><h2>AI cost by model and action</h2>
+<table><thead><tr><th>Model</th><th>Action</th><th class="num">Calls</th><th class="num">Tokens in / out</th><th class="num">Cost</th></tr></thead><tbody>
+{% for r in f.rows %}<tr><td>{{ r.label }}</td><td>{{ r.action }}</td><td class="num">{{ r.calls }}</td><td class="num mono">{{ r.tokens_in }} / {{ r.tokens_out }}</td><td class="num mono">${{ "%.4f"|format(r.cost) }}</td></tr>
+{% else %}<tr><td colspan="5" class="text-muted">No AI use this month.</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="section"><h2>Costliest shops this month</h2>
+<table><thead><tr><th>Shop</th><th>Plan</th><th class="num">AI cost</th><th class="num">Price</th><th class="num">Margin</th></tr></thead><tbody>
+{% for s in f.costliest %}<tr><td><a href="/admin/shops/{{ s.id }}">{{ s.shop_domain }}</a></td><td>{{ s.plan_tier }}</td><td class="num mono">${{ "%.4f"|format(s.cost_mtd) }}</td>
+<td class="num mono">{% if s.price %}${{ "%.0f"|format(s.price) }}{% else %}—{% endif %}</td>
+<td class="num mono {% if s.margin_pct is not none and s.margin_pct < 80 %}text-critical{% endif %}">{% if s.margin_pct is none %}—{% else %}{{ "%.0f"|format(s.margin_pct) }}%{% endif %}</td></tr>
+{% endfor %}</tbody></table></div>
+{% endblock %}

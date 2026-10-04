@@ -81,7 +81,7 @@ export default function GiftOrdersPage() {
           : 'Ships to recipient'}
       </IndexTable.Cell>
       <IndexTable.Cell>{o.has_note ? NOTE_LABEL[o.note_source] || 'Note' : <Text as="span" tone="subdued">None</Text>}</IndexTable.Cell>
-      <IndexTable.Cell>{o.wraps.length ? o.wraps.join(', ') : <Text as="span" tone="subdued">None</Text>}</IndexTable.Cell>
+      <IndexTable.Cell>{o.wraps.length || o.cards?.length ? [...o.wraps, ...(o.cards || []).map(c => `${c} (card)`)].join(', ') : <Text as="span" tone="subdued">None</Text>}</IndexTable.Cell>
       <IndexTable.Cell><ArriveBy o={o} /></IndexTable.Cell>
       <IndexTable.Cell>
         <Text as="span" alignment="end" numeric>{money(o.gift_revenue, o.currency)}</Text>

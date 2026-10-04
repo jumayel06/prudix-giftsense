@@ -10,6 +10,8 @@ Deletion order respects FK constraints (children before parents):
   usage_logs → jobs
   billing_events
   catalog_products, catalog_syncs, gift_sessions, gift_orders, gift_events, order_counts_daily
+  gift_media (R2 files first: a failed R2 call raises, so the purge retries)
+  registry_items → registries, support_tickets
   then anonymise the shop row (kept so trial_used=True survives reinstall)
 """
 
@@ -20,8 +22,8 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.db.models import (
-    BillingEvent, CatalogProductRow, CatalogSync, GiftEvent, GiftOrder, GiftSession, Job, OrderCountDaily, Shop,
-    UsageLog,
+    BillingEvent, CatalogProductRow, CatalogSync, GiftEvent, GiftMedia, GiftOrder, GiftSession, Job, OrderCountDaily,
+    Registry, RegistryItem, Shop, SupportTicket, UsageLog,
 )
 
 logger = structlog.get_logger()
@@ -29,6 +31,9 @@ logger = structlog.get_logger()
 
 async def purge_shop_data(shop_id: uuid.UUID, db: AsyncSession) -> None:
     """Delete all data for `shop_id` and anonymise the shop row."""
+    from app.services.media import delete_shop_objects
+    await delete_shop_objects(shop_id)
+    await db.execute(delete(GiftMedia).where(GiftMedia.shop_id == shop_id))
     await db.execute(delete(UsageLog).where(UsageLog.shop_id == shop_id))
     await db.execute(delete(Job).where(Job.shop_id == shop_id))
     await db.execute(delete(BillingEvent).where(BillingEvent.shop_id == shop_id))
@@ -38,6 +43,9 @@ async def purge_shop_data(shop_id: uuid.UUID, db: AsyncSession) -> None:
     await db.execute(delete(GiftOrder).where(GiftOrder.shop_id == shop_id))
     await db.execute(delete(GiftEvent).where(GiftEvent.shop_id == shop_id))
     await db.execute(delete(OrderCountDaily).where(OrderCountDaily.shop_id == shop_id))
+    await db.execute(delete(RegistryItem).where(RegistryItem.shop_id == shop_id))
+    await db.execute(delete(Registry).where(Registry.shop_id == shop_id))
+    await db.execute(delete(SupportTicket).where(SupportTicket.shop_id == shop_id))
 
     # Anonymise shop row — keep it so trial_used=True survives a future reinstall
     result = await db.execute(select(Shop).where(Shop.id == shop_id))

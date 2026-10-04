@@ -109,4 +109,4 @@ async def test_direct_mode_wrap_is_kept_for_the_orders_page(db_session, job_pool
     post(db_session, "orders/create", order([line(props={"_giftsense_gift": "order"})],
                                             attrs={"_giftsense_mode": "direct", "Gift wrap": "Gold"}))
     row = (await db_session.execute(select(GiftOrder))).scalar_one()
-    assert row.groups == [{"id": "order", "label": None, "wrap": "Gold", "message": None}]
+    assert row.groups == [{"id": "order", "label": None, "wrap": "Gold", "card": None, "message": None}]

@@ -24,13 +24,6 @@ logger = structlog.get_logger()
 _openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
 _anthropic_client = _anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
 
-# USD per token, derived from the registry (kept for callers that read it).
-MODEL_COSTS = {m: dict(zip(("input", "output"), price_per_token(m))) for m in MODELS}
-
-# Capabilities for a model missing from the registry (shouldn't happen in app
-# code; keeps ad-hoc calls working).
-_DEFAULT_CAPS = {"max_tokens_param": "max_tokens", "temperature": "always", "thinking_off": {}, "thinking_on": {}}
-
 # Per-request timeout (seconds). The SDK defaults (10 minutes, retried) let one
 # stalled request freeze a caller; seen in the 2026-09-28 eval. Shopper-facing
 # callers pass much shorter values (gift search: rerank.RERANK_TIMEOUT_SECS).
@@ -52,15 +45,11 @@ def calc_cost(model: str, input_tokens: int, output_tokens: int) -> float:
     return round(input_tokens * cin + output_tokens * cout, 8)
 
 
-def _caps(model: str) -> dict:
-    return (MODELS.get(model) or {}).get("caps", _DEFAULT_CAPS)
-
-
-def _provider(model: str) -> str:
+def _spec(model: str) -> dict:
     spec = MODELS.get(model)
-    if spec:
-        return spec["provider"]
-    return "anthropic" if model.startswith("claude-") else "openai"
+    if spec is None:
+        raise ValueError(f"{model} is not in app/ai_models.py MODELS")
+    return spec
 
 
 async def chat(
@@ -87,12 +76,13 @@ async def chat(
 
 
 async def _call(model, system, prompt, max_tokens, temperature, json_mode, thinking, timeout) -> LLMResponse:
-    caps = _caps(model)
+    spec = _spec(model)
+    caps = spec["caps"]
     extra = dict(caps["thinking_on"] if thinking else caps["thinking_off"])
     extra[caps["max_tokens_param"]] = max_tokens
-    if caps["temperature"] == "always" or (caps["temperature"] == "thinking_off" and not thinking):
+    if caps["temperature"] == "thinking_off" and not thinking:
         extra["temperature"] = temperature
-    if _provider(model) == "anthropic":
+    if spec["provider"] == "anthropic":
         return await _claude_chat(model, system, prompt, json_mode, timeout, extra)
     return await _openai_chat(model, system, prompt, json_mode, timeout, extra)
 

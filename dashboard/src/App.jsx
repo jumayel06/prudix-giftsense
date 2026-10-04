@@ -5,7 +5,7 @@ import { AppProvider, Frame, Navigation, SkeletonPage, SkeletonBodyText, Badge }
 import { TitleBar } from '@shopify/app-bridge-react'
 import {
   HomeIcon, CreditCardIcon, SettingsIcon, ChatIcon, ProductIcon, WandIcon, StoreIcon, ChartVerticalIcon,
-  NoteIcon, PackageIcon, OrderIcon, CalendarIcon,
+  NoteIcon, PackageIcon, OrderIcon, CalendarIcon, MicrophoneIcon, ListBulletedIcon,
 } from '@shopify/polaris-icons'
 import enTranslations from '@shopify/polaris/locales/en.json'
 import '@shopify/polaris/build/esm/styles.css'
@@ -23,6 +23,8 @@ import AnalyticsPage from './pages/AnalyticsPage'
 import GiftNotesPage from './pages/GiftNotesPage'
 import GiftWrapPage from './pages/GiftWrapPage'
 import GiftOrdersPage from './pages/GiftOrdersPage'
+import MessagesPage from './pages/MessagesPage'
+import RegistriesPage from './pages/RegistriesPage'
 import ArriveByPage from './pages/ArriveByPage'
 import { UPCOMING } from './utils/upcoming'
 import { navBadge } from './utils/planBadge'
@@ -96,7 +98,7 @@ function SidebarNav({ planStatus, planTier, onMobileClose }) {
           />
           <Navigation.Section
             title="Gifting"
-            items={[item('Gift notes', '/notes', NoteIcon, 'ai_notes'), item('Gift wrap', '/wrap', PackageIcon, 'gift_wrap'), item('Arrive-by dates', '/delivery', CalendarIcon, 'arrive_by'), ...soon('gifting')]}
+            items={[item('Gift notes', '/notes', NoteIcon, 'ai_notes'), item('Gift wrap', '/wrap', PackageIcon, 'gift_wrap'), item('Arrive-by dates', '/delivery', CalendarIcon, 'arrive_by'), item('Voice & video', '/messages', MicrophoneIcon, 'voice_messages'), item('Registries', '/registries', ListBulletedIcon, 'registries'), ...soon('gifting')]}
           />
           <Navigation.Section title="Orders" items={[item('Gift orders', '/orders', OrderIcon, 'gift_cards_print')]} />
           <Navigation.Section title="Insights" items={[item('Analytics', '/analytics', ChartVerticalIcon)]} />
@@ -141,7 +143,7 @@ function AppFooter() {
 }
 
 const TITLES = {
-  '/': APP_NAME, '/catalog': 'Catalog', '/playground': 'Try the gift finder', '/plans': 'Plans', '/settings': 'Settings', '/support': 'Support', '/storefront': 'Storefront', '/analytics': 'Analytics', '/notes': 'Gift notes', '/wrap': 'Gift wrap', '/orders': 'Gift orders', '/delivery': 'Arrive-by dates',
+  '/': APP_NAME, '/catalog': 'Catalog', '/playground': 'Try the gift finder', '/plans': 'Plans', '/settings': 'Settings', '/support': 'Support', '/storefront': 'Storefront', '/analytics': 'Analytics', '/notes': 'Gift notes', '/wrap': 'Gift wrap', '/orders': 'Gift orders', '/delivery': 'Arrive-by dates', '/messages': 'Voice & video', '/registries': 'Registries',
   ...Object.fromEntries(UPCOMING.map(u => [u.path, u.title])),
 }
 
@@ -248,6 +250,8 @@ function AppShell() {
             <Route path="/notes" element={<GiftNotesPage />} />
             <Route path="/wrap" element={<GiftWrapPage />} />
             <Route path="/orders" element={<GiftOrdersPage />} />
+            <Route path="/messages" element={<MessagesPage />} />
+            <Route path="/registries" element={<RegistriesPage />} />
             <Route path="/delivery" element={<ArriveByPage />} />
             <Route path="/playground" element={<PlaygroundPage />} />
             <Route path="/plans" element={<PlanPickerPage />} />

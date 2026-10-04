@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Offline gift-finder evaluation (internal tooling; spends real API money).
 
-    .venv/bin/python scripts/eval_recs.py --stores candles,general --models haiku,sonnet --cap 6
+    .venv/bin/python scripts/eval_recs.py --stores candles,general --models luna,sonnet --cap 6
 
 Stores: candles, jewelry, toys, kitchen, general.
-Models: mini (gpt-4o-mini), haiku (claude-haiku-4-5), gpt41 (gpt-4.1), sonnet (claude-sonnet-5),
-        luna (gpt-6-luna), sol (gpt-6-sol), sonnet55 (claude-sonnet-5-5).
+Models: luna (gpt-6-luna), sol (gpt-6-sol), sonnet (claude-sonnet-5), sonnet55 (claude-sonnet-5-5).
 Outputs evals/results/report.md, report.json, review.html. Catalogs, profiles
 and judge labels are cached under evals/data/, so reruns only pay for searches.
 """
@@ -22,15 +21,13 @@ from evals.catalogs import STORES  # noqa: E402
 from evals.ledger import BudgetExceeded, Ledger  # noqa: E402
 from evals.runner import DATA, RESULTS, EvalRun  # noqa: E402
 
-MODELS = {"mini": "gpt-4o-mini", "haiku": "claude-haiku-4-5", "gpt41": "gpt-4.1", "sonnet": "claude-sonnet-5",
-          "luna": "gpt-6-luna", "sol": "gpt-6-sol",
-          "sonnet55": "claude-sonnet-5-5"}
+MODELS = {"luna": "gpt-6-luna", "sol": "gpt-6-sol", "sonnet": "claude-sonnet-5", "sonnet55": "claude-sonnet-5-5"}
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--stores", default="candles,general")
-    ap.add_argument("--models", default="haiku,sonnet")
+    ap.add_argument("--models", default="luna,sonnet")
     ap.add_argument("--cap", type=float, required=True, help="hard spending cap in USD")
     args = ap.parse_args()
 

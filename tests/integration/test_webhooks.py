@@ -497,7 +497,7 @@ class TestGdprEndpoints:
         db_session.add(job)
         await db_session.flush()
 
-        db_session.add(UsageLog(id=_uuid.uuid4(), shop_id=shop.id, action_type="gift_search", model_used="claude-haiku-4-5", job_id=job.id))
+        db_session.add(UsageLog(id=_uuid.uuid4(), shop_id=shop.id, action_type="gift_search", model_used="gpt-6-luna", job_id=job.id))
         db_session.add(BillingEvent(id=_uuid.uuid4(), shop_id=shop.id, event_type="trial_started", plan_tier="growth"))
 
         await db_session.commit()

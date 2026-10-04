@@ -50,7 +50,7 @@ def test_current_lineup():
     assert {t: am.SLOTS[s["slot"]]["model"] for t, s in am.AI_TIERS.items()} == {
         "standard": "gpt-6-luna", "advanced": "gpt-6-sol", "premium": "claude-sonnet-5"}
     assert am.SLOTS["catalog_analysis"]["model"] == "gpt-6-luna"
-    assert am.model_status("claude-haiku-4-5") == "retired"
+    assert am.model_status("not-a-model") == "retired"
 
 
 # ── Tiers ────────────────────────────────────────────────────────────────────
@@ -60,11 +60,7 @@ def test_current_lineup():
     ("starter", "premium", "standard"),          # not in plan → plan default
     ("growth", None, "advanced"),
     ("none", None, "standard"),                  # no plan → starter default
-    ("pro", "claude-sonnet-5", "premium"),   # stored before tiers existed
-    ("pro", "claude-haiku-4-5", "standard"),
-    ("growth", "gpt-4.1", "advanced"),
-    ("pro", "fast", "standard"),              # first tier names (renamed 2026-09-28)
-    ("growth", "balanced", "advanced"),
+    ("growth", "claude-sonnet-5", "advanced"),   # not a tier → plan default
 ])
 def test_ai_tier_for(plan, selected, expected):
     assert am.ai_tier_for(plan, selected) == expected
@@ -98,10 +94,13 @@ def test_pin_holds_a_shop_on_a_model(rollout):
 
 
 def test_retired_models_resolve_to_their_replacement(monkeypatch):
-    monkeypatch.setattr(am, "SLOTS", {**am.SLOTS, "ai_standard": {"model": "claude-haiku-4-5", "next": None,
+    old = {**am.MODELS["gpt-6-luna"], "status": "retired", "replacement": "gpt-6-luna"}
+    monkeypatch.setattr(am, "MODELS", {**am.MODELS, "old-model": old})
+    monkeypatch.setattr(am, "SLOTS", {**am.SLOTS, "ai_standard": {"model": "old-model", "next": None,
                                                               "rollout_pct": 0}})
     assert am.resolve_model("ai_standard", uuid.uuid4()) == "gpt-6-luna"
-    assert am.resolve_model("ai_premium", uuid.uuid4(), pins={"ai_premium": "gpt-4.1"}) == "gpt-6-sol"
+    assert am.resolve_model("ai_premium", uuid.uuid4(), pins={"ai_premium": "old-model"}) == "gpt-6-luna"
+    assert am.resolve_model("ai_premium", uuid.uuid4(), pins={"ai_premium": "unknown"}) == "claude-sonnet-5"
 
 
 def test_model_for_shop_uses_its_ai_tier():

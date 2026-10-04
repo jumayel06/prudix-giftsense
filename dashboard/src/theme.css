@@ -1733,3 +1733,73 @@ body.prudix-no-nav .Polaris-Frame__Main .Polaris-Page {
 .prudix-kit-event-regenerate .Polaris-Button:hover {
   background: linear-gradient(135deg, var(--prudix-slate-dark) 0%, #0f172a 100%) !important;
 }
+
+/* ── Home page ─────────────────────────────────────────────────────────── */
+.gs-home-hero {
+  background: radial-gradient(1200px 300px at 100% 0%, rgba(234, 179, 8, .18), transparent 60%), var(--prudix-gradient);
+  color: #f8fafc; border-radius: 16px; padding: 24px; display: grid; gap: 24px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, .18);
+}
+.gs-home-hero__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.gs-home-hero__eyebrow { margin: 0 0 4px; color: #cbd5e1; font-size: 14px; }
+.gs-home-hero__title { margin: 0 0 12px; font-size: 26px; line-height: 1.2; font-weight: 700; letter-spacing: -.01em; }
+.gs-home-hero__chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.gs-home-hero__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.gs-home-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  background: rgba(255, 255, 255, .10); border: 1px solid rgba(255, 255, 255, .14); font-size: 13px; color: #e2e8f0;
+}
+.gs-home-chip--accent { background: rgba(234, 179, 8, .18); border-color: rgba(234, 179, 8, .45); color: #fde68a; }
+.gs-home-chip--live .gs-home-dot { background: #4ade80; box-shadow: 0 0 0 3px rgba(74, 222, 128, .25); }
+.gs-home-chip--off .gs-home-dot { background: #fbbf24; box-shadow: 0 0 0 3px rgba(251, 191, 36, .25); }
+.gs-home-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.gs-home-hero__stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .gs-home-hero__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.gs-home-stat {
+  background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .10); border-radius: 12px;
+  padding: 14px 16px; display: grid; gap: 4px; min-width: 0;
+}
+.gs-home-stat__label { font-size: 13px; color: #cbd5e1; }
+.gs-home-stat__value { font-size: 26px; font-weight: 700; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.gs-home-stat__help { font-size: 12px; color: #94a3b8; }
+.gs-home-change { font-size: 12px; font-weight: 600; padding: 2px 6px; border-radius: 6px; }
+.gs-home-change--up { color: #86efac; background: rgba(34, 197, 94, .15); }
+.gs-home-change--down { color: #fca5a5; background: rgba(239, 68, 68, .15); }
+.gs-home-change--flat { color: #cbd5e1; background: rgba(255, 255, 255, .08); font-weight: 500; }
+
+.gs-home-icon {
+  display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px;
+  background: #fef3c7; color: #92400e; box-shadow: inset 0 0 0 1px rgba(202, 138, 4, .25);
+}
+/* Polaris paints icons with its own (pale) icon color; ours follow the tile. */
+.gs-home-icon .Polaris-Icon { color: inherit; }
+.gs-home-icon .Polaris-Icon svg, .gs-home-icon svg { fill: currentColor !important; color: inherit; }
+.gs-home-icon--lg { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #fde68a, #facc15); color: #78350f; }
+.gs-home-icon--lg .Polaris-Icon { width: 22px; height: 22px; }
+.gs-home-icon--accent { background: #fde68a; color: #78350f; }
+
+.gs-home-bars { display: flex; align-items: flex-end; gap: 6px; height: 120px; }
+.gs-home-bar { flex: 1; height: 100%; display: flex; align-items: flex-end; }
+.gs-home-bar__fill { width: 100%; border-radius: 6px 6px 3px 3px; background: linear-gradient(180deg, #facc15, #ca8a04); transition: height .3s; }
+.gs-home-bar__fill--zero { background: var(--p-color-bg-fill-secondary, #e2e8f0); }
+
+/* Rows always fill the width: 6 toolkit tiles = 3 × 2 (2 × 3 on tablets, 1 per row on phones). */
+.gs-home-toolkit { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1000px) { .gs-home-toolkit { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .gs-home-toolkit { grid-template-columns: 1fr; } }
+.gs-home-split { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 20px; align-items: stretch; }
+.gs-home-split > * { min-width: 0; }
+.gs-home-split > .Polaris-ShadowBevel { height: 100%; }
+@media (max-width: 900px) { .gs-home-split { grid-template-columns: 1fr; } }
+.gs-home-tool {
+  display: grid; gap: 8px; align-content: start; text-align: left; font: inherit; color: inherit; cursor: pointer;
+  background: #fff; border: 1px solid var(--p-color-border, #e2e8f0); border-radius: 12px; padding: 16px;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.gs-home-tool:hover { border-color: var(--prudix); box-shadow: 0 6px 18px rgba(15, 23, 42, .08); transform: translateY(-1px); }
+.gs-home-tool:focus-visible { outline: 2px solid var(--prudix); outline-offset: 2px; }
+.gs-home-tool__title { font-weight: 650; font-size: 15px; }
+.gs-home-tool__text { color: var(--p-color-text-secondary, #64748b); font-size: 13px; line-height: 1.4; }
+.gs-home-tool__go { display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 600; color: var(--prudix-darker); }
+.gs-home-tool__go svg { width: 16px; height: 16px; fill: currentColor; }
+@media (prefers-reduced-motion: reduce) { .gs-home-tool, .gs-home-bar__fill { transition: none; } }

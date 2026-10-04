@@ -13,11 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.ai_models import AI_TIERS, ai_tier_for, tier_models_for_shop
 from app.config import PLANS
 from app.jobs import enqueue
-from app.services.wrap import WrapUpdate, update_wrap_settings, wrap_settings
+from app.services.wrap import WrapUpdate, create_image_upload, update_wrap_settings, wrap_settings
 from app.services.delivery import DeliveryUpdate, date_window, delivery_settings, update_delivery_settings
 from app.services.gift_settings import NOTE_TONES, GiftNotesUpdate, note_settings, update_note_settings
 from core.db.models import Shop
 from core.db.session import get_db
+from core.shopify_auth import get_valid_access_token
 from core.shopify_deps import get_current_shop
 
 router = APIRouter()
@@ -112,7 +113,10 @@ async def save_settings(
         update_delivery_settings(shop_record, payload.delivery)
     resync_wrap = False
     if payload.gift_wrap is not None:
-        update_wrap_settings(shop_record, payload.gift_wrap)
+        try:
+            update_wrap_settings(shop_record, payload.gift_wrap)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail={"code": "invalid_wrap_photo", "message": str(e)})
         w = wrap_settings(shop_record)
         resync_wrap = w["enabled"] and bool(w["styles"]) and not w["ready"]
 
@@ -120,3 +124,27 @@ async def save_settings(
     if resync_wrap:
         await enqueue("sync_wrap", shop_record.shop_domain)
     return {"ok": True}
+
+
+class WrapImageUpload(BaseModel):
+    filename: str
+    mime_type: str
+    size: int
+
+
+@router.post("/api/settings/gift-wrap/image-upload")
+async def wrap_image_upload(
+    payload: WrapImageUpload,
+    shop_record: Shop = Depends(get_current_shop),
+    db: AsyncSession = Depends(get_db),
+):
+    """Staged upload target for a wrap style photo (app/services/wrap.py)."""
+    token = await get_valid_access_token(shop_record, db)
+    try:
+        return await create_image_upload(shop_record.shop_domain, token, payload.filename,
+                                         payload.mime_type, payload.size)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail={"code": "invalid_wrap_photo", "message": str(e)})
+    except RuntimeError:
+        raise HTTPException(status_code=502, detail={"code": "upload_unavailable",
+                                                     "message": "Shopify didn't accept the upload. Please try again."})

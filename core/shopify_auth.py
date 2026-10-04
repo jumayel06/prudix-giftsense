@@ -15,7 +15,7 @@ logger = structlog.get_logger()
 
 # Must match [access_scopes] in BOTH shopify.app.dev.toml and shopify.app.prod.toml.
 # Every change forces merchants to re-authorize (see docs/SHOPIFY_PLAYBOOK.md §10).
-SCOPES = "read_products,write_products,read_orders,write_orders,write_order_edits,write_merchant_managed_fulfillment_orders,read_themes,write_publications"
+SCOPES = "read_products,write_products,read_orders,write_orders,write_merchant_managed_fulfillment_orders,read_themes,write_publications"
 
 # Buffer: refresh the token this many seconds before actual expiry
 _TOKEN_REFRESH_BUFFER_SECS = 300

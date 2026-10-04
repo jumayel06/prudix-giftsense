@@ -54,7 +54,7 @@ async def test_config_offers_synced_wrap_styles(db_session):
     db_session.add(shop)
     await db_session.commit()
     data = proxy_call(db_session, "GET", "/api/storefront/config").json()
-    assert data["wrap"] == [{"variant_id": 1, "name": "Gold", "price": 5.0}]
+    assert data["wrap"] == [{"variant_id": 1, "name": "Gold", "price": 5.0, "kind": "wrap"}]
 
 
 @pytest.mark.asyncio
@@ -111,3 +111,42 @@ async def test_sync_job_drops_a_stale_result(db_session):
         await sync_wrap({}, shop.shop_domain)
     row = (await db_session.execute(select(Shop))).scalar_one()
     assert row.gift_settings["wrap"]["styles"] == [{"name": "Kraft", "price": 3.0}]
+
+
+@pytest.mark.asyncio
+async def test_photo_from_another_host_is_a_422(db_session):
+    db_session.add(make_shop())
+    await db_session.commit()
+    resp = settings_call(db_session, "PUT", json={"gift_wrap": {"enabled": True, "styles": [
+        {"name": "Gold", "price": 5, "image": "https://evil.example/x.jpg"}]}})
+    assert resp.status_code == 422 and resp.json()["detail"]["code"] == "invalid_wrap_photo"
+
+
+def _upload_call(db_session, body):
+    from fastapi.testclient import TestClient
+    from app.main import app
+    from core.db.session import get_db
+
+    async def override_db():
+        yield db_session
+    app.dependency_overrides[get_db] = override_db
+    try:
+        return TestClient(app).post(f"/api/settings/gift-wrap/image-upload?shop={TEST_SHOP_DOMAIN}", json=body)
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_image_upload_endpoint(db_session):
+    db_session.add(make_shop())
+    await db_session.commit()
+    target = {"url": "u", "resource_url": "r", "parameters": []}
+    with patch("app.routes.settings.get_valid_access_token", new=AsyncMock(return_value="tok")), \
+         patch("app.routes.settings.create_image_upload", new=AsyncMock(return_value=target)) as up:
+        resp = _upload_call(db_session, {"filename": "gold.jpg", "mime_type": "image/jpeg", "size": 1000})
+    assert resp.status_code == 200 and resp.json() == target
+    assert up.await_args.args == (TEST_SHOP_DOMAIN, "tok", "gold.jpg", "image/jpeg", 1000)
+
+    with patch("app.routes.settings.get_valid_access_token", new=AsyncMock(return_value="tok")):
+        bad = _upload_call(db_session, {"filename": "x.svg", "mime_type": "image/svg+xml", "size": 10})
+    assert bad.status_code == 422

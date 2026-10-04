@@ -1,0 +1,13 @@
+{
+  "launcher": "Trova un regalo",
+  "finder": {
+    "heading": "Non sai cosa regalare?",
+    "text": "Rispondi a qualche domanda veloce e ti suggeriremo regali dal nostro negozio."
+  },
+  "options": {
+    "this_is_a_gift": "È un regalo",
+    "add_gift_note": "Aggiungi un biglietto",
+    "add_to_registry": "Aggiungi alla lista",
+    "add_gift_note_or_wrap": "Aggiungi biglietto o confezione regalo"
+  }
+}

@@ -27,8 +27,9 @@ from app.config import (
     PLANS,
 )
 from app.jobs import enqueue
-from app.services import delivery
-from app.services.gift_orders import metafield_value, note_source, parse_gift_order
+from app.services import delivery, media, registry
+from app.services.gift_orders import message_tokens, metafield_value, note_source, parse_gift_order
+from app.routes.qr import qr_image_url
 from core.config import settings
 from core.db.models import (
     BillingEvent, CatalogProductRow, GiftOrder, GiftSession, OrderCountDaily, ProcessedWebhook, Shop, SuppressedEmail,
@@ -644,9 +645,9 @@ async def _count_order(db: AsyncSession, shop: Shop, payload: dict) -> None:
 def _stored_groups(parsed) -> list[dict]:
     """Group summary for gift_orders (no notes). A direct-mode order has no
     groups, so its wrap is kept as one "order" group for the Gift orders page."""
-    groups = [{k: g.get(k) for k in ("id", "label", "wrap", "message")} for g in parsed.groups]
-    if not groups and parsed.wrap:
-        groups = [{"id": "order", "label": None, "wrap": parsed.wrap, "message": None}]
+    groups = [{k: g.get(k) for k in ("id", "label", "wrap", "card", "message")} for g in parsed.groups]
+    if not groups and (parsed.wrap or parsed.card or parsed.message):
+        groups = [{"id": "order", "label": None, "wrap": parsed.wrap, "card": parsed.card, "message": parsed.message}]
     return groups
 
 async def _handle_order_created(shop_domain: str, payload: dict, db: AsyncSession) -> None:
@@ -677,7 +678,7 @@ async def _handle_order_created(shop_domain: str, payload: dict, db: AsyncSessio
     shipment = None
     if parsed.arrive_by and "arrive_by" in PLANS.get(shop.plan_tier, PLANS["starter"])["features"]:
         shipment = delivery.plan_shipment(delivery.delivery_settings(shop), shop.store_timezone, parsed.arrive_by)
-    db.add(GiftOrder(
+    gift_row = GiftOrder(
         shop_id=shop.id, order_id=parsed.order_id, order_name=parsed.order_name, sid=parsed.sid,
         delivery_mode=parsed.delivery_mode, gift_lines=parsed.gift_lines, gift_revenue=parsed.gift_revenue,
         order_total=parsed.order_total, currency=parsed.currency, note_source=source,
@@ -685,13 +686,31 @@ async def _handle_order_created(shop_domain: str, payload: dict, db: AsyncSessio
         arrive_by=date.fromisoformat(shipment["arrive_by"]) if shipment else None,
         ship_by=date.fromisoformat(shipment["ship_by"]) if shipment else None,
         hold_status=("late" if shipment["late"] else "pending") if shipment else None,
-    ))
+    )
+    db.add(gift_row)
+    # Registry purchases: bought counts go up; the order remembers the registry.
+    bought = await registry.record_purchases(db, shop.id, parsed.registry_lines)
+    if bought:
+        gift_row.registry_id, gift_row.registry_revenue = bought
+    # Voice/video messages: link the recordings, start their retention clock.
+    linked = await media.link_to_order(db, shop.id, message_tokens(parsed), parsed.order_id,
+                                       shipment["arrive_by"] if shipment else parsed.arrive_by)
     try:
         await db.commit()
     except IntegrityError:          # the same order redelivered concurrently
         await db.rollback()
         return
     value = metafield_value(parsed)
+    # The recipient page link per message, for the merchant and the Thank-you page.
+    for entry in [value, *value["groups"]]:
+        m = linked.get(entry.get("message") or "")
+        if m:
+            entry["message_url"] = media.view_url(shop_domain, m.view_token)
+            entry["message_kind"] = m.kind
+    # Packing slips: a plain metafield the template can read (see annotate_order).
+    value["messages"] = [{"for": e.get("label"), "kind": e["message_kind"], "url": e["message_url"],
+                          "qr": qr_image_url(settings.get_app_host(), linked[e["message"]].view_token)}
+                         for e in [value, *value["groups"]] if e.get("message_url")]
     if shipment:
         value.update(arrive_by=shipment["arrive_by"], ship_by=shipment["ship_by"])
     await enqueue("annotate_gift_order", shop_domain, parsed.order_gid, value,

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Shops · GiftSense admin{% endblock %}
+{% block content %}
+<h1 class="page-title">Shops</h1>
+<p class="page-subtitle">{{ shops|length }} shown, newest first.</p>
+<form class="filter-bar" method="get">
+  <input type="text" name="search" placeholder="Search domain…" value="{{ search }}">
+  <select name="status"><option value="">All statuses</option>
+    {% for s in ('active','trial_active','pending','cancelled','expired','declined','uninstalled','purged') %}<option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+  <select name="tier"><option value="">All plans</option>
+    {% for t in ('starter','growth','pro') %}<option value="{{ t }}" {% if tier_filter == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+  <button type="submit">Filter</button>{% if search or status_filter or tier_filter %} <a class="clear" href="/admin/shops">Clear</a>{% endif %}
+</form>
+{% if shops %}
+<table><thead><tr><th>Shop</th><th>Plan</th><th>Status</th><th class="num">Products</th><th class="num">Gens this month</th><th class="num">AI cost</th><th class="num">Margin</th><th>Installed</th><th>Last AI use</th></tr></thead><tbody>
+{% for s in shops %}<tr>
+  <td><a href="/admin/shops/{{ s.id }}">{{ s.shop_domain }}</a></td>
+  <td><span class="pill pill-neutral">{{ s.plan_tier }}</span></td>
+  <td><span class="pill pill-{{ s.plan_status }}">{{ s.plan_status }}</span></td>
+  <td class="num">{{ s.products }}</td><td class="num mono">{{ s.generations_mtd }}</td>
+  <td class="num mono">${{ "%.4f"|format(s.cost_mtd) }}</td>
+  <td class="num mono {% if s.margin_pct is not none and s.margin_pct < 80 %}text-critical{% endif %}">{% if s.margin_pct is none %}—{% else %}{{ "%.0f"|format(s.margin_pct) }}%{% endif %}</td>
+  <td class="text-muted">{{ s.installed_at.strftime('%Y-%m-%d') if s.installed_at else '—' }}</td>
+  <td class="text-muted">{{ s.last_active.strftime('%Y-%m-%d') if s.last_active else '—' }}</td>
+</tr>{% endfor %}</tbody></table>
+{% else %}<div class="card empty">No shops match.</div>{% endif %}
+{% endblock %}

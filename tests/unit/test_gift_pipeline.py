@@ -48,7 +48,7 @@ async def test_small_catalog_skips_embedding_and_sends_every_eligible_product():
     items = catalog(20)
     emb = SpyEmbedder()
     chat = chat_picking(["3", "7", "11"])
-    result = await recommend(INTAKE, items, embedder=emb, model="claude-haiku-4-5", chat_fn=chat)
+    result = await recommend(INTAKE, items, embedder=emb, model="gpt-6-luna", chat_fn=chat)
     assert result.mode == "small_catalog"
     assert emb.calls == 0
     prompt = chat.await_args.kwargs["prompt"]
@@ -61,7 +61,7 @@ async def test_large_catalog_embeds_query_once_and_shortlists():
     items = catalog(SMALL_CATALOG_MAX + 40)
     emb = SpyEmbedder()
     chat = chat_picking(["1", "2", "3"])
-    result = await recommend(INTAKE, items, embedder=emb, model="claude-haiku-4-5", chat_fn=chat)
+    result = await recommend(INTAKE, items, embedder=emb, model="gpt-6-luna", chat_fn=chat)
     assert result.mode == "vector"
     assert emb.calls == 1
     assert chat.await_args.kwargs["prompt"].count("product_id:") == 12
@@ -71,7 +71,7 @@ async def test_large_catalog_embeds_query_once_and_shortlists():
 async def test_nothing_in_budget_returns_empty_without_llm():
     chat = chat_picking([])
     result = await recommend(INTAKE, catalog(10, price=500), embedder=FakeEmbedder(),
-                             model="claude-haiku-4-5", chat_fn=chat)
+                             model="gpt-6-luna", chat_fn=chat)
     assert result.picks == []
     chat.assert_not_awaited()
 
@@ -79,7 +79,7 @@ async def test_nothing_in_budget_returns_empty_without_llm():
 @pytest.mark.asyncio
 async def test_no_budget_left_uses_templates_without_llm():
     chat = chat_picking(["1"])
-    result = await recommend(INTAKE, catalog(10), embedder=FakeEmbedder(), model="claude-haiku-4-5",
+    result = await recommend(INTAKE, catalog(10), embedder=FakeEmbedder(), model="gpt-6-luna",
                              chat_fn=chat, use_llm=False)
     chat.assert_not_awaited()
     assert result.used_fallback and len(result.picks) == 5
@@ -89,5 +89,5 @@ async def test_no_budget_left_uses_templates_without_llm():
 async def test_every_pick_is_within_budget_even_if_llm_misbehaves():
     items = catalog(10) + catalog(1, price=999)  # id "0" duplicated at 999 is filtered before the LLM
     chat = chat_picking(["0", "1", "2"])
-    result = await recommend(INTAKE, items, embedder=FakeEmbedder(), model="claude-haiku-4-5", chat_fn=chat)
+    result = await recommend(INTAKE, items, embedder=FakeEmbedder(), model="gpt-6-luna", chat_fn=chat)
     assert all(p.product.price_min <= 50 for p in result.picks)

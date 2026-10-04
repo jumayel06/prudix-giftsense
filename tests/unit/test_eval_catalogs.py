@@ -10,13 +10,13 @@ from evals.ledger import BudgetExceeded, Ledger
 
 
 def test_ledger_tracks_spend_and_refuses_calls_over_the_cap():
-    ledger = Ledger(cap_usd=0.01)
-    ledger.charge("step", "claude-haiku-4-5", 2500, 400)          # $0.0045
-    assert ledger.spent == pytest.approx(0.0045)
-    ledger.check(0.005)                                            # 0.0095 ≤ 0.01 → fine
+    ledger = Ledger(cap_usd=0.001)
+    ledger.charge("step", "gpt-6-luna", 2500, 400)          # $0.00045
+    assert ledger.spent == pytest.approx(0.00045)
+    ledger.check(0.0005)                                           # 0.00095 ≤ 0.001 → fine
     with pytest.raises(BudgetExceeded):
-        ledger.check(0.006)                                        # would exceed
-    assert ledger.by_step()["step"] == pytest.approx(0.0045)
+        ledger.check(0.0006)                                       # would exceed
+    assert ledger.by_step()["step"] == pytest.approx(0.00045)
 
 
 def _chunk(n, start=0, bad=0):

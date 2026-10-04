@@ -1,0 +1,4294 @@
+{
+  "jewelry-0002": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "luxurious"
+    ],
+    "interests": [
+      "jewelry",
+      "gemstones"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys distinctive jewelry, with warm citrine stones and hand-shaped sunburst details.",
+    "facts": [
+      "Citrine stones measure approximately 4 mm",
+      "Total earring diameter is 9 mm",
+      "Gold vermeil over sterling silver",
+      "Butterfly backs",
+      "Sold as a pair"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0005": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "celestial"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys delicate jewelry and celestial details, designed to layer with pieces they already wear.",
+    "facts": [
+      "Cast in solid 14k yellow gold",
+      "Finished with a small soldered jump ring",
+      "Measures 8 mm from tip to tip",
+      "Fits a fine chain, charm bracelet, or existing charm hoop",
+      "Chain is not included"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0004": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "creative",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "handmade"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who appreciates handmade jewelry would love this adjustable sterling silver bracelet with pebble-inspired links.",
+    "facts": [
+      "Sterling silver links",
+      "6.5-inch chain",
+      "1-inch extender for an adjustable fit",
+      "Lobster clasp",
+      "Stamped studio tag",
+      "Each link is formed and joined by hand in small batches"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0003": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "gemstones"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A jewelry lover would appreciate this distinctive moss agate signet ring, with a natural stone pattern that makes each one unique.",
+    "facts": [
+      "Sterling silver signet ring",
+      "Deep green moss agate cabochon",
+      "Oval stone measures 8 by 10 mm",
+      "Low bezel with a softly brushed band",
+      "Available in US sizes 5 through 9",
+      "Designed for the little or ring finger"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0001": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "eco_friendly"
+    ],
+    "interests": [
+      "jewelry",
+      "ocean",
+      "minimalism"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys understated jewelry, with a small wave pendant that works alone or layered.",
+    "facts": [
+      "Made from recycled 925 sterling silver",
+      "Wave-shaped pendant measures 14 mm across",
+      "Adjustable chain fastens at 16 or 18 inches",
+      "Polished front with a lightly textured edge",
+      "Finished with a spring ring clasp"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0006": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "parent",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "graduation",
+      "just_because"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic"
+    ],
+    "interests": [
+      "jewelry"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who would cherish a personalized everyday necklace marked with a meaningful initial.",
+    "facts": [
+      "Hand-stamped initial on a small sterling silver disc",
+      "12 mm pendant",
+      "Adjustable 16- to 18-inch sterling silver cable chain",
+      "Secure spring ring clasp",
+      "Select one uppercase letter at checkout",
+      "Please allow extra time for personalization"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0008": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "luxurious"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys versatile jewelry would love these textured gold vermeil hoops for everyday wear or evening outfits.",
+    "facts": [
+      "Made from sterling silver",
+      "Finished in a thick layer of 14k gold vermeil",
+      "22 mm in diameter",
+      "Hinged latch post closure",
+      "Sold as a pair"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0009": {
+    "giftable": 0.45,
+    "recipients": [
+      "friend",
+      "partner",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "just_because"
+    ],
+    "vibes": [
+      "practical"
+    ],
+    "interests": [
+      "jewelry",
+      "rings"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A practical gift for someone ordering a made-to-size ring who wants to check their fit at home.",
+    "facts": [
+      "Reusable set of smooth plastic ring gauges",
+      "Includes US sizes 1 through 13",
+      "Half-size increments",
+      "Connected on a metal ring for easy storage",
+      "Used to check ring size at home",
+      "A fitting aid, not jewelry"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0010": {
+    "giftable": 0.78,
+    "recipients": [
+      "partner",
+      "friend"
+    ],
+    "occasions": [
+      "anniversary",
+      "birthday",
+      "holiday"
+    ],
+    "vibes": [
+      "classic"
+    ],
+    "interests": [
+      "jewelry",
+      "rings"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for a partner or friend who enjoys understated gold jewelry and versatile pieces for everyday wear.",
+    "facts": [
+      "Solid 14k yellow gold",
+      "2 mm band",
+      "Brushed finish",
+      "Narrow ridge around the band",
+      "Available in US sizes 4 through 10 in whole and half sizes",
+      "Can be worn alone or stacked"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0007": {
+    "giftable": 0.88,
+    "recipients": [
+      "friend",
+      "partner",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "anniversary",
+      "just_because"
+    ],
+    "vibes": [
+      "practical",
+      "trendy",
+      "classic"
+    ],
+    "interests": [
+      "jewelry",
+      "travel",
+      "organization"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who travels or likes keeping jewelry organized, with compact storage for rings, earrings, pendants, and chains.",
+    "facts": [
+      "Textured vegan leather exterior",
+      "Soft microfiber lining",
+      "Includes a ring roll",
+      "Divided compartment for earrings and small pendants",
+      "Removable pouch for chains",
+      "Measures 4 by 4 by 2 inches"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0011": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "gemstones",
+      "celestial"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys distinctive jewelry, with a labradorite stone that catches subtle flashes of color.",
+    "facts": [
+      "Deep blue-gray labradorite cabochon",
+      "Fine sterling silver cable chain",
+      "Oval stone in a low-profile bezel",
+      "Polished finish",
+      "Choose a 16-inch or 18-inch chain",
+      "Fastens with a spring ring clasp"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0012": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "creative"
+    ],
+    "interests": [
+      "jewelry",
+      "florals",
+      "botanical"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys delicate floral jewelry, with gold vermeil flowers and chains that add graceful movement.",
+    "facts": [
+      "Made from sterling silver",
+      "Thick layer of 18-karat gold vermeil",
+      "Five-petal flower forms",
+      "Flowers measure about 9 mm across",
+      "Total drop is approximately 2 inches",
+      "Slim chains pass through the piercing"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0013": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "eco_friendly",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "coastal style"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who loves understated jewelry, with a coastal-inspired texture and an adjustable open design.",
+    "facts": [
+      "Cast in recycled sterling silver",
+      "Finished by hand",
+      "Open design allows for slight adjustment",
+      "Band measures about 4 mm wide",
+      "Gently rounded ends"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0015": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "gemstones"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys subtle jewelry would love this petite gemstone charm, with natural blue and green flashes and a character all its own.",
+    "facts": [
+      "8 mm labradorite stone",
+      "Sterling silver bezel",
+      "Small hinged bail fits most fine chains and charm bracelets",
+      "Natural stones vary slightly in color and pattern",
+      "Can be worn as an everyday detail or combined with other small gemstone charms"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0014": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "sentimental",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "gemstones",
+      "accessories"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys delicate jewelry would love this garnet bracelet for its warm color and easy-to-stack style.",
+    "facts": [
+      "Small faceted garnet beads",
+      "Sterling silver spacer beads",
+      "Secure lobster clasp",
+      "Short extender chain",
+      "Available in 6.5-inch or 7.5-inch lengths",
+      "Can be worn alone or stacked"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0016": {
+    "giftable": 0.94,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "anniversary",
+      "birthday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic"
+    ],
+    "interests": [
+      "travel",
+      "hiking",
+      "keepsakes"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who treasures a meaningful place, engraved with the coordinates of a favorite trail, home, or meeting spot.",
+    "facts": [
+      "Slim sterling silver bar",
+      "Bar measures 28 mm",
+      "Engraved with one set of latitude and longitude",
+      "Fine cable chain with a spring ring clasp",
+      "Available with a 16-inch or 18-inch chain"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0017": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "practical",
+      "cozy"
+    ],
+    "interests": [
+      "jewelry",
+      "organization"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who wears jewelry and would appreciate a compact, natural-wood place to keep everyday pieces organized.",
+    "facts": [
+      "Made from solid cedarwood",
+      "Smooth, natural finish",
+      "Roll-top lid",
+      "Soft-lined interior with a ring groove and two open sections",
+      "Measures 6 by 4 by 2.5 inches",
+      "Wood grain varies naturally from piece to piece"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0019": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "luxurious"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who loves understated jewelry, with a subtle texture that pairs easily with other rings.",
+    "facts": [
+      "Hand-finished in solid 14-karat yellow gold",
+      "Approximately 1.7 mm wide",
+      "Available in US sizes 5 through 9",
+      "Pairs with plain or gemstone rings",
+      "Gently rounded interior"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0018": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys versatile everyday jewelry would love these petite hoops with removable pearl drops.",
+    "facts": [
+      "Gold-filled hoops with freshwater pearl drops",
+      "Each hoop measures about 10 mm in diameter",
+      "Sold as a pair",
+      "Hinged hoops are easy to fasten",
+      "Pearls are removable",
+      "Can be worn with the pearls attached or on their own"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0020": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely everyday gift for someone who enjoys versatile jewelry, with a twisted silver design that works alone or stacked.",
+    "facts": [
+      "Sterling silver",
+      "Two slender strands twisted into a rope-like design",
+      "Soft, reflective finish",
+      "Lobster clasp",
+      "1-inch extender",
+      "Choose a 6.5-inch or 7.5-inch base length"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0021": {
+    "giftable": 0.9,
+    "recipients": [
+      "friend",
+      "partner",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "anniversary",
+      "just_because"
+    ],
+    "vibes": [
+      "practical",
+      "trendy",
+      "classic"
+    ],
+    "interests": [
+      "jewelry",
+      "travel"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful pick for someone who travels with jewelry, with separate compartments that keep small pieces organized on the go.",
+    "facts": [
+      "Exterior made from durable cotton velvet",
+      "Measures 8 by 5 inches when closed",
+      "Includes a ring roll and an earring panel",
+      "Has two pockets for necklaces or bracelets",
+      "Closes with a smooth metal zipper",
+      "Available in dusty rose or midnight blue"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0022": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys understated jewelry would love this textured silver pendant for everyday wear or layering.",
+    "facts": [
+      "Sterling silver pendant",
+      "18-inch cable chain with a two-inch extender",
+      "Pendant measures 28 mm long",
+      "Rain-textured, hand-finished surface",
+      "Made in small batches"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0023": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys understated jewelry, with a sculpted beaded profile that adds a little shine.",
+    "facts": [
+      "Sold as a pair",
+      "Gold vermeil over a sterling silver base",
+      "Finished in 18k gold vermeil",
+      "Straight post with a butterfly back",
+      "Designed for pierced ears",
+      "Works well with simple studs in a second piercing"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0024": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "minimalism"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who likes understated jewelry, with a subtle black spinel and a gently open silhouette.",
+    "facts": [
+      "Sterling silver band",
+      "Single black spinel",
+      "Polished stone measures approximately 3 mm across",
+      "Low-profile bezel",
+      "Gently open silhouette with a small gap at the back",
+      "Choose from three size options"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0025": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "luxurious",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for a partner or friend who appreciates delicate, everyday jewelry in solid gold.",
+    "facts": [
+      "Made in 14k gold",
+      "Measures 6.5 inches",
+      "Comes with a one-inch extender",
+      "Has a small spring-ring clasp",
+      "Can be worn on its own or alongside a watch"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0026": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "shells",
+      "coastal"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys coastal keepsakes, this tiny sterling silver oyster shell charm can be added to a necklace or charm bracelet.",
+    "facts": [
+      "Cast in sterling silver",
+      "About 12 mm high",
+      "Fine ridges in a softly polished finish",
+      "Small attached loop fits most fine chains and charm bracelets",
+      "Chain sold separately"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0027": {
+    "giftable": 0.98,
+    "recipients": [
+      "partner",
+      "parent",
+      "grandparent",
+      "sibling",
+      "friend"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "thank_you",
+      "holiday",
+      "sympathy"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic"
+    ],
+    "interests": [
+      "jewelry",
+      "handwriting",
+      "keepsakes"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who would treasure wearing a loved one\u2019s handwriting close, engraved on a sterling silver pendant.",
+    "facts": [
+      "Sterling silver pendant",
+      "Round disc measures 16 mm across",
+      "Includes a 16-inch chain and two-inch extender",
+      "Engraved from a supplied handwriting sample",
+      "Upload a clear photo or scan of the writing",
+      "Finished by hand"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0028": {
+    "giftable": 0.88,
+    "recipients": [
+      "friend",
+      "partner",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "housewarming"
+    ],
+    "vibes": [
+      "practical",
+      "classic",
+      "cozy"
+    ],
+    "interests": [
+      "jewelry",
+      "home decor"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who wears jewelry daily and would appreciate a pretty, easy-to-find spot for small pieces.",
+    "facts": [
+      "Shallow ceramic dish shaped like a maple leaf",
+      "Glossy ivory glaze",
+      "Approximately 5 by 4 inches",
+      "Gently raised edges help keep rings and small earrings from slipping off",
+      "Intended for tabletop storage, not travel"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0029": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "graduation",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "birthstones",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys understated jewelry would love this necklace for its blue topaz accent and versatile layering style.",
+    "facts": [
+      "Sterling silver bar pendant",
+      "Bezel-set blue topaz",
+      "Pendant is 24 mm long",
+      "18-inch chain with a two-inch extender",
+      "Lobster clasp",
+      "Can be layered with shorter silver chains"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0030": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "practical",
+      "cozy"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely everyday gift for someone who appreciates understated jewelry, with a pebble-inspired shape and a ready-to-gift box.",
+    "facts": [
+      "Sterling silver studs",
+      "Satin-brushed finish",
+      "Each stud measures about 8 mm across",
+      "Sterling silver posts and butterfly backs are included",
+      "Arrives in a compact cotton-lined box"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0031": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "graduation"
+    ],
+    "vibes": [
+      "classic",
+      "luxurious"
+    ],
+    "interests": [
+      "jewelry",
+      "birthstones"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for a partner or friend, personalized with their birthstone in a delicate solid-gold signet ring.",
+    "facts": [
+      "Solid 14k gold setting",
+      "Choice of lab-created birthstone",
+      "Select a month stone and one of five available sizes",
+      "Small oval signet face",
+      "Smooth face is left unengraved",
+      "Low setting is designed for comfortable everyday wear"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0033": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "eco_friendly",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "coastal",
+      "ocean",
+      "nature"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys coastal-inspired jewelry, with a delicate kelp pendant and recycled silver.",
+    "facts": [
+      "Made from recycled sterling silver",
+      "Pendant measures 18 mm long",
+      "Adjustable chain fastens at 16 or 18 inches",
+      "Polished front and lightly textured reverse",
+      "Small-batch made"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0034": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "practical"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys everyday jewelry would love these lightweight gold vermeil hoops and their subtle honeycomb pattern.",
+    "facts": [
+      "Made from sterling silver",
+      "Thick layer of 18k gold vermeil",
+      "Hoops measure 13 mm across",
+      "Hinged posts",
+      "Open honeycomb pattern",
+      "Lightweight enough for all-day wear"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0032": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "graduation"
+    ],
+    "vibes": [
+      "practical",
+      "classic"
+    ],
+    "interests": [
+      "jewelry",
+      "travel",
+      "organization"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who wears jewelry and wants to keep small favorites organized at home or while traveling.",
+    "facts": [
+      "Exterior wrapped in natural linen",
+      "Zip-around closure",
+      "Soft microfiber lining",
+      "Removable ring roll holds several rings",
+      "Divided tray for earrings, chains, and small pendants",
+      "Measures 6 by 4 by 2 inches"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0035": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "sentimental"
+    ],
+    "interests": [
+      "gemstones",
+      "jewelry",
+      "accessories"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who loves understated jewelry and earthy gemstones, with a faceted smoky quartz that makes each ring subtly unique.",
+    "facts": [
+      "Faceted smoky quartz",
+      "Smooth sterling silver bezel",
+      "Oval stone measures approximately 7 by 5 mm",
+      "Slim, rounded band",
+      "Available in US sizes 5 through 9",
+      "Each stone has subtle variations in color and inclusions"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0037": {
+    "giftable": 0.85,
+    "recipients": [
+      "friend",
+      "partner",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "beach",
+      "charm collecting"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who loves coastal details or personal jewelry, this tiny starfish charm adds a keepsake touch to a chain or bracelet.",
+    "facts": [
+      "Cast in sterling silver",
+      "Finished with 18k gold vermeil",
+      "Measures about 12 mm from tip to tip",
+      "Has a small attached loop sized for most fine chains",
+      "Softly raised texture across the arms and a smooth reverse"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0036": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "creative"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys versatile jewelry would love this polished mariner-link bracelet for wearing solo or layering.",
+    "facts": [
+      "Sterling silver links",
+      "7 inches long with a 1-inch extender",
+      "Spring ring clasp",
+      "Links are polished by hand in small batches",
+      "Can be worn solo or combined with fine chain bracelets"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0038": {
+    "giftable": 0.94,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "graduation",
+      "just_because"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic"
+    ],
+    "interests": [
+      "astrology",
+      "astronomy",
+      "jewelry"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who loves astrology or meaningful jewelry, personalized with their zodiac constellation and optional engraving.",
+    "facts": [
+      "Round sterling silver pendant",
+      "16 mm wide",
+      "Adjustable 16\u201318-inch sterling silver chain",
+      "Choose from all twelve zodiac signs",
+      "Reverse can be engraved with up to eight characters",
+      "Made to order in small batches"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0041": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "graduation"
+    ],
+    "vibes": [
+      "classic",
+      "practical"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys understated jewelry would love these solid gold studs for comfortable everyday wear.",
+    "facts": [
+      "Solid 14k yellow gold",
+      "Smooth 3 mm ball fronts",
+      "Threaded backs screw on for a close, secure fit",
+      "Low-profile shape for everyday wear",
+      "Works well in first or additional piercings",
+      "Arrives in a cotton pouch"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0039": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "practical",
+      "luxurious"
+    ],
+    "interests": [
+      "jewelry",
+      "organization",
+      "woodworking"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who wears jewelry, with organized storage and a distinctive walnut finish.",
+    "facts": [
+      "Made from solid walnut with a natural oil finish",
+      "Measures 6 by 4 by 2.5 inches",
+      "Has a brass latch",
+      "Includes a lift-out tray for rings and small studs",
+      "Open compartment below for chains or bracelets",
+      "Interior lined in soft charcoal cotton"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0040": {
+    "giftable": 0.94,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "pearls",
+      "floral"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys delicate jewelry would love the playful silver daisies and freshwater pearls for everyday wear or spring celebrations.",
+    "facts": [
+      "Small sterling silver daisies alternate with freshwater seed pearls.",
+      "16-inch chain with a 2-inch extender.",
+      "Lobster clasp.",
+      "Each pearl is naturally shaped.",
+      "Designed for everyday wear or spring celebrations."
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0043": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "practical",
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "travel",
+      "organization"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A jewelry lover would appreciate this compact ring box for keeping rings and small keepsakes neatly organized at home or while traveling.",
+    "facts": [
+      "Soft velvet exterior",
+      "Removable insert designed to hold six rings",
+      "Measures 4 by 3 by 2 inches",
+      "Hinged lid closes with a discreet snap",
+      "Fits in a drawer or suitcase",
+      "Insert lifts out to make room for earrings or small keepsakes"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0042": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "luxurious"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys versatile jewelry, with contrasting finishes that pair naturally with mixed-metal pieces.",
+    "facts": [
+      "Polished sterling silver",
+      "Small 18k gold vermeil accent on one end",
+      "Measures 5.5 inches around with a 1-inch opening",
+      "Can be gently adjusted for fit",
+      "Wear it alone or stack it beside a watch or fine chain bracelet"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0044": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion",
+      "accessories"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys understated jewelry would love this versatile lariat necklace for everyday wear or layering.",
+    "facts": [
+      "Fine sterling silver chain",
+      "18-inch chain with a 2-inch extender",
+      "Two slim, softly tapered drops",
+      "Spring-ring clasp",
+      "Assembled in small batches"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0045": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys colorful jewelry would love these lightweight handmade earrings for everyday outfits or a dinner out.",
+    "facts": [
+      "Sterling silver drop earrings",
+      "Deep cobalt glass beads",
+      "Each bead measures about 8 mm",
+      "Overall drop is approximately 1.25 inches",
+      "Assembled by hand in small batches",
+      "Arrives with silicone backs"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0046": {
+    "giftable": 0.8,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "creative",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys distinctive jewelry would love this sculptural sterling silver ring, worn alone or stacked.",
+    "facts": [
+      "Sterling silver",
+      "Approximately 2 mm wide",
+      "Polished finish",
+      "Available in US sizes 5 through 9",
+      "Made in small batches",
+      "Can be worn alone or with a slim stacking band"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0047": {
+    "giftable": 0.82,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "practical"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who likes understated everyday jewelry would appreciate its adjustable fit and subtle sterling silver detail.",
+    "facts": [
+      "Olive green nylon cord",
+      "Small sterling silver tube bead",
+      "Adjustable from approximately 6 to 9 inches",
+      "Sliding knots; no clasp",
+      "Remove before swimming or applying lotions"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0048": {
+    "giftable": 0.88,
+    "recipients": [
+      "friend",
+      "partner",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "creative",
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "coffee",
+      "collecting",
+      "jewelry"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A coffee lover or miniature-object collector would enjoy this playful silver charm as a personal touch for a bracelet, necklace, or zipper pull.",
+    "facts": [
+      "Cast in sterling silver",
+      "About 12 mm tall",
+      "Fixed loop fits most charm bracelets and fine chains",
+      "Polished exterior with a darkened detail inside the cup",
+      "Chain and bracelet are sold separately"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0049": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "personalized gifts"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who loves everyday jewelry, personalized with a name or word that means something to them.",
+    "facts": [
+      "Sterling silver nameplate",
+      "Stamped in a typewriter-inspired font",
+      "Choose a name or word up to 10 characters",
+      "Choose an 18- or 20-inch chain",
+      "Plate measures approximately 30 by 6 mm",
+      "Cable chain with a spring-ring clasp"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0050": {
+    "giftable": 0.9,
+    "recipients": [
+      "friend",
+      "partner",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "anniversary",
+      "just_because"
+    ],
+    "vibes": [
+      "practical",
+      "classic",
+      "cozy"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who wears jewelry daily, with compact compartments to keep favorite pieces organized at home.",
+    "facts": [
+      "Upholstered in charcoal cotton velvet",
+      "Warm brass-tone clasp",
+      "Removable ring roll",
+      "Two small compartments",
+      "Measures 5 by 4 by 2 inches",
+      "Intended for home storage rather than travel"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0052": {
+    "giftable": 0.88,
+    "recipients": [
+      "friend",
+      "sibling",
+      "partner",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "just_because",
+      "thank_you"
+    ],
+    "vibes": [
+      "trendy",
+      "classic"
+    ],
+    "interests": [
+      "jewelry",
+      "fruit",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend who enjoys playful everyday jewelry would love these cheerful lemon studs, which are easy to pair with other small earrings.",
+    "facts": [
+      "Sterling silver studs",
+      "Yellow enamel",
+      "Each lemon measures approximately 7 mm across",
+      "Straight post and butterfly back",
+      "Low-profile shape sits close to the ear",
+      "Enamel is applied in small batches"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0051": {
+    "giftable": 0.25,
+    "recipients": [
+      "friend",
+      "anyone"
+    ],
+    "occasions": [
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "practical"
+    ],
+    "interests": [
+      "jewelry"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A practical little gift for someone who wears sterling silver and wants an easy way to refresh their jewelry-care kit.",
+    "facts": [
+      "Two-layer polishing cloth for sterling silver pieces",
+      "3 by 3 inch cloth",
+      "Treated inner layer lifts tarnish",
+      "Soft outer layer buffs away fingerprints",
+      "Use dry with gentle strokes",
+      "Arrives folded in a recyclable paper sleeve"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0054": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "luxurious"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys understated fine jewelry, with versatile cuffs that need no ear piercing.",
+    "facts": [
+      "Crafted in solid 14k gold",
+      "Softly brushed finish",
+      "Approximately 8 mm wide",
+      "Sold as a pair",
+      "Designed to slide onto the outer edge of the ear without a piercing",
+      "Can be worn together on one ear or split between both ears"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0053": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "trendy",
+      "classic",
+      "luxurious"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys modern statement jewelry would love this sculptural gold vermeil cuff, worn solo or layered with a slim bracelet.",
+    "facts": [
+      "Made from sterling silver",
+      "Thick layer of 14k gold vermeil",
+      "Measures about 6 inches around with a 1-inch opening",
+      "Can be gently adjusted once for fit",
+      "Open cuff slips over the wrist"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0056": {
+    "giftable": 0.9,
+    "recipients": [
+      "friend",
+      "partner",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "creative",
+      "trendy"
+    ],
+    "interests": [
+      "botanical",
+      "jewelry",
+      "nature"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys botanical details and lightweight earrings with a hand-shaped character.",
+    "facts": [
+      "Formed from recycled sterling silver",
+      "Finished in 18k gold vermeil",
+      "Hangs just under an inch",
+      "Has sterling silver ear wires",
+      "Features softly folded petal shapes",
+      "Satin finish"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0055": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you"
+    ],
+    "vibes": [
+      "classic",
+      "creative",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "coastal style",
+      "handmade"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who loves handmade jewelry and coastal details would enjoy this delicate necklace with naturally varied blue chalcedony beads.",
+    "facts": [
+      "Fine sterling silver chain",
+      "Three hand-cut blue chalcedony beads",
+      "Measures 18 inches",
+      "Spring ring clasp",
+      "2-inch extender",
+      "Made in small batches and finished by hand"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0057": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys understated statement jewelry would love this polished black onyx ring for day or evening wear.",
+    "facts": [
+      "Sterling silver setting",
+      "Black onyx stone",
+      "Stone measures approximately 10 by 8 mm",
+      "Available in US sizes 5 through 9",
+      "Lightly brushed band contrasts with glossy onyx"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0058": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys delicate jewelry, with a subtle two-tone detail that\u2019s easy to wear or stack every day.",
+    "facts": [
+      "Sterling silver cable chain",
+      "Single solid 14k gold bead",
+      "6.5 inches long with a 1-inch extender",
+      "Secure lobster clasp",
+      "Bead is fixed in place",
+      "Easy to stack with a watch or other chains"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0059": {
+    "giftable": 0.85,
+    "recipients": [
+      "friend",
+      "partner",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "sentimental",
+      "eco_friendly"
+    ],
+    "interests": [
+      "nature",
+      "moths",
+      "jewelry"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys nature-inspired jewelry or collecting meaningful charms.",
+    "facts": [
+      "Cast in recycled sterling silver",
+      "Measures about 12 mm across",
+      "Has a small soldered jump ring",
+      "Fits most standard charm bracelets and fine chains",
+      "Softly oxidized details highlight the shape"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0060": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "graduation",
+      "just_because"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful keepsake for someone who enjoys personal jewelry, stamped with the initial of your choice for everyday wear.",
+    "facts": [
+      "Sterling silver cuff",
+      "Hand-stamped with one initial",
+      "Open-ended and gently adjustable",
+      "Sized to fit most adult wrists",
+      "Band measures 4 mm wide",
+      "Can be worn alone or layered with slim bracelets"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0061": {
+    "giftable": 0.9,
+    "recipients": [
+      "friend",
+      "partner",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "anniversary",
+      "just_because"
+    ],
+    "vibes": [
+      "practical",
+      "classic",
+      "cozy"
+    ],
+    "interests": [
+      "jewelry",
+      "travel",
+      "organization"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who travels or likes keeping jewelry organized, with a compact design and dedicated storage for delicate pieces.",
+    "facts": [
+      "Sewn from indigo linen",
+      "Soft cotton lining",
+      "Measures 8 by 5 inches when closed",
+      "Includes a zip pocket, a ring bar, and three snap loops",
+      "Fabric tie secures the roll for packing",
+      "Designed for travel and tidy everyday storage"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0062": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "luxurious",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "moonstone",
+      "minimalism"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys delicate jewelry, with a subtle moonstone shimmer suited to everyday wear and layering.",
+    "facts": [
+      "Tiny rainbow moonstone cabochon",
+      "14k solid gold bar pendant",
+      "16-inch gold chain",
+      "2-inch extender",
+      "Spring ring clasp",
+      "Smooth bezel"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0063": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "trendy",
+      "creative",
+      "classic"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A stylish gift for someone who loves sculptural jewelry, with a no-piercing design that can be worn as a pair or individually.",
+    "facts": [
+      "Made from sterling silver",
+      "Plated in 18k gold vermeil",
+      "Each cuff measures about 14 mm tall",
+      "No piercing required",
+      "Sold as a pair"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0064": {
+    "giftable": 0.95,
+    "recipients": [
+      "friend",
+      "partner",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "thank_you",
+      "just_because",
+      "sympathy"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic"
+    ],
+    "interests": [
+      "pets",
+      "dogs",
+      "cats"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A pet lover would treasure this personalized pendant as a meaningful daily keepsake celebrating a beloved companion.",
+    "facts": [
+      "Sterling silver pendant",
+      "Round disc measures 16 mm across",
+      "Features a paw print",
+      "Hand-stamped name on the reverse",
+      "18-inch sterling silver cable chain with a 2-inch extender",
+      "Name can be up to eight letters"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0065": {
+    "giftable": 0.82,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "eco_friendly",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "sustainable fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys delicate jewelry would love this recycled silver ring for its subtle texture and easy stacking style.",
+    "facts": [
+      "Made from recycled sterling silver",
+      "Two slim strands twist together",
+      "Approximately 2 mm wide",
+      "Polished by hand",
+      "Available in US sizes 4 through 10",
+      "Can be worn alone or stacked with smooth bands"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0066": {
+    "giftable": 0.94,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "creative",
+      "trendy",
+      "eco_friendly"
+    ],
+    "interests": [
+      "jewelry",
+      "sea glass",
+      "coastal style",
+      "layering"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys coastal-inspired jewelry, with a naturally varied sea-glass pendant they can wear alone or layer.",
+    "facts": [
+      "Sterling silver chain",
+      "Hand-shaped sea-glass drop",
+      "Pendant measures approximately 18 mm",
+      "Adjustable 16\u201318 inch chain",
+      "Spring ring clasp",
+      "Choose pale aqua or deep teal glass"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0068": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "just_because"
+    ],
+    "vibes": [
+      "creative",
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "gemstones",
+      "handmade"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who loves distinctive handmade jewelry, with a raw aquamarine that makes each ring slightly unique.",
+    "facts": [
+      "Sterling silver setting",
+      "Small raw aquamarine",
+      "Narrow, lightly hammered band",
+      "Designed to stack or wear on its own",
+      "Stone is approximately 4\u20136 mm",
+      "Available in US sizes 5 through 9"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0067": {
+    "giftable": 0.94,
+    "recipients": [
+      "friend",
+      "partner",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "creative"
+    ],
+    "interests": [
+      "gardening",
+      "nature",
+      "botany"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for a gardener or nature lover who would enjoy a subtle botanical detail for everyday outfits.",
+    "facts": [
+      "Fern-shaped stud earrings",
+      "Cast in sterling silver",
+      "Finished with a layer of 14k gold vermeil",
+      "About 10 mm tall",
+      "Sterling silver posts and butterfly backs",
+      "Lightweight for all-day wear"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0069": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who loves delicate jewelry would enjoy this polished bracelet as a modern accent for a watch or layered chains.",
+    "facts": [
+      "14k gold vermeil",
+      "Sterling silver base",
+      "Paperclip-link bracelet",
+      "Lobster clasp",
+      "Includes a 1-inch extender",
+      "Measures 6.5 inches before the extender"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0070": {
+    "giftable": 0.9,
+    "recipients": [
+      "friend",
+      "partner",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "thank_you",
+      "just_because",
+      "holiday"
+    ],
+    "vibes": [
+      "classic",
+      "creative",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "botanical",
+      "fruit",
+      "gardening"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely small gift for someone who enjoys delicate jewelry and botanical details, with a fig charm they can wear alone or add to a collection.",
+    "facts": [
+      "Cast in solid sterling silver",
+      "Approximately 12 mm from top to bottom",
+      "Attached, hinged jump ring fits most fine chains",
+      "Gently textured surface",
+      "Reverse is smooth and lightly polished"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0071": {
+    "giftable": 0.94,
+    "recipients": [
+      "partner",
+      "friend",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic"
+    ],
+    "interests": [
+      "pets",
+      "dogs",
+      "cats"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A pet lover would treasure this personalized pendant as a meaningful everyday reminder of a beloved companion.",
+    "facts": [
+      "Sterling silver pendant",
+      "Engraved from a clear, high-contrast photo of the pet\u2019s nose",
+      "16 mm round disc",
+      "Polished front with a smooth reverse",
+      "Adjustable 16\u201318 inch silver chain",
+      "Spring ring clasp"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0072": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "practical",
+      "cozy",
+      "classic"
+    ],
+    "interests": [
+      "jewelry",
+      "travel",
+      "organization"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who wears jewelry and wants a compact, velvet-lined place to organize small favorites at home or while traveling.",
+    "facts": [
+      "Wrapped in deep juniper-green cotton velvet",
+      "Soft cream lining",
+      "Removable ring roll",
+      "Two divided compartments",
+      "Measures 5 by 4 by 2 inches",
+      "Closes with a discreet metal snap"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0073": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "graduation",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "luxurious"
+    ],
+    "interests": [
+      "jewelry",
+      "minimalism"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys understated jewelry, with a petite 14k gold pendant suited to everyday wear.",
+    "facts": [
+      "14k solid gold pendant",
+      "9 mm raindrop",
+      "Fine matching chain",
+      "Choose a 16- or 18-inch chain",
+      "Spring ring clasp",
+      "Small maker\u2019s tag"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0075": {
+    "giftable": 0.95,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "anniversary",
+      "birthday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic"
+    ],
+    "interests": [
+      "jewelry"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who treasures a meaningful date, engraved in Roman numerals on an adjustable cuff.",
+    "facts": [
+      "Engraved with Roman numerals",
+      "Choose sterling silver or 14k gold vermeil",
+      "Provide a date and preferred engraving placement at checkout",
+      "Open cuff is gently adjustable",
+      "Measures approximately 5.5 inches around",
+      "Custom engraving requires extra production time"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0074": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "creative",
+      "trendy",
+      "classic"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion",
+      "accessories"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys modern jewelry would love these sculpted silver ear jackets for adding dimension to everyday studs.",
+    "facts": [
+      "Sterling silver",
+      "Each set includes two sculpted jackets and small ball studs",
+      "Sterling silver posts and butterfly backs",
+      "Jackets measure approximately 14 mm tall",
+      "Can be worn with the supplied studs or compatible small studs",
+      "Brushed finish"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0077": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "nature",
+      "forest walks",
+      "jewelry"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys nature-inspired jewelry, with a hand-textured pine needle pendant for everyday wear or layering.",
+    "facts": [
+      "Slender sterling silver chain",
+      "Small, hand-textured pine needle pendant",
+      "Finished in warm 14k gold vermeil",
+      "Pendant measures about 22 mm long",
+      "Adjustable 16\u201318 inch chain",
+      "Finished in small batches"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0076": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "sentimental",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "gemstones",
+      "accessories"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who loves delicate jewelry would appreciate this sterling silver bangle and its shifting blue-flash moonstone.",
+    "facts": [
+      "Sterling silver bangle",
+      "Bezel-set rainbow moonstone",
+      "Stone measures about 5 mm",
+      "Hinged bangle with a secure side clasp",
+      "2.5-inch inner diameter",
+      "Can be worn alone or layered with smooth metal bangles"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0078": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "thank_you",
+      "holiday"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "pearls",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys understated jewelry would love these lightweight pearl drops for everyday wear or dressing up.",
+    "facts": [
+      "Freshwater pearls",
+      "Hand-formed sterling silver hooks",
+      "Hang approximately 32 mm from the ear",
+      "Sold as a pair",
+      "Secure backs are included"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0079": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "gemstones",
+      "accessories"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A partner or friend who enjoys understated jewelry would love this petite smoky quartz ring for everyday wear and easy stacking.",
+    "facts": [
+      "Faceted smoky quartz stone",
+      "Low-profile sterling silver setting",
+      "Stone measures approximately 5 mm across",
+      "Slim 1.5 mm band",
+      "Available in US sizes 5 through 9",
+      "Natural tonal variation from pale tea to deep brown"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0080": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "graduation"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "luxurious"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys delicate everyday jewelry, with an adjustable fit and a polished gold finish.",
+    "facts": [
+      "Made from solid 14k gold cable chain",
+      "Finished with a small polished bead",
+      "Spring-ring clasp and two-inch extender",
+      "Chain measures 1.2 mm wide",
+      "Choose a 6.5\u20137.5 inch or 7.5\u20138.5 inch adjustable length",
+      "Can be worn alone or alongside a watch and other slim bracelets"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0081": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "creative",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "botany",
+      "nature"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who loves delicate jewelry or botanical details, ready to style on a favorite chain or bracelet.",
+    "facts": [
+      "Cast in sterling silver",
+      "Finished with a layer of 14k gold vermeil",
+      "Approximately 12 mm long",
+      "Lightly raised veins add texture",
+      "Small, sturdy jump ring",
+      "Charm is sold on its own"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0082": {
+    "giftable": 0.95,
+    "recipients": [
+      "partner",
+      "parent",
+      "grandparent",
+      "friend"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic"
+    ],
+    "interests": [
+      "jewelry",
+      "handwriting",
+      "keepsakes"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful keepsake for someone who would treasure a loved one\u2019s handwriting engraved on a sterling silver pendant.",
+    "facts": [
+      "Sterling silver circle pendant",
+      "Engraved from a clear image of handwriting",
+      "16 mm disc",
+      "Adjustable 16\u201318 inch sterling silver chain",
+      "Polished surface",
+      "Made to order and presented ready for gifting"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0083": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "anniversary",
+      "just_because"
+    ],
+    "vibes": [
+      "practical",
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "travel"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who travels with jewelry and wants a compact way to keep pieces organized and untangled.",
+    "facts": [
+      "Covered in soft, durable leatherette",
+      "Measures 16 by 11 cm when closed",
+      "Includes a padded ring bar",
+      "Has three necklace hooks with a pocket beneath",
+      "Includes a divided compartment",
+      "Fastens with a discreet snap"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0085": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "flowers",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys colorful floral jewelry, with petite poppy details for a cheerful everyday accent.",
+    "facts": [
+      "Sterling silver posts",
+      "Hand-applied red enamel petals",
+      "Each flower measures about 9 mm across",
+      "Secure butterfly backs",
+      "Polished silver settings"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0084": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "creative",
+      "classic",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "clouds",
+      "layering"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who enjoys sculptural silver jewelry and a subtle everyday reminder to look up.",
+    "facts": [
+      "Hand-sculpted sterling silver cloud pendant",
+      "Softly brushed finish",
+      "Pendant measures 19 mm wide",
+      "Fine 18-inch chain with a 2-inch extender",
+      "Smooth back rests comfortably against the skin"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0086": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "creative"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who enjoys understated jewelry, with textured ridges and an adjustable fit for easy everyday wear.",
+    "facts": [
+      "Sterling silver",
+      "Two narrow raised ridges",
+      "Approximately 5 mm wide",
+      "Open cuff with a gentle, adjustable fit on most wrists",
+      "Polished edges and softly satin center",
+      "Formed and finished in small batches"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0087": {
+    "giftable": 0.94,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "parent",
+      "grandparent"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic",
+      "creative"
+    ],
+    "interests": [
+      "jewelry",
+      "botany",
+      "flowers"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who would appreciate a personal keepsake featuring their birth flower and month.",
+    "facts": [
+      "Sterling silver pendant",
+      "18 mm round pendant",
+      "Lightly brushed face",
+      "Engraved with a birth flower illustration and month name",
+      "Adjustable 16\u201318 inch silver chain",
+      "Made to order"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0088": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "gemstones"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely everyday gift for someone who enjoys subtle color and natural gemstones.",
+    "facts": [
+      "Natural citrine cabochons, approximately 5 mm across",
+      "Low-profile sterling silver settings",
+      "Sterling silver posts and butterfly backs",
+      "Supplied as a pair in a cotton jewelry pouch"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0089": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "graduation",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "luxurious"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who loves understated jewelry, with solid gold craftsmanship and a design made for everyday wear.",
+    "facts": [
+      "Crafted in solid 14k yellow gold",
+      "9 by 7 mm face",
+      "Plain, understated finish",
+      "Rounded inner band designed for comfortable daily wear",
+      "Available in US sizes 5 through 9",
+      "Arrives in a recyclable presentation box"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0091": {
+    "giftable": 0.9,
+    "recipients": [
+      "friend",
+      "sibling",
+      "partner",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "creative",
+      "classic"
+    ],
+    "interests": [
+      "charms",
+      "jewelry",
+      "marshmallows"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend who enjoys playful jewelry or collecting charms would love this tiny toasted marshmallow accent.",
+    "facts": [
+      "Creamy ivory enamel with a toasted caramel edge",
+      "Set on a sterling silver base",
+      "Measures about 12 mm tall",
+      "Hangs from a sturdy silver jump ring",
+      "Fits most fine charm bracelets and necklace chains",
+      "Chain sold separately"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0090": {
+    "giftable": 0.86,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys understated jewelry would love this adjustable bracelet\u2019s moss-green cord and handmade silver details.",
+    "facts": [
+      "Deep moss-green silk cord",
+      "Handmade sterling silver toggle",
+      "Small polished silver bead",
+      "Adjustable sliding knot fits wrists from 6 to 8 inches",
+      "Lightweight cord",
+      "Remove before swimming or bathing"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0092": {
+    "giftable": 0.95,
+    "recipients": [
+      "partner",
+      "parent",
+      "friend",
+      "anyone"
+    ],
+    "occasions": [
+      "anniversary",
+      "birthday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic"
+    ],
+    "interests": [
+      "jewelry",
+      "keepsakes",
+      "music"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A partner, friend, or loved one would treasure this personalized pendant, engraved with a meaningful recorded phrase.",
+    "facts": [
+      "Polished sterling silver bar pendant",
+      "Bar measures 32 by 7 mm",
+      "Adjustable 18-inch chain with a 2-inch extender",
+      "Submit a clear audio file up to 10 seconds",
+      "Optional short date on the reverse",
+      "Arrives ready to give in a recyclable gift box"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0093": {
+    "giftable": 0.55,
+    "recipients": [
+      "friend",
+      "partner",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "just_because"
+    ],
+    "vibes": [
+      "practical"
+    ],
+    "interests": [
+      "jewelry"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A practical gift for someone choosing a new ring, with a reusable gauge for checking fit at home or while traveling.",
+    "facts": [
+      "Flexible, reusable plastic gauge",
+      "US sizes 1 through 13",
+      "Half-size increments",
+      "Fastens with a sliding lock",
+      "Adjust until comfortably snug and read the size at the marker"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0094": {
+    "giftable": 0.92,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "practical",
+      "luxurious"
+    ],
+    "interests": [
+      "jewelry",
+      "organization"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who wears jewelry and would appreciate an elegant, compact place to keep everyday pieces organized.",
+    "facts": [
+      "Measures 6 by 4 by 2 inches",
+      "Brushed brass-finish exterior",
+      "Navy velvet-lined interior",
+      "Includes a lift-out tray with ring rolls",
+      "Has two small compartments and a lower section for chains or bracelets",
+      "Wipe the exterior with a dry cloth"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0095": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys distinctive everyday jewelry would love these lightweight hoops with their softly sculptural shape.",
+    "facts": [
+      "Made from recycled sterling silver",
+      "Finished in 18k gold vermeil",
+      "Each hoop measures 18 mm across",
+      "Closes with a hinged snap clasp",
+      "Sold as a pair",
+      "Store dry and polish lightly with a soft, non-abrasive cloth"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0097": {
+    "giftable": 0.25,
+    "recipients": [
+      "friend",
+      "anyone"
+    ],
+    "occasions": [],
+    "vibes": [
+      "practical"
+    ],
+    "interests": [
+      "jewelry"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A practical little add-on for someone who wears silver or gold vermeil jewelry and wants to keep it looking cared for.",
+    "facts": [
+      "Pack contains three soft, untreated cotton cloths",
+      "Each cloth measures 6 by 6 inches",
+      "Suitable for gentle dry buffing of fingerprints and light surface marks",
+      "Keep the cloths dry between uses",
+      "Not impregnated with polish"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0096": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you"
+    ],
+    "vibes": [
+      "classic",
+      "sentimental",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "pearls",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who loves classic jewelry would appreciate this softly layered pearl bracelet for everyday wear or special occasions.",
+    "facts": [
+      "Two delicate strands of small freshwater pearls",
+      "Pearls are individually knotted on silk cord",
+      "Finished with a sterling silver lobster clasp",
+      "Includes a short extender chain",
+      "Choose a 6.5-inch or 7.5-inch base length",
+      "Natural pearls vary slightly in shape and luster"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0099": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "creative"
+    ],
+    "interests": [
+      "jewelry",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys classic jewelry with a restrained pop of color and an easy everyday style.",
+    "facts": [
+      "Sterling silver hoops",
+      "Warm ochre enamel along the front edge",
+      "18 mm in diameter",
+      "Hinged latch closure",
+      "Lightweight enough for daily use"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0098": {
+    "giftable": 0.94,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "graduation",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "sentimental",
+      "eco_friendly",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "travel",
+      "navigation"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who loves understated jewelry or the symbolism of a compass, made from recycled sterling silver.",
+    "facts": [
+      "Small compass rose pendant",
+      "Fine sterling silver cable chain",
+      "Pendant measures 14 mm across",
+      "Chain adjusts between 16 and 18 inches",
+      "Spring-ring clasp",
+      "Made in small batches from recycled sterling silver"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0100": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "graduation",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "luxurious"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who loves modern jewelry, with a hand-hammered texture and warm gold finish for everyday wear.",
+    "facts": [
+      "Sterling silver signet ring",
+      "18k gold vermeil",
+      "Hand-hammered texture",
+      "Face measures approximately 10 mm across",
+      "Available in US sizes 5 through 10",
+      "Made in small batches and finished by hand"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0101": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "nautical style"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys understated jewelry would love this adjustable bracelet\u2019s sterling silver details and deep blue cord.",
+    "facts": [
+      "Fine sterling silver chain",
+      "Deep blue waxed cotton cord",
+      "Small toggle clasp and end bars are solid sterling silver",
+      "Adjusts to fit wrists from 6 to 7.5 inches",
+      "Wear it alone or stack it with a slim metal bangle",
+      "Remove before swimming or applying lotions"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0102": {
+    "giftable": 0.82,
+    "recipients": [
+      "friend",
+      "partner",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "just_because",
+      "thank_you"
+    ],
+    "vibes": [
+      "classic",
+      "sentimental"
+    ],
+    "interests": [
+      "nature",
+      "woodland walks",
+      "autumn"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful little gift for someone who loves nature-inspired jewelry or wants a charm to mark a new beginning.",
+    "facts": [
+      "Cast in sterling silver",
+      "Finished with 18k gold vermeil",
+      "Textured cap and smooth rounded base",
+      "Measures 11 mm tall",
+      "Includes a small jump ring",
+      "Sold on its own"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0103": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "anyone"
+    ],
+    "occasions": [
+      "anniversary",
+      "birthday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic"
+    ],
+    "interests": [
+      "travel",
+      "personalized jewelry"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who treasures a meaningful place, personalized with its coordinates on a sleek necklace.",
+    "facts": [
+      "Slim sterling silver bar pendant",
+      "Engraved with chosen latitude and longitude",
+      "28 mm pendant",
+      "18-inch cable chain with a 2-inch extender",
+      "Available in polished sterling silver or gold vermeil",
+      "Arrives in a cotton pouch with a care card"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0105": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "luxurious"
+    ],
+    "interests": [
+      "jewelry",
+      "gemstones",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys gemstone jewelry, with natural garnets and versatile styling for evenings or everyday outfits.",
+    "facts": [
+      "Deep red garnet briolettes",
+      "Petite crescent shapes in sterling silver",
+      "About 32 mm from ear wire to stone tip",
+      "Lightweight on the ear",
+      "Natural stones may vary slightly in color and inclusions",
+      "Finished with sterling silver ear wires"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0104": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "practical",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "organization",
+      "woodworking"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who wears jewelry and would appreciate a compact, characterful place to keep rings and keepsakes.",
+    "facts": [
+      "Made from cedar with a natural satin finish",
+      "Removable linen-covered tray",
+      "Six ring slots",
+      "Two divided compartments",
+      "Lower section for chains or small keepsakes",
+      "Measures 7 by 5 by 3 inches"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0106": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "graduation",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "luxurious",
+      "sentimental"
+    ],
+    "interests": [
+      "jewelry",
+      "minimalism",
+      "beach"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who loves understated jewelry, with a solid-gold wave pendant that layers easily with other necklaces.",
+    "facts": [
+      "Crafted in solid 14k gold",
+      "Pendant measures 19 mm wide",
+      "Fine 16-inch chain with a 2-inch extender",
+      "Secure spring-ring clasp",
+      "Choose yellow or white gold at checkout",
+      "Made in small batches"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0107": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "creative",
+      "classic",
+      "eco_friendly",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "gemstones",
+      "nature"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys distinctive gemstone jewelry, with a landscape-like moss agate pattern that makes each ring slightly different.",
+    "facts": [
+      "Petite oval moss agate cabochon",
+      "Narrow recycled sterling silver band",
+      "Stone measures approximately 8 by 6 mm",
+      "Designed to stack or wear by itself",
+      "Available in US sizes 5 through 9",
+      "Clean gently with a soft cloth"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0108": {
+    "giftable": 0.9,
+    "recipients": [
+      "friend",
+      "sibling",
+      "partner",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "sentimental",
+      "creative"
+    ],
+    "interests": [
+      "reading",
+      "books",
+      "writing",
+      "book clubs"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful keepsake for readers, writers, or book-club friends, with a miniature open-book design they can wear or carry.",
+    "facts": [
+      "Cast in sterling silver",
+      "Measures 13 mm wide",
+      "Lightly etched page lines",
+      "Includes a sturdy jump ring",
+      "Attaches to a bracelet, necklace, or key charm loop",
+      "Arrives in a cotton pouch with a polishing cloth"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0110": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "gemstones",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys understated jewelry, with naturally patterned moss agate drops that make each pair unique.",
+    "facts": [
+      "Slim sterling silver threader earrings",
+      "Small, naturally patterned moss agate drops",
+      "Made with 925 sterling silver findings",
+      "Lightweight enough for daytime wear",
+      "Fine chains pass through pierced ears",
+      "Polished silver bars at the ends"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0109": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "eco_friendly"
+    ],
+    "interests": [
+      "jewelry",
+      "coastal style",
+      "layering"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys understated jewelry, with a coastal-inspired shape that layers easily for everyday wear.",
+    "facts": [
+      "Made from recycled 925 sterling silver",
+      "Gently curved pendant",
+      "18-inch chain with a 2-inch extender",
+      "Spring-ring clasp",
+      "Softly brushed front and polished edges"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0111": {
+    "giftable": 0.82,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys understated jewelry would love this sculptural ring for comfortable everyday wear or stacking.",
+    "facts": [
+      "Gold vermeil ring",
+      "Band formed from recycled sterling silver",
+      "Finished with a thick layer of 14k gold vermeil",
+      "Available in US sizes 5 through 9",
+      "Designed for solo wear or alongside fine stacking bands",
+      "Remove before swimming or applying lotions"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0112": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "sentimental",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "water"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who prefers understated jewelry, with a delicate water-inspired detail for everyday wear.",
+    "facts": [
+      "Sterling silver chain bracelet",
+      "Small, gently rippled centerpiece inspired by water in motion",
+      "925 silver links polished by hand",
+      "Lobster clasp",
+      "Adjustable from 6.5 to 8 inches"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0113": {
+    "giftable": 0.85,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "celestial"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely choice for someone who enjoys subtle jewelry and celestial details, especially as a meaningful addition to a chain or charm bracelet they already own.",
+    "facts": [
+      "Cut from recycled sterling silver",
+      "Plated in 14k gold vermeil",
+      "Approximately 12 mm tall",
+      "Small round loop fits most fine chains and charm bracelets",
+      "Lightly polished front with a smooth, simple reverse"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0116": {
+    "giftable": 0.82,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "sentimental"
+    ],
+    "interests": [
+      "nature",
+      "botany",
+      "jewelry"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone who loves nature-inspired jewelry, with a textured olive branch design that pairs easily with other silver pieces.",
+    "facts": [
+      "Made from 925 silver",
+      "Polished finish",
+      "Sturdy top loop for threading onto a fine chain or charm bracelet",
+      "Measures approximately 24 mm from loop to tip",
+      "Tiny raised leaves add texture and dimension"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0115": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "eco_friendly"
+    ],
+    "interests": [
+      "jewelry",
+      "beach",
+      "coastal style"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys understated jewelry and beach-inspired details, with sea-green glass and recycled silver settings.",
+    "facts": [
+      "Sea-green glass cabochons",
+      "Recycled 925 silver settings",
+      "Each stud measures about 7 mm across",
+      "Sterling silver post and butterfly back"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0114": {
+    "giftable": 0.95,
+    "recipients": [
+      "partner",
+      "parent",
+      "grandparent",
+      "sibling",
+      "friend"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "graduation",
+      "just_because"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic"
+    ],
+    "interests": [
+      "jewelry",
+      "keepsakes"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone close to you, with a personal engraving and space to carry a tiny photo, note, or pressed keepsake.",
+    "facts": [
+      "Small oval locket in sterling silver",
+      "Opens to hold a tiny photograph, note, or pressed keepsake",
+      "Front can be engraved with up to eight characters",
+      "18-inch 925 sterling silver cable chain",
+      "2-inch extender and secure lobster clasp",
+      "Engraving is applied by hand"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0117": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "thank_you",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "creative",
+      "trendy"
+    ],
+    "interests": [
+      "jewelry",
+      "accessories",
+      "fashion"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys everyday jewelry would love this textured silver trio, which can be stacked together or worn across several fingers.",
+    "facts": [
+      "Three slim 925 sterling silver bands",
+      "Each ring has a different hand-textured surface",
+      "Inspired by smooth river pebbles",
+      "Can be worn together or spaced across several fingers",
+      "Choose your ring size at checkout",
+      "Arrives in a recyclable jewelry pouch"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0118": {
+    "giftable": 0.94,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "parent"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "thank_you",
+      "graduation",
+      "just_because"
+    ],
+    "vibes": [
+      "sentimental",
+      "classic"
+    ],
+    "interests": [
+      "jewelry",
+      "personalized gifts"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A thoughtful gift for someone close to you, personalized with a name, initials, or a meaningful word.",
+    "facts": [
+      "Narrow sterling silver bar",
+      "Engraved with a name, initials, or short meaningful word",
+      "Fine 925 silver cable chain",
+      "Lobster clasp",
+      "1-inch extender",
+      "Adjustable fit from 6.5 to 7.5 inches"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0119": {
+    "giftable": 0.9,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "practical",
+      "classic",
+      "cozy"
+    ],
+    "interests": [
+      "jewelry",
+      "travel",
+      "organizing"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A friend or partner who enjoys keeping jewelry organized would appreciate its compact design and removable travel tray.",
+    "facts": [
+      "Maple veneer exterior",
+      "Removable tray for rings and small earrings",
+      "Soft-lined interior with separate compartments",
+      "Approximately 7 by 5 by 3 inches",
+      "Fits on a dresser or inside a suitcase for short trips",
+      "Lift-off lid and padded base"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  },
+  "jewelry-0120": {
+    "giftable": 0.88,
+    "recipients": [
+      "partner",
+      "friend",
+      "sibling",
+      "anyone"
+    ],
+    "occasions": [
+      "birthday",
+      "anniversary",
+      "holiday",
+      "just_because"
+    ],
+    "vibes": [
+      "classic",
+      "trendy",
+      "creative"
+    ],
+    "interests": [
+      "jewelry",
+      "botany",
+      "nature"
+    ],
+    "age_band": "adult",
+    "gift_pitch": "A lovely gift for someone who enjoys delicate jewelry and botanical details, with an adjustable chain for everyday layering.",
+    "facts": [
+      "Sterling silver chain",
+      "Finished in warm 18k gold vermeil",
+      "Openwork canopy pendant with cutout leaves",
+      "Pendant measures 18 mm across",
+      "Adjustable chain fastens at 16 or 18 inches",
+      "Made in small batches"
+    ],
+    "_version": "enrich-v2+gpt-6-luna",
+    "_fallback": false
+  }
+}

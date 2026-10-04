@@ -194,3 +194,19 @@ async def test_receipt_has_date_options_and_how_to_exchange(db_session, shop):
     assert "help@snowco.com" in html and "snowco.com" in html and "mention order <b>#1001</b>" in html
     assert "<!--email_off--><b>help@snowco.com</b><!--/email_off-->" in html   # Cloudflare leaves it alone
     assert "$" not in html and "49" not in html                   # still no prices
+
+
+@pytest.mark.asyncio
+async def test_cards_with_a_message_get_a_qr_code(db_session, shop):
+    from core.db.models import GiftMedia
+    db_session.add(GiftMedia(shop_id=shop.id, token="mom-token-000001", view_token="mom-view-token-0000001",
+                             kind="video", storage_key="k", mime="video/mp4", status="linked"))
+    await db_session.commit()
+    groups = [{"id": "g1", "label": "Mom", "note": "Hi", "message": "mom-token-000001"},
+              {"id": "g2", "label": "Dad", "message": "made-up-token-01"}]
+    o = order(attrs={"_giftsense_gifts": json.dumps(groups)},
+              lines=[line("Ski Wax", {"_giftsense_gift": "g1"}), line("Board", {"_giftsense_gift": "g2"})])
+    resp, _ = get(db_session, gql_response(o, shop={"name": "Snow & Co", "primaryDomain": {"host": "snow.co"}}))
+    html = resp.text
+    assert html.count('class="qr"') == 1 and html.count("<svg") == 1          # Dad's token isn't a real recording
+    assert "Scan to watch your message" in html

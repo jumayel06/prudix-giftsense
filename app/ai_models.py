@@ -29,13 +29,12 @@ from app.config import PLAN_DEFAULT_AI_TIER, PLANS
 #   would go stale on the next swap).
 # price: USD per million tokens. caps drive request shaping in app/llm.py:
 #   max_tokens_param   request field for the output cap
-#   temperature        "always" | "never" (400s on non-default) | "thinking_off"
+#   temperature        "never" (400s on non-default) | "thinking_off" (only with thinking off)
 #   thinking_off       extra request fields that turn thinking/reasoning off
 #   thinking_on        extra request fields when a caller opts into thinking
 # provider_retires_on: provider's earliest possible retirement (None = none announced).
 _OPENAI_REASONING = {"max_tokens_param": "max_completion_tokens", "temperature": "thinking_off",
                      "thinking_off": {"reasoning_effort": "none"}, "thinking_on": {"reasoning_effort": "medium"}}
-_OPENAI_CLASSIC = {"max_tokens_param": "max_tokens", "temperature": "always", "thinking_off": {}, "thinking_on": {}}
 
 MODELS = {
     "gpt-6-luna": {
@@ -61,22 +60,6 @@ MODELS = {
                  "thinking_off": {"thinking": {"type": "between_tools"}}, "thinking_on": {}},
         "provider_retires_on": date(2027, 9, 28),
     },
-    # Retired 2026-09-28 by the six-model eval (kept for historical cost and
-    # so old stored values resolve): GPT-6 Luna beat Haiku 4.5 on speed, reason
-    # accuracy and cost, and GPT-6 replaced the GPT-4 generation.
-    "claude-haiku-4-5": {
-        "label": "Claude Haiku 4.5", "provider": "anthropic", "price": (1.00, 5.00), "status": "retired", "replacement": "gpt-6-luna",
-        "caps": {"max_tokens_param": "max_tokens", "temperature": "always", "thinking_off": {}, "thinking_on": {}},
-        "provider_retires_on": date(2026, 10, 15),
-    },
-    "gpt-4o-mini": {
-        "label": "GPT-4o mini", "provider": "openai", "price": (0.15, 0.60), "status": "retired", "replacement": "gpt-6-luna",
-        "caps": _OPENAI_CLASSIC, "provider_retires_on": None,
-    },
-    "gpt-4.1": {
-        "label": "GPT-4.1", "provider": "openai", "price": (2.00, 8.00), "status": "retired", "replacement": "gpt-6-sol",
-        "caps": _OPENAI_CLASSIC, "provider_retires_on": None,
-    },
 }
 
 # ── Slots: what each tier / background job runs on ──────────────────────────
@@ -84,7 +67,7 @@ SLOTS = {
     "ai_standard":      {"model": "gpt-6-luna",      "next": None, "rollout_pct": 0},
     "ai_advanced":      {"model": "gpt-6-sol",       "next": None, "rollout_pct": 0},
     "ai_premium":       {"model": "claude-sonnet-5", "next": None, "rollout_pct": 0},
-    # Product gift profiles (was Haiku 4.5 until 2026-09-28; Luna ≈ 12× cheaper).
+    # Product gift profiles.
     "catalog_analysis": {"model": "gpt-6-luna",      "next": None, "rollout_pct": 0},
 }
 
@@ -99,13 +82,6 @@ AI_TIERS = {
                  "description": "More thoughtful picks with carefully worded, accurate reasons."},
     "premium":  {"label": "Premium",  "weight": 4, "slot": "ai_premium",
                  "description": "Our most capable AI: the strongest picks and most personal notes."},
-}
-
-# Older stored values (model IDs, and the first tier names) → current tier.
-LEGACY_SELECTIONS = {
-    "gpt-6-luna": "standard", "gpt-4o-mini": "standard", "claude-haiku-4-5": "standard", "fast": "standard",
-    "gpt-6-sol": "advanced", "gpt-4.1": "advanced", "balanced": "advanced",
-    "claude-sonnet-5": "premium", "claude-sonnet-5-5": "premium",
 }
 
 AI_TIER_WEIGHTS = {t: spec["weight"] for t, spec in AI_TIERS.items()}
@@ -148,8 +124,7 @@ def resolve_model(slot: str, shop_id=None, pins: dict | None = None) -> str:
 def ai_tier_for(plan_tier: str | None, selected: str | None) -> str:
     """The shop's AI tier: its choice if the plan includes it, else the plan default."""
     plan = plan_tier if plan_tier in PLANS else "starter"
-    tier = LEGACY_SELECTIONS.get(selected, selected)
-    return tier if tier in PLANS[plan]["ai_tiers"] else PLAN_DEFAULT_AI_TIER[plan]
+    return selected if selected in PLANS[plan]["ai_tiers"] else PLAN_DEFAULT_AI_TIER[plan]
 
 
 def model_for_shop(shop) -> str:

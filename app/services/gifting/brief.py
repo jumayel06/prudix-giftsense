@@ -19,6 +19,14 @@ class GiftBrief(BaseModel):
     vibes: list[str] = Field(default_factory=list, max_length=MAX_VIBES)
     age_band: Optional[str] = None
     free_text: str = Field(default="", max_length=MAX_FREE_TEXT)
+    locale: Optional[str] = None   # storefront language; anything malformed is ignored (English)
+
+    @field_validator("locale", mode="before")
+    @classmethod
+    def _locale(cls, v):
+        import re
+        from app.services.gifting.languages import LOCALE_RE
+        return v if isinstance(v, str) and len(v) <= 20 and re.fullmatch(LOCALE_RE, v) else None
 
     @field_validator("recipient")
     @classmethod

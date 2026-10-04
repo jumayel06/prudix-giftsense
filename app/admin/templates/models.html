@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}AI models · GiftSense admin{% endblock %}
+{% block content %}
+<h1 class="page-title">AI models</h1>
+<p class="page-subtitle">Slots, rollouts and models come from <code>app/ai_models.py</code> (change them there and deploy). Per-shop pins are set on each shop's page.</p>
+<div class="section"><h2>Slots</h2>
+<table><thead><tr><th>Slot</th><th>Merchant option</th><th>Model</th><th>Next</th><th class="num">Rollout</th></tr></thead><tbody>
+{% for s in m.slots %}<tr><td class="mono">{{ s.slot }}</td><td>{{ s.tier or 'background job' }}</td><td>{{ s.model }}</td><td>{{ s.next or '—' }}</td><td class="num">{{ s.rollout_pct }}%</td></tr>{% endfor %}
+</tbody></table></div>
+<div class="section"><h2>Usage by model, last 30 days</h2>
+<table><thead><tr><th>Model</th><th class="num">Calls</th><th class="num">Shops</th><th class="num">Avg ms</th><th class="num">Cost</th></tr></thead><tbody>
+{% for u in m.usage %}<tr><td>{{ u.label }}</td><td class="num">{{ u.calls }}</td><td class="num">{{ u.shops }}</td><td class="num">{{ u.avg_ms }}</td><td class="num mono">${{ "%.4f"|format(u.cost) }}</td></tr>
+{% else %}<tr><td colspan="5" class="text-muted">No AI use yet.</td></tr>{% endfor %}</tbody></table></div>
+<div class="section"><h2>Registry</h2>
+<table><thead><tr><th>Model</th><th>Provider</th><th class="num">$ / 1M in · out</th><th>Status</th><th>Fallback</th><th>Provider retires</th></tr></thead><tbody>
+{% for x in m.models %}<tr><td>{{ x.label }} <span class="text-faint mono">{{ x.id }}</span></td><td>{{ x.provider }}</td><td class="num mono">{{ x.price[0] }} · {{ x.price[1] }}</td>
+<td>{{ x.status }}</td><td>{{ x.fallback or x.replacement or '—' }}</td><td>{{ x.provider_retires_on or '—' }}</td></tr>{% endfor %}</tbody></table></div>
+<div class="section"><h2>Pinned shops</h2>
+{% if m.pinned %}<table><tbody>{% for domain, id, pins in m.pinned %}<tr><td><a href="/admin/shops/{{ id }}">{{ domain }}</a></td><td class="mono">{% for slot, model in pins.items() %}{{ slot }} → {{ model }}{% if not loop.last %}, {% endif %}{% endfor %}</td></tr>{% endfor %}</tbody></table>
+{% else %}<p class="text-muted">No shop has a pin.</p>{% endif %}</div>
+{% endblock %}

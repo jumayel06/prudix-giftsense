@@ -49,12 +49,12 @@ PERSONAS = {"candles": [
 @pytest.mark.asyncio
 async def test_full_run_offline_then_rerun_uses_caches(tmp_path):
     model = FakeModel()
-    run = EvalRun(["candles"], ["claude-haiku-4-5", "claude-sonnet-5"], Ledger(cap_usd=5), FakeEmbedder(),
+    run = EvalRun(["candles"], ["gpt-6-luna", "claude-sonnet-5"], Ledger(cap_usd=5), FakeEmbedder(),
                   chat_fn=model, data_dir=tmp_path / "data", results_dir=tmp_path / "results", log=lambda *_: None)
     report = await run.run(PERSONAS)
 
-    assert set(report["summary"]) == {"claude-haiku-4-5", "claude-sonnet-5"}
-    row = report["summary"]["claude-haiku-4-5"]
+    assert set(report["summary"]) == {"gpt-6-luna", "claude-sonnet-5"}
+    row = report["summary"]["gpt-6-luna"]
     assert row["searches"] == 2 and row["budget_violations"] == 0 and row["invented"] == 0
     assert (tmp_path / "results" / "report.md").read_text().startswith("# Gift finder evaluation")
     assert "Label spot-check" in (tmp_path / "results" / "review.html").read_text()
@@ -64,7 +64,7 @@ async def test_full_run_offline_then_rerun_uses_caches(tmp_path):
 
     # Rerun: catalogs + profiles cached; only searches (and reason checks) cost again.
     before = dict(model.calls)
-    run2 = EvalRun(["candles"], ["claude-haiku-4-5"], Ledger(cap_usd=5), FakeEmbedder(), chat_fn=model,
+    run2 = EvalRun(["candles"], ["gpt-6-luna"], Ledger(cap_usd=5), FakeEmbedder(), chat_fn=model,
                    data_dir=tmp_path / "data", results_dir=tmp_path / "results", log=lambda *_: None)
     await run2.run(PERSONAS)
     assert model.calls["generate"] == before["generate"]
@@ -80,7 +80,7 @@ async def test_run_stops_at_the_spending_cap_and_keeps_finished_work(tmp_path, m
     # Price profiles like Sonnet 5 (~20× Luna) so the cap lands mid-profiles.
     monkeypatch.setattr("evals.runner.resolve_model", lambda slot: "claude-sonnet-5")
     model = FakeModel()
-    run = EvalRun(["candles"], ["claude-haiku-4-5"], Ledger(cap_usd=0.07), FakeEmbedder(), chat_fn=model,
+    run = EvalRun(["candles"], ["gpt-6-luna"], Ledger(cap_usd=0.07), FakeEmbedder(), chat_fn=model,
                   data_dir=tmp_path / "data", results_dir=tmp_path / "results", concurrency=1, log=lambda *_: None)
     with pytest.raises(BudgetExceeded):
         await run.run(PERSONAS)
@@ -93,7 +93,7 @@ async def test_run_stops_at_the_spending_cap_and_keeps_finished_work(tmp_path, m
 @pytest.mark.asyncio
 async def test_stop_during_catalog_generation_saves_no_partial_catalog(tmp_path):
     from evals.ledger import BudgetExceeded
-    run = EvalRun(["candles"], ["claude-haiku-4-5"], Ledger(cap_usd=0.017), FakeEmbedder(), chat_fn=FakeModel(),
+    run = EvalRun(["candles"], ["gpt-6-luna"], Ledger(cap_usd=0.017), FakeEmbedder(), chat_fn=FakeModel(),
                   data_dir=tmp_path / "data", results_dir=tmp_path / "results", log=lambda *_: None)
     with pytest.raises(BudgetExceeded):
         await run.run(PERSONAS)
@@ -113,10 +113,10 @@ class ThinkingOverrunModel(FakeModel):
 @pytest.mark.asyncio
 async def test_empty_judge_reply_is_retried_without_thinking(tmp_path):
     model = ThinkingOverrunModel()
-    run = EvalRun(["candles"], ["claude-haiku-4-5"], Ledger(cap_usd=5), FakeEmbedder(),
+    run = EvalRun(["candles"], ["gpt-6-luna"], Ledger(cap_usd=5), FakeEmbedder(),
                   chat_fn=model, data_dir=tmp_path / "data", results_dir=tmp_path / "results", log=lambda *_: None)
     report = await run.run(PERSONAS)
 
     assert model.calls["judge"] == 4  # one failed + one retry per persona
-    assert report["summary"]["claude-haiku-4-5"]["unjudged"] == 0
+    assert report["summary"]["gpt-6-luna"]["unjudged"] == 0
     assert not (tmp_path / "results" / "judge_failures").exists()

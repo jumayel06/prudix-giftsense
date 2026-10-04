@@ -1,0 +1,13 @@
+{
+  "launcher": "Trouver un cadeau",
+  "finder": {
+    "heading": "Vous ne savez pas quoi offrir ?",
+    "text": "Répondez à quelques questions rapides et nous vous suggérerons des cadeaux de notre boutique."
+  },
+  "options": {
+    "this_is_a_gift": "C’est un cadeau",
+    "add_gift_note": "Ajouter un mot",
+    "add_to_registry": "Ajouter à ma liste",
+    "add_gift_note_or_wrap": "Ajouter un mot ou un emballage cadeau"
+  }
+}

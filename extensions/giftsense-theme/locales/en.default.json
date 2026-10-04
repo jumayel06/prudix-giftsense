@@ -1,3 +1,13 @@
 {
-  "launcher": "Find a gift"
+  "launcher": "Find a gift",
+  "finder": {
+    "heading": "Not sure what to get?",
+    "text": "Answer a few quick questions and we'll suggest gifts from our store."
+  },
+  "options": {
+    "this_is_a_gift": "This is a gift",
+    "add_gift_note": "Add a gift note",
+    "add_to_registry": "Add to registry",
+    "add_gift_note_or_wrap": "Add a gift note or wrap"
+  }
 }

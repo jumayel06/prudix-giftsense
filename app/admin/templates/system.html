@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}System · GiftSense admin{% endblock %}
+{% block content %}
+{% set down = health.services | rejectattr("ok") | list %}
+{% set worker_ok = health.worker and health.worker.alive %}
+{% set missing = [] %}
+{% for name, items in groups %}{% for label, ok, impact, yes, no in items %}{% if not ok %}{% set _ = missing.append(label) %}{% endif %}{% endfor %}{% endfor %}
+{% set problems = down | length + (0 if worker_ok else 1) + stuck + wrap_errors | length %}
+
+<style>
+  .sys-status { display: flex; align-items: center; gap: 16px; padding: 20px 24px; border-radius: var(--radius);
+    border: 1px solid; margin-bottom: 1.5rem; }
+  .sys-status.ok { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+  .sys-status.bad { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+  .sys-status__icon { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 22px;
+    font-weight: 700; color: #fff; flex: none; }
+  .sys-status.ok .sys-status__icon { background: var(--accent-emerald); }
+  .sys-status.bad .sys-status__icon { background: var(--accent-rose); }
+  .sys-status h2 { margin: 0; font-size: 1.15rem; }
+  .sys-status p { margin: 2px 0 0; font-size: .9rem; opacity: .85; }
+  .sys-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  @media (max-width: 900px) { .sys-grid { grid-template-columns: 1fr; } }
+  .sys-tile { background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius); padding: 18px 20px;
+    box-shadow: var(--shadow-sm); display: grid; gap: 6px; align-content: start; }
+  .sys-tile__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .sys-tile__name { font-weight: 650; color: var(--navy-900); }
+  .sys-tile__desc { font-size: .82rem; color: var(--slate-500); }
+  .sys-tile__metric { font-size: 1.6rem; font-weight: 700; color: var(--navy-900); letter-spacing: -.01em; }
+  .sys-tile__metric small { font-size: .85rem; color: var(--slate-500); font-weight: 500; }
+  .sys-tile__detail { font-size: .8rem; color: var(--slate-500); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    word-break: break-word; }
+  .sys-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: .72rem;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+  .sys-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .sys-badge.ok { background: #d1fae5; color: #047857; }
+  .sys-badge.bad { background: #fee2e2; color: #b91c1c; }
+  .sys-badge.warn { background: #fef3c7; color: #a16207; }
+  .sys-columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1rem; margin-bottom: 1.5rem;
+    align-items: start; }
+  @media (max-width: 1000px) { .sys-columns { grid-template-columns: 1fr; } }
+  .sys-card { background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+  .sys-card__head { padding: 16px 20px; border-bottom: 1px solid var(--slate-100); display: flex; justify-content: space-between;
+    align-items: baseline; gap: 8px; }
+  .sys-card__head h2 { margin: 0; font-size: 1rem; color: var(--navy-900); }
+  .sys-card__head span { font-size: .82rem; color: var(--slate-500); }
+  .sys-group { padding: 12px 20px 4px; font-size: .72rem; font-weight: 700; color: var(--slate-400); text-transform: uppercase;
+    letter-spacing: .06em; }
+  .sys-check { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: start; padding: 10px 20px;
+    border-top: 1px solid var(--slate-100); }
+  .sys-check:first-of-type { border-top: 0; }
+  .sys-check__mark { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: .75rem;
+    font-weight: 800; color: #fff; }
+  .sys-check__mark.ok { background: var(--accent-emerald); }
+  .sys-check__mark.bad { background: #f59e0b; }
+  .sys-check__label { font-weight: 600; color: var(--navy-900); font-size: .9rem; }
+  .sys-check__impact { font-size: .8rem; color: var(--slate-500); margin-top: 2px; }
+  .sys-kv { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; padding: 16px 20px; font-size: .88rem; }
+  .sys-kv dt { color: var(--slate-500); }
+  .sys-kv dd { margin: 0; color: var(--navy-900); font-weight: 600; text-align: right; word-break: break-all; }
+  .sys-empty { padding: 18px 20px; color: var(--slate-500); font-size: .88rem; }
+  .sys-card table { margin: 0; border: 0; box-shadow: none; }
+</style>
+
+<h1 class="page-title">System</h1>
+<p class="page-subtitle">Live health of the app, its worker and its configuration. Checked when this page loads.</p>
+
+<div class="sys-status {{ 'ok' if problems == 0 else 'bad' }}">
+  <div class="sys-status__icon">{{ '✓' if problems == 0 else '!' }}</div>
+  <div>
+    {% if problems == 0 %}
+      <h2>All systems working</h2>
+      <p>Database, Redis and the worker are up{% if missing %}; {{ missing | length }} optional service{{ 's' if missing | length != 1 }} not configured{% endif %}.</p>
+    {% else %}
+      <h2>{{ problems }} problem{{ 's' if problems != 1 }} need{{ '' if problems != 1 else 's' }} attention</h2>
+      <p>
+        {% for s in down %}{{ s.name }} is down. {% endfor %}
+        {% if not worker_ok %}The worker isn't running (no heartbeat in the last minute). {% endif %}
+        {% if stuck %}{{ stuck }} catalog sync{{ 's' if stuck != 1 }} running over an hour. {% endif %}
+        {% if wrap_errors %}{{ wrap_errors | length }} gift wrap product error{{ 's' if wrap_errors | length != 1 }}.{% endif %}
+      </p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="sys-grid">
+  {% for s in health.services %}
+  <div class="sys-tile">
+    <div class="sys-tile__head">
+      <span class="sys-tile__name">{{ s.name }}</span>
+      <span class="sys-badge {{ 'ok' if s.ok else 'bad' }}">{{ 'Up' if s.ok else 'Down' }}</span>
+    </div>
+    <div class="sys-tile__metric">{% if s.ms is not none %}{{ s.ms }}<small> ms</small>{% else %}—{% endif %}</div>
+    <div class="sys-tile__desc">{{ s.desc }}</div>
+    {% if not s.ok %}<div class="sys-tile__detail">{{ s.detail }}</div>{% endif %}
+  </div>
+  {% endfor %}
+  <div class="sys-tile">
+    <div class="sys-tile__head">
+      <span class="sys-tile__name">Worker</span>
+      <span class="sys-badge {{ 'ok' if worker_ok else 'bad' }}">{{ 'Running' if worker_ok else 'Not running' }}</span>
+    </div>
+    <div class="sys-tile__metric">{{ health.worker.queued if health.worker else '—' }}<small> queued jobs</small></div>
+    <div class="sys-tile__desc">Catalog sync, orders, wrap product, emails and crons (ARQ)</div>
+    {% if worker_ok %}<div class="sys-tile__detail">{{ health.worker.beat }}</div>
+    {% else %}<div class="sys-tile__detail">Start it: .venv/bin/arq app.workers.main.WorkerSettings --watch app</div>{% endif %}
+  </div>
+</div>
+
+<div class="sys-columns">
+  <div class="sys-card">
+    <div class="sys-card__head"><h2>Configuration</h2><span>{{ missing | length }} not set</span></div>
+    {% for name, items in groups %}
+      <div class="sys-group">{{ name }}</div>
+      {% for label, ok, impact, yes, no in items %}
+      <div class="sys-check">
+        <span class="sys-check__mark {{ 'ok' if ok else 'bad' }}">{{ '✓' if ok else '!' }}</span>
+        <div>
+          <div class="sys-check__label">{{ label }}</div>
+          {% if not ok %}<div class="sys-check__impact">{{ impact }}</div>{% endif %}
+        </div>
+        <span class="sys-badge {{ 'ok' if ok else 'warn' }}">{{ yes if ok else no }}</span>
+      </div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+  <div class="sys-card">
+    <div class="sys-card__head"><h2>Environment</h2>{% if sentry_project_url %}<span><a href="{{ sentry_project_url }}" target="_blank" rel="noopener noreferrer">Sentry ↗</a></span>{% endif %}</div>
+    <dl class="sys-kv">
+      {% for k, v in env_info %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}
+    </dl>
+  </div>
+</div>
+
+<div class="sys-columns">
+  <div class="sys-card">
+    <div class="sys-card__head"><h2>Catalog syncs in progress</h2><span>{{ running | length }} running{% if stuck %} · {{ stuck }} over an hour{% endif %}</span></div>
+    {% if running %}
+    <table><thead><tr><th>Shop</th><th>Kind</th><th>Status</th><th class="num">Progress</th><th>Started</th></tr></thead><tbody>
+    {% for s, domain in running %}<tr><td>{{ domain }}</td><td>{{ s.kind }}</td><td>{{ s.status }}</td><td class="num">{{ s.processed }}/{{ s.total }}</td><td class="text-muted">{{ s.started_at.strftime('%m-%d %H:%M') if s.started_at else '' }}</td></tr>{% endfor %}
+    </tbody></table>
+    {% else %}<div class="sys-empty">Nothing syncing right now.</div>{% endif %}
+  </div>
+  <div class="sys-card">
+    <div class="sys-card__head"><h2>Gift wrap product errors</h2><span>{{ wrap_errors | length }}</span></div>
+    {% if wrap_errors %}
+      {% for domain, err in wrap_errors %}<div class="sys-check"><span class="sys-check__mark bad">!</span><div><div class="sys-check__label">{{ domain }}</div><div class="sys-check__impact">{{ err }}</div></div><span></span></div>{% endfor %}
+    {% else %}<div class="sys-empty">No errors.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,7 +1,9 @@
 {% comment %}
   GiftSense "Gift options" block for product and cart pages (plan §6.1).
   Product page: "This is a gift" opens the gift panel for this product (the
-  variant currently selected in the product form). Cart page: "Add a gift
+  variant currently selected in the product form), and "Add to registry"
+  (Pro, shown by the bootstrap when /config says registries are on) adds the
+  selected variant to the logged-in shopper's registry. Cart page: "Add a gift
   note" sets a note for the whole order. Both write the cart attributes and
   line properties the orders/create webhook reads.
 {% endcomment %}
@@ -10,6 +12,12 @@
 {% else %}
   {% assign gs_entry = 'cart' %}
 {% endif %}
+{%- assign gs_lang = request.locale.iso_code | split: '-' | first | downcase -%}
+{%- comment -%} Widget text file for the storefront's language (assets/giftsense-i18n-<lang>.js); English needs none. {%- endcomment -%}
+{%- if gs_lang == 'es' or gs_lang == 'fr' or gs_lang == 'de' or gs_lang == 'it' or gs_lang == 'pt' -%}
+  {%- assign gs_i18n_file = 'giftsense-i18n-' | append: gs_lang | append: '.js' -%}
+  {%- assign gs_i18n = gs_i18n_file | asset_url -%}
+{%- endif -%}
 <div
   class="giftsense-options"
   data-giftsense-root
@@ -17,25 +25,45 @@
   data-api="/apps/giftsense"
   data-ui-src="{{ 'giftsense-ui.js' | asset_url }}"
   data-css-src="{{ 'giftsense.css' | asset_url }}"
+  data-cart-src="{{ 'giftsense-cart.js' | asset_url }}"
   data-currency="{{ shop.currency }}"
   data-locale="{{ request.locale.iso_code }}"
+  {% if gs_i18n %}data-i18n-src="{{ gs_i18n }}"{% endif %}
   {% if product %}
     data-product-id="{{ product.id }}"
     data-product-title="{{ product.title | escape }}"
     data-variant-id="{{ product.selected_or_first_available_variant.id }}"
+    {% if product.tags contains 'no-gift-wrap' %}data-no-wrap{% endif %}
   {% endif %}
   style="--gs-accent: {{ block.settings.accent }}; --gs-on-accent: {{ block.settings.on_accent }};"
   {{ block.shopify_attributes }}
 >
   <button type="button" class="giftsense-options__button" data-giftsense-open>
-    {% if product %}{{ block.settings.product_label | default: 'This is a gift' | escape }}{% else %}{{ block.settings.cart_label | default: 'Add a gift note' | escape }}{% endif %}
+    {%- assign gs_product_label = block.settings.product_label -%}
+    {%- if gs_product_label == blank or gs_product_label == 'This is a gift' -%}{%- assign gs_product_label = 'options.this_is_a_gift' | t -%}{%- endif -%}
+    {%- assign gs_cart_label = block.settings.cart_label -%}
+    {%- if gs_cart_label == blank or gs_cart_label == 'Add a gift note' -%}{%- assign gs_cart_label = 'options.add_gift_note' | t -%}{%- endif -%}
+    {% if product %}{{ gs_product_label | escape }}{% else %}{{ gs_cart_label | escape }}{% endif %}
   </button>
+  {% if product and block.settings.show_registry %}
+    <button type="button" class="giftsense-options__button giftsense-options__registry" hidden
+      data-giftsense-registry
+      data-logged-in="{% if customer %}1{% endif %}"
+      data-login-url="{{ routes.account_login_url }}?return_url={{ product.url | url_encode }}"
+      data-variant-ids="{{ product.variants | map: 'id' | json | escape }}"
+      data-variant-titles="{{ product.variants | map: 'title' | json | escape }}">
+      {%- assign gs_registry_label = block.settings.registry_label -%}
+      {%- if gs_registry_label == blank or gs_registry_label == 'Add to registry' -%}{%- assign gs_registry_label = 'options.add_to_registry' | t -%}{%- endif -%}
+      {{ gs_registry_label | escape }}
+    </button>
+  {% endif %}
 </div>
 <style>
   .giftsense-options{margin:12px 0}
   .giftsense-options__button{width:100%;padding:12px 18px;border:1px solid var(--gs-accent,#111827);border-radius:999px;
     background:transparent;color:var(--gs-accent,#111827);font:600 15px/1.2 inherit;cursor:pointer}
   .giftsense-options__button::before{content:"\1F381  "}
+  .giftsense-options__registry{margin-top:8px}.giftsense-options__registry::before{content:"\2661  "}
   .giftsense-options__button:focus-visible{outline:3px solid var(--gs-accent,#111827);outline-offset:3px}
 </style>
 <script src="{{ 'giftsense.js' | asset_url }}" defer></script>
@@ -48,6 +76,8 @@
   "settings": [
     { "type": "text", "id": "product_label", "label": "Button text on product pages", "default": "This is a gift" },
     { "type": "text", "id": "cart_label", "label": "Button text on the cart page", "default": "Add a gift note" },
+    { "type": "checkbox", "id": "show_registry", "label": "Show \"Add to registry\" on product pages (Pro)", "default": true },
+    { "type": "text", "id": "registry_label", "label": "Registry button text", "default": "Add to registry" },
     { "type": "color", "id": "accent", "label": "Button color", "default": "#111827" },
     { "type": "color", "id": "on_accent", "label": "Button text color", "default": "#ffffff" }
   ]

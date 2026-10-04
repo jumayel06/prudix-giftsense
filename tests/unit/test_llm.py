@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app import llm
+from app.ai_models import MODELS
 
 
 def _anthropic_resp(text, blocks=None):
@@ -31,12 +32,28 @@ async def test_sonnet5_can_opt_into_adaptive_thinking():
 
 
 @pytest.mark.asyncio
-async def test_haiku_keeps_temperature_and_sends_no_thinking_param():
-    create = AsyncMock(return_value=_anthropic_resp("hello"))
+@pytest.mark.parametrize("model", [m for m, s in MODELS.items() if s["provider"] == "anthropic"])
+async def test_anthropic_kwargs_fit_the_real_sdk_signature(model):
+    """Mocks accept anything; bind against the installed SDK so a removed
+    parameter (like temperature in 1.x) fails here, not in production."""
+    import inspect
+    create = AsyncMock(return_value=_anthropic_resp('{"ok": 1}'))
     with patch.object(llm._anthropic_client.messages, "create", create):
-        await llm.chat("claude-haiku-4-5", "sys", "hi", temperature=0.3)
-    kwargs = create.await_args.kwargs
-    assert kwargs["temperature"] == 0.3 and "thinking" not in kwargs
+        await llm.chat(model, "sys", "hi", temperature=0.4, json_mode=True)
+    real = inspect.signature(type(llm._anthropic_client.messages).create)
+    real.bind(None, **create.await_args.kwargs)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model,thinking", [(m, t) for m, s in MODELS.items() if s["provider"] == "openai"
+                                             for t in (False, True)])
+async def test_openai_kwargs_fit_the_real_sdk_signature(model, thinking):
+    import inspect
+    oa = _openai_mock('{"a": 1}')
+    with patch.object(llm._openai_client.chat.completions, "create", oa):
+        await llm.chat(model, "sys", "hi", temperature=0.4, json_mode=True, thinking=thinking)
+    real = inspect.signature(type(llm._openai_client.chat.completions).create)
+    real.bind(None, **oa.await_args.kwargs)
 
 
 @pytest.mark.asyncio
@@ -63,13 +80,13 @@ def test_extract_json(raw, expected):
 async def test_timeout_is_passed_to_both_providers():
     create = AsyncMock(return_value=_anthropic_resp("hi"))
     with patch.object(llm._anthropic_client.messages, "create", create):
-        await llm.chat("claude-haiku-4-5", "sys", "hi", timeout=8.0)
+        await llm.chat("claude-sonnet-5", "sys", "hi", timeout=8.0)
     assert create.await_args.kwargs["timeout"] == 8.0
 
     choice = SimpleNamespace(message=SimpleNamespace(content="hi"))
     oa = AsyncMock(return_value=SimpleNamespace(choices=[choice], usage=None))
     with patch.object(llm._openai_client.chat.completions, "create", oa):
-        await llm.chat("gpt-4o-mini", "sys", "hi", timeout=8.0)
+        await llm.chat("gpt-6-luna", "sys", "hi", timeout=8.0)
     assert oa.await_args.kwargs["timeout"] == 8.0
 
 
@@ -77,7 +94,7 @@ async def test_timeout_is_passed_to_both_providers():
 async def test_default_timeout_is_bounded():
     create = AsyncMock(return_value=_anthropic_resp("hi"))
     with patch.object(llm._anthropic_client.messages, "create", create):
-        await llm.chat("claude-haiku-4-5", "sys", "hi")
+        await llm.chat("claude-sonnet-5", "sys", "hi")
     assert 0 < create.await_args.kwargs["timeout"] <= 120
 
 
@@ -110,12 +127,9 @@ async def test_gpt6_thinking_opt_in_drops_temperature():
 
 
 @pytest.mark.asyncio
-async def test_older_openai_models_unchanged():
-    oa = _openai_mock()
-    with patch.object(llm._openai_client.chat.completions, "create", oa):
-        await llm.chat("gpt-4o-mini", "sys", "hi", max_tokens=50, temperature=0.4)
-    kw = oa.await_args.kwargs
-    assert kw["max_tokens"] == 50 and kw["temperature"] == 0.4 and "reasoning_effort" not in kw
+async def test_unregistered_models_are_refused():
+    with pytest.raises(ValueError):
+        await llm.chat("gpt-4o-mini", "sys", "hi")
 
 
 def test_gpt6_prices():

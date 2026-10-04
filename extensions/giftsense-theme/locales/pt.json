@@ -1,0 +1,13 @@
+{
+  "launcher": "Encontrar um presente",
+  "finder": {
+    "heading": "Não sabe o que dar?",
+    "text": "Responda algumas perguntas rápidas e sugerimos presentes da nossa loja."
+  },
+  "options": {
+    "this_is_a_gift": "É um presente",
+    "add_gift_note": "Adicionar cartão",
+    "add_to_registry": "Adicionar à lista",
+    "add_gift_note_or_wrap": "Adicionar cartão ou embalagem de presente"
+  }
+}

@@ -7,8 +7,9 @@ order IDs as personal data, so every row keyed by them must be deletable and
 reportable.
 
 Each GiftSense table keyed by customer or order ID is registered in
-`_tables()` (gift_orders now; gift_media, choice_requests, registries…
-as they ship) and covered by tests. gift_sessions have no order id; they are
+`_tables()` (gift_orders, gift_media) and covered by tests. gift_media rows
+also own R2 files, deleted first. Registries are keyed by the customer id
+(their only customer data) and handled with their items below. gift_sessions have no order id; they are
 reached through the redacted orders' `sid` (`_linked_session_sids`).
 
 `customers/redact` deletes the rows for the customer + `orders_to_redact`.
@@ -26,9 +27,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 logger = structlog.get_logger()
 
 def _tables():
-    from core.db.models import GiftOrder
+    from core.db.models import GiftMedia, GiftOrder
     # (model, customer_id column name or None, order_id column name or None)
-    return [(GiftOrder, None, "order_id")]
+    return [(GiftOrder, None, "order_id"), (GiftMedia, None, "order_id")]
 
 
 async def _linked_session_sids(db, shop_id, order_ids: list[str]) -> list:
@@ -68,10 +69,19 @@ async def redact_customer(shop_id: uuid.UUID, payload: dict, db: AsyncSession) -
     if sids:
         res = await db.execute(delete(GiftSession).where(GiftSession.shop_id == shop_id, GiftSession.sid.in_(sids)))
         counts["gift_sessions"] = res.rowcount or 0
+    if customer_id:
+        from app.services.registry import delete_for_customer
+        counts["registries"] = await delete_for_customer(db, shop_id, customer_id)
     for model, customer_col, order_col in _tables():
         cond = _conditions(model, customer_col, order_col, customer_id, order_ids)
         if cond is None:
             continue
+        if model.__tablename__ == "gift_media":
+            from sqlalchemy import select
+            from app.services.media import delete_objects, configured
+            keys = (await db.execute(select(model.storage_key).where(model.shop_id == shop_id, cond))).scalars().all()
+            if keys and configured():
+                await delete_objects(list(keys))
         res = await db.execute(delete(model).where(model.shop_id == shop_id, cond))
         counts[model.__tablename__] = res.rowcount or 0
     await db.commit()
@@ -98,6 +108,17 @@ async def collect_customer_data(shop_id: uuid.UUID, payload: dict, db: AsyncSess
                                                             GiftSession.sid.in_(sids)))).scalars().all()
         cols = [c.name for c in GiftSession.__table__.columns if c.name not in ("id", "shop_id")]
         data["gift_sessions"] = [_row(r, cols) for r in rows]
+    if customer_id:
+        from core.db.models import Registry, RegistryItem
+        regs = (await db.execute(select(Registry).where(Registry.shop_id == shop_id,
+                                                        Registry.customer_id == customer_id))).scalars().all()
+        cols = [c.name for c in Registry.__table__.columns if c.name not in ("id", "shop_id", "suggestions")]
+        data["registries"] = [_row(r, cols) for r in regs]
+        if regs:
+            items = (await db.execute(select(RegistryItem).where(
+                RegistryItem.registry_id.in_([r.id for r in regs])))).scalars().all()
+            icols = [c.name for c in RegistryItem.__table__.columns if c.name not in ("id", "shop_id", "registry_id")]
+            data["registry_items"] = [_row(r, icols) for r in items]
     return {k: v for k, v in data.items() if v}
 
 

@@ -35,8 +35,7 @@
     });
   }
 
-  // Widget session id: ties searches together for "show different ideas" and
-  // (later) cart attribution. Never contains customer data.
+  // Widget session id (searches + cart attribution). No customer data.
   function sessionId() {
     var now = Date.now();
     var saved = readJson('localStorage', SID_KEY);
@@ -46,10 +45,8 @@
     return id;
   }
 
-  // Only real answers are cached. A failed request (backend restarting, proxy
-  // hiccup) hides the launcher on this page only and is retried on the next,
-  // instead of hiding it for the whole session. "Disabled" (plan inactive) is
-  // re-checked after a few minutes so a newly chosen plan shows up quickly.
+  // Only real answers are cached; a failure hides the launcher on this page
+  // only. "Disabled" is re-checked after a few minutes.
   function loadConfig(api) {
     var cached = readJson('sessionStorage', CFG_KEY);
     var ttl = cached && cached.data && cached.data.enabled ? CFG_TTL : CFG_OFF_TTL;
@@ -66,8 +63,22 @@
   }
 
   var uiPromise = null;
+  // Widget text in the storefront's language, if shipped (else English).
+  function loadText(root) {
+    var src = root.getAttribute('data-i18n-src');
+    if (!src || window.GiftSenseI18n) return Promise.resolve();
+    return new Promise(function (resolve) {
+      var js = document.createElement('script');
+      js.src = src;
+      js.async = true;
+      js.onload = js.onerror = function () { resolve(); };
+      document.head.appendChild(js);
+    });
+  }
+
   function loadUi(root) {
     if (uiPromise) return uiPromise;
+    var text = loadText(root);
     uiPromise = new Promise(function (resolve, reject) {
       var css = document.createElement('link');
       css.rel = 'stylesheet';
@@ -76,17 +87,60 @@
       var js = document.createElement('script');
       js.src = root.getAttribute('data-ui-src');
       js.async = true;
-      js.onload = function () { window.GiftSenseUI ? resolve(window.GiftSenseUI) : reject(new Error('ui')); };
+      js.onload = function () {
+        if (!window.GiftSenseUI) { reject(new Error('ui')); return; }
+        text.then(function () { resolve(window.GiftSenseUI); });
+      };
       js.onerror = function () { uiPromise = null; reject(new Error('ui')); };
       document.head.appendChild(js);
     });
     return uiPromise;
   }
 
+  // Wrap cart guard (giftsense-cart.js): only where wrap was added.
+  function armCartGuard(root) {
+    var src = root.getAttribute('data-cart-src');
+    if (!src || window.__giftsenseCartGuard) return;
+    var js = document.createElement('script');
+    js.src = src;
+    js.async = true;
+    document.head.appendChild(js);
+  }
+
+  // Another app's floating button (chat, AI concierge…) in the same corner:
+  // look under our launcher (it's on top) and sit just above any fixed element.
+  function fixedAncestor(n, own) {
+    for (; n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
+      if (n === own) return null;
+      if (getComputedStyle(n).position === 'fixed') return n;
+    }
+    return null;
+  }
+
+  function avoidOverlap(btn) {
+    if (!document.elementsFromPoint) return;
+    function check() {
+      btn.style.transform = '';
+      var r = btn.getBoundingClientRect(), top = Infinity;
+      [[r.left + 4, r.bottom - 4], [r.right - 4, r.bottom - 4], [r.left + r.width / 2, r.top + r.height / 2]].forEach(function (p) {
+        document.elementsFromPoint(p[0], p[1]).forEach(function (n) {
+          var f = fixedAncestor(n, btn);
+          if (f && f.offsetWidth < window.innerWidth * 0.6) top = Math.min(top, f.getBoundingClientRect().top);
+        });
+      });
+      if (top !== Infinity) btn.style.transform = 'translateY(' + -Math.ceil(r.bottom - top + 12) + 'px)';
+    }
+    [1500, 4000, 8000].forEach(function (ms) { setTimeout(check, ms); });
+    var t;
+    window.addEventListener('resize', function () { clearTimeout(t); t = setTimeout(check, 300); });
+  }
+
   function init() {
     var roots = document.querySelectorAll('[data-giftsense-root]');
     if (!roots.length) return;
     var main = roots[0];
+    window.GiftSenseArmCart = function () { armCartGuard(main); };
+    try { if (localStorage.getItem('giftsense:wrap')) armCartGuard(main); } catch (e) { /* private mode */ }
     var api = main.getAttribute('data-api') || '/apps/giftsense';
 
     loadConfig(api).then(function (config) {
@@ -105,7 +159,7 @@
         if (entry.type === 'product') {
           var form = document.querySelector('form[action*="/cart/add"] [name="id"]');
           entry.product = { product_id: r.getAttribute('data-product-id'), title: r.getAttribute('data-product-title'),
-            variant_id: (form && form.value) || r.getAttribute('data-variant-id') };
+            variant_id: (form && form.value) || r.getAttribute('data-variant-id'), wrap: !r.hasAttribute('data-no-wrap') };
         }
         return entry;
       }
@@ -125,7 +179,17 @@
         }).catch(function () { trigger.removeAttribute('aria-busy'); });
       }
 
+      // Cart drawer (giftsense-drawer.js): only on pages that have one.
+      window.__giftsenseConfig = config;
+      window.GiftSenseOpen = open;
       var embed = document.getElementById('giftsense-embed');
+      if (embed && embed.getAttribute('data-drawer-src') &&
+          document.querySelector('cart-drawer,#CartDrawer,#cart-drawer,.cart-drawer,[data-cart-drawer],#sidebar-cart,.drawer--cart,#mini-cart,.mini-cart')) {
+        var dj = document.createElement('script');
+        dj.src = embed.getAttribute('data-drawer-src');
+        dj.async = true;
+        document.head.appendChild(dj);
+      }
       if (embed) {
         var btn = document.createElement('button');
         btn.type = 'button';
@@ -136,8 +200,21 @@
         btn.style.setProperty('--gs-on-accent', getComputedStyle(embed).getPropertyValue('--gs-on-accent'));
         btn.textContent = '🎁 ' + (embed.getAttribute('data-label') || 'Find a gift');
         btn.addEventListener('click', function () { open(btn); });
+        var lift = parseInt(embed.getAttribute('data-offset'), 10) || 0;
+        if (lift) btn.style.bottom = 'calc(' + getComputedStyle(btn).bottom + ' + ' + lift + 'px)';
         document.body.appendChild(btn);
+        avoidOverlap(btn);
       }
+
+      // "Add to registry" (Pro); the work happens in the lazily loaded UI.
+      var regButtons = config.registry ? document.querySelectorAll('[data-giftsense-registry]') : [];
+      for (var k = 0; k < regButtons.length; k++) (function (b) {
+        b.hidden = false;
+        b.addEventListener('click', function () {
+          if (!b.getAttribute('data-logged-in')) { location.href = b.getAttribute('data-login-url'); return; }
+          loadUi(main).then(function (ui) { ui.addToRegistry(b, api); });
+        });
+      })(regButtons[k]);
 
       var buttons = document.querySelectorAll('[data-giftsense-open]');
       for (var j = 0; j < buttons.length; j++) {

@@ -162,7 +162,9 @@ def remember(shop, result: dict) -> None:
     blocks_lost = (switched and had and not has) or (same_theme and prev.get("blocks_lost", False) and not has)
     check = {"embed": result["embed"], "theme_name": result.get("theme_name"), "blocks": result.get("blocks") or {},
              "theme_changed": theme_changed, "blocks_lost": blocks_lost,
-             "checked_at": datetime.now(timezone.utc).isoformat()}
+             "checked_at": datetime.now(timezone.utc).isoformat(),
+             # Theme we already emailed the owner about (app/workers/theme.py).
+             "emailed_for": prev.get("emailed_for")}
     shop.gift_settings = {**(shop.gift_settings or {}), "theme_check": check}
 
 

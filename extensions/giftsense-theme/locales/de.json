@@ -1,0 +1,13 @@
+{
+  "launcher": "Geschenk finden",
+  "finder": {
+    "heading": "Keine Idee, was du schenken sollst?",
+    "text": "Beantworte ein paar kurze Fragen und wir schlagen dir Geschenke aus unserem Shop vor."
+  },
+  "options": {
+    "this_is_a_gift": "Das ist ein Geschenk",
+    "add_gift_note": "Grußkarte hinzufügen",
+    "add_to_registry": "Zur Wunschliste",
+    "add_gift_note_or_wrap": "Grußkarte oder Geschenkverpackung hinzufügen"
+  }
+}

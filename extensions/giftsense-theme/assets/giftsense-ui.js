@@ -24,6 +24,16 @@
   }
   function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
 
+  // Shopper-facing text in the storefront's language: giftsense-i18n-<lang>.js
+  // (loaded with the UI) sets window.GiftSenseI18n = { "English": "…" }.
+  // Missing keys fall back to English; {name} placeholders are filled in.
+  function tr(text, vars) {
+    var dict = window.GiftSenseI18n || {};
+    var out = dict[text] || text;
+    if (vars) Object.keys(vars).forEach(function (k) { out = out.split('{' + k + '}').join(vars[k]); });
+    return out;
+  }
+
   function money(n) {
     try {
       return new Intl.NumberFormat(ctx.locale, { style: 'currency', currency: ctx.currency }).format(n);
@@ -61,23 +71,23 @@
         if (!product || !product.variants || !slot.isConnected) return;
         var available = product.variants.filter(function (v) { return v.available; });
         if (!available.length) {
-          var sold = el('button', 'gs-secondary gs-small', 'Sold out');
+          var sold = el('button', 'gs-secondary gs-small', tr('Sold out'));
           sold.type = 'button';
           sold.disabled = true;
           slot.appendChild(sold);
           return;
         }
         if (product.variants.length > 1) {
-          var choose = el('a', 'gs-secondary gs-small', 'Choose options');
+          var choose = el('a', 'gs-secondary gs-small', tr('Choose options'));
           choose.href = safeHref(pick.url);
           slot.appendChild(choose);
           return;
         }
-        var gift = el('button', 'gs-primary gs-small', 'Add as a gift');
+        var gift = el('button', 'gs-primary gs-small', tr('Add as a gift'));
         gift.type = 'button';
         gift.addEventListener('click', function () { renderGiftPanel(pick, available[0].id); });
         slot.appendChild(gift);
-        var add = el('button', 'gs-secondary gs-small', 'Add to cart');
+        var add = el('button', 'gs-secondary gs-small', tr('Add to cart'));
         add.type = 'button';
         add.addEventListener('click', function () { addToCart(available[0].id, add, slot, pick.product_id); });
         slot.appendChild(add);
@@ -114,7 +124,7 @@
 
   function addToCart(variantId, button, slot, productId) {
     button.disabled = true;
-    button.textContent = 'Adding\u2026';
+    button.textContent = tr('Adding\u2026');
     var json = { 'Content-Type': 'application/json', Accept: 'application/json' };
     fetch(root() + 'cart/add.js', {
       method: 'POST', credentials: 'same-origin', headers: json,
@@ -127,15 +137,15 @@
         body: JSON.stringify({ attributes: { _giftsense_sid: ctx.sid } })
       });
     }).then(function () {
-      button.textContent = 'Added \u2713';
+      button.textContent = tr('Added \u2713');
       track('pick_atc', productId);
-      var view = el('a', 'gs-link', 'View cart');
+      var view = el('a', 'gs-link', tr('View cart'));
       view.href = root() + 'cart';
       slot.appendChild(view);
       document.dispatchEvent(new CustomEvent('giftsense:added-to-cart', { detail: { variantId: variantId } }));
     }).catch(function () {
       button.disabled = false;
-      button.textContent = 'Try again';
+      button.textContent = tr('Try again');
     });
   }
 
@@ -154,11 +164,11 @@
     els.dialog.setAttribute('aria-labelledby', 'gs-title');
 
     var head = el('div', 'gs-head');
-    var title = el('h2', 'gs-title', 'Find the perfect gift');
+    var title = el('h2', 'gs-title', tr('Find the perfect gift'));
     title.id = 'gs-title';
     var x = el('button', 'gs-close', '×');
     x.type = 'button';
-    x.setAttribute('aria-label', 'Close');
+    x.setAttribute('aria-label', tr('Close'));
     x.addEventListener('click', close);
     head.appendChild(title);
     head.appendChild(x);
@@ -192,10 +202,10 @@
     els.overlay.hidden = false;
     document.documentElement.classList.add('gs-lock');
     document.getElementById('gs-title').textContent =
-      ctx.entry && ctx.entry.type !== 'finder' ? 'Gift options' : 'Find the perfect gift';
+      ctx.entry && ctx.entry.type !== 'finder' ? tr('Gift options') : tr('Find the perfect gift');
     var entry = ctx.entry;
     if (entry && entry.type === 'product' && entry.product && entry.product.variant_id) {
-      renderGiftPanel({ product_id: entry.product.product_id, title: entry.product.title },
+      renderGiftPanel({ product_id: entry.product.product_id, title: entry.product.title, wrap: entry.product.wrap },
                       Number(entry.product.variant_id), { askContext: true, standalone: true });
     } else if (entry && entry.type === 'cart') {
       renderCartNote();
@@ -214,7 +224,7 @@
 
   function renderFoot() {
     clear(els.foot);
-    if (ctx.config.show_badge) els.foot.appendChild(el('span', 'gs-badge', 'Gift ideas by GiftSense'));
+    if (ctx.config.show_badge) els.foot.appendChild(el('span', 'gs-badge', tr('Gift ideas by GiftSense')));
   }
 
   // ── step 1: questions ─────────────────────────────────────────────────────
@@ -232,7 +242,7 @@
       updateGo();
     }
     options.forEach(function (o) {
-      var b = el('button', 'gs-chip', o.label);
+      var b = el('button', 'gs-chip', tr(o.label));
       b.type = 'button';
       b.setAttribute('data-value', o.value);
       b.addEventListener('click', function () {
@@ -269,23 +279,23 @@
     var intake = ctx.config.intake;
     clear(els.body);
     els.go = null;
-    els.body.appendChild(chipGroup('Who is it for?', intake.recipients, 'recipient'));
-    els.body.appendChild(chipGroup("What's the occasion?", intake.occasions, 'occasion'));
-    els.body.appendChild(chipGroup("What's your budget?", intake.budgets, 'budget_band'));
-    els.body.appendChild(chipGroup('They are\u2026 (pick up to ' + intake.max_vibes + ')', intake.vibes, 'vibes', true, intake.max_vibes));
+    els.body.appendChild(chipGroup(tr('Who is it for?'), intake.recipients, 'recipient'));
+    els.body.appendChild(chipGroup(tr("What's the occasion?"), intake.occasions, 'occasion'));
+    els.body.appendChild(chipGroup(tr("What's your budget?"), intake.budgets, 'budget_band'));
+    els.body.appendChild(chipGroup(tr('They are\u2026 (pick up to {n})', { n: intake.max_vibes }), intake.vibes, 'vibes', true, intake.max_vibes));
 
     var noteWrap = el('label', 'gs-group');
-    noteWrap.appendChild(el('span', 'gs-label', 'Anything else? (optional)'));
+    noteWrap.appendChild(el('span', 'gs-label', tr('Anything else? (optional)')));
     var note = el('textarea', 'gs-note');
     note.rows = 2;
     note.maxLength = intake.max_free_text || 200;
-    note.placeholder = 'e.g. loves hiking and strong coffee';
+    note.placeholder = tr('e.g. loves hiking and strong coffee');
     note.value = state.answers.free_text;
     note.addEventListener('input', function () { state.answers.free_text = note.value; });
     noteWrap.appendChild(note);
     els.body.appendChild(noteWrap);
 
-    els.go = el('button', 'gs-primary', 'Show gift ideas');
+    els.go = el('button', 'gs-primary', tr('Show gift ideas'));
     els.go.type = 'button';
     els.go.addEventListener('click', function () {
       state.shown = []; state.refines = 0; state.asked = [];
@@ -293,7 +303,7 @@
       search();
     });
     els.body.appendChild(els.go);
-    els.hint = el('p', 'gs-hint', 'Pick who it\u2019s for, the occasion and a budget.');
+    els.hint = el('p', 'gs-hint', tr('Pick who it\u2019s for, the occasion and a budget.'));
     els.body.appendChild(els.hint);
     updateGo();
     renderFoot();
@@ -305,7 +315,7 @@
   // ── step 2: results ───────────────────────────────────────────────────────
   // Loading state while the AI picks (a few seconds): a short line of text
   // that moves on, with a small animated indicator. No empty placeholder boxes.
-  var LOADING_STEPS = ['Looking through the store\u2026', 'Picking the best matches\u2026', 'Writing why each one fits\u2026'];
+  var LOADING_STEPS = [tr('Looking through the store\u2026'), tr('Picking the best matches\u2026'), tr('Writing why each one fits\u2026')];
   function skeleton() {
     clear(els.body);
     clearInterval(state.loadingTimer);
@@ -345,7 +355,7 @@
     var body = {
       sid: ctx.sid, recipient: a.recipient, occasion: a.occasion, budget_band: a.budget_band,
       vibes: a.vibes.slice(), free_text: a.free_text.trim(), exclude_ids: state.shown.slice(-MAX_EXCLUDE),
-      refine: refine === true
+      refine: refine === true, locale: ctx.locale
     };
     if (AGE_FOR[a.recipient]) body.age_band = AGE_FOR[a.recipient];
     var instant = null;
@@ -365,24 +375,24 @@
     post(Object.assign({}, body, { phase: 'ai' })).then(function (res) {
       if (seq !== state.seq) return;
       if (res.ok) { clearInterval(state.loadingTimer); renderResults(res.data.picks || [], false); return; }
-      fallback(res.status === 429 && res.data.detail ? res.data.detail : 'Something went wrong. Please try again.');
+      fallback(res.status === 429 && res.data.detail ? res.data.detail : tr('Something went wrong. Please try again.'));
     }).catch(function () {
       if (seq !== state.seq) return;
-      fallback('Something went wrong. Please check your connection and try again.');
+      fallback(tr('Something went wrong. Please check your connection and try again.'));
     });
   }
 
   function actions(showMore, pending) {
     var row = el('div', 'gs-actions');
     if (showMore) {
-      var more = el('button', 'gs-primary', 'Show different ideas');
+      var more = el('button', 'gs-primary', tr('Show different ideas'));
       more.type = 'button';
       more.disabled = !!pending;
       more.addEventListener('click', function () { search(); });
       row.appendChild(more);
     }
     if (showMore && !pending) row.appendChild(refineControl());
-    var back = el('button', 'gs-secondary', 'Change answers');
+    var back = el('button', 'gs-secondary', tr('Change answers'));
     back.type = 'button';
     back.addEventListener('click', function () { state.seq = (state.seq || 0) + 1; renderIntake(); });
     row.appendChild(back);
@@ -405,11 +415,11 @@
     var max = ctx.config.intake.max_refines || 2;
     var q = nextQuestion();
     if (state.refines >= max || !q) {
-      var browse = el('a', 'gs-secondary', 'Browse all products');
+      var browse = el('a', 'gs-secondary', tr('Browse all products'));
       browse.href = root() + 'collections/all';
       return browse;
     }
-    var b = el('button', 'gs-secondary', 'Not quite right?');
+    var b = el('button', 'gs-secondary', tr('Not quite right?'));
     b.type = 'button';
     b.addEventListener('click', function () { renderQuestion(q); });
     return b;
@@ -417,12 +427,12 @@
 
   function renderQuestion(q) {
     clear(els.body);
-    var p = el('p', 'gs-status', q.question);
+    var p = el('p', 'gs-status', tr(q.question));
     p.setAttribute('role', 'status');
     els.body.appendChild(p);
     var row = el('div', 'gs-chips');
     q.options.forEach(function (o) {
-      var b = el('button', 'gs-chip', o.label);
+      var b = el('button', 'gs-chip', tr(o.label));
       b.type = 'button';
       b.addEventListener('click', function () {
         var vibes = state.answers.vibes;
@@ -439,7 +449,7 @@
       row.appendChild(b);
     });
     els.body.appendChild(row);
-    var back = el('button', 'gs-secondary', 'Back to ideas');
+    var back = el('button', 'gs-secondary', tr('Back to ideas'));
     back.type = 'button';
     back.style.marginTop = '12px';
     back.addEventListener('click', function () { renderResults(state.lastPicks || [], false, true); });
@@ -464,7 +474,7 @@
     wrap.appendChild(el('legend', 'gs-label', title));
     var row = el('div', 'gs-chips');
     options.forEach(function (o) {
-      var b = el('button', 'gs-chip gs-small-chip', o.label);
+      var b = el('button', 'gs-chip gs-small-chip', tr(o.label));
       b.type = 'button';
       b.setAttribute('aria-pressed', state.answers[key] === o.value ? 'true' : 'false');
       b.addEventListener('click', function () {
@@ -482,19 +492,33 @@
   function renderCartNote() {
     var g = { note: '', tone: (ctx.config.notes || {}).tone || 'warm', name: '', left: null };
     clear(els.body);
-    els.body.appendChild(el('p', 'gs-status', 'Add a gift note to your order'));
+    els.body.appendChild(el('p', 'gs-status', tr('Add a gift note to your order')));
     var intake = ctx.config.intake;
-    els.body.appendChild(contextChips('Who’s it for? (optional)', intake.recipients, 'recipient'));
-    els.body.appendChild(contextChips('What’s the occasion? (optional)', intake.occasions, 'occasion'));
+    els.body.appendChild(contextChips(tr('Who’s it for? (optional)'), intake.recipients, 'recipient'));
+    els.body.appendChild(contextChips(tr('What’s the occasion? (optional)'), intake.occasions, 'occasion'));
     var section = noteSection(g, null);
     els.body.appendChild(section);
     var textarea = section.querySelector('textarea');
+    var wrapHolder = el('div');
+    els.body.appendChild(wrapHolder);
     var dateHolder = el('div');
     els.body.appendChild(dateHolder);
+    var cartNow = null;
     fetch(root() + 'cart.js', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (cart) {
+      cartNow = cart;
       var attrs = (cart && cart.attributes) || {};
       var existing = attrs['Gift note'];
       if (existing && !textarea.value) { textarea.value = g.note = existing; textarea.dispatchEvent(new Event('input')); }
+      // Wrap for the whole order: only when there's something to wrap.
+      var items = (cart && cart.items) || [];
+      if (items.some(function (it) { return !(it.properties || {})._giftsense_wrap_for; })) {
+        var wrapChoice = wrapSection(g, attrs['Gift wrap']);
+        if (wrapChoice) wrapHolder.appendChild(wrapChoice);
+        var cardChoice = cardSection(g, attrs['Greeting card']);
+        if (cardChoice) wrapHolder.appendChild(cardChoice);
+      }
+      g.wrapBefore = attrs['Gift wrap'] || '';
+      g.cardBefore = attrs['Greeting card'] || '';
       var dateChoice = dateSection(g, attrs['Arrive by']);
       if (dateChoice) dateHolder.appendChild(dateChoice);
     }).catch(function () {
@@ -502,30 +526,42 @@
       if (dateChoice) dateHolder.appendChild(dateChoice);
     });
     var row = el('div', 'gs-actions');
-    var save = el('button', 'gs-primary', 'Save gift note');
+    var save = el('button', 'gs-primary', tr('Save gift note'));
     save.type = 'button';
     save.addEventListener('click', function () {
       save.disabled = true;
       var note = (g.note || '').trim();
-      fetch(root() + 'cart/update.js', {
-        method: 'POST', credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ attributes: { 'Gift note': note, 'Arrive by': g.arriveBy || '', _giftsense_sid: ctx.sid } })
+      var attrs = { 'Gift note': note, 'Arrive by': g.arriveBy || '', _giftsense_sid: ctx.sid };
+      var wrapNow = g.wrap ? g.wrap.name : '';
+      var wrapChanged = cartNow && g.wrapBefore !== undefined && wrapNow !== g.wrapBefore;
+      if (wrapChanged) attrs['Gift wrap'] = wrapNow;
+      var cardNow = g.card ? g.card.name : '';
+      var cardChanged = cartNow && g.cardBefore !== undefined && cardNow !== g.cardBefore;
+      if (cardChanged) attrs['Greeting card'] = cardNow;
+      orderAddon(wrapChanged ? cartNow : null, g.wrap, '_giftsense_wrap_for', 'Wrap for').then(function () {
+        return orderAddon(cardChanged ? cartNow : null, g.card, '_giftsense_card_for', 'Card for');
+      }).then(function () {
+        return fetch(root() + 'cart/update.js', {
+          method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ attributes: attrs })
+        });
       }).then(function (r) {
         if (!r.ok) throw new Error('update');
+        if (wrapChanged || cardChanged) refreshCart();
         clear(els.body);
-        var done = el('p', 'gs-status', note ? 'Gift note saved ✓' : 'Gift note removed');
+        var done = el('p', 'gs-status', note ? tr('Gift note saved ✓') : tr('Gift note removed'));
         done.setAttribute('role', 'status');
         els.body.appendChild(done);
-        var ok = el('button', 'gs-primary', 'Done');
+        var ok = el('button', 'gs-primary', tr('Done'));
         ok.type = 'button';
         ok.addEventListener('click', close);
         els.body.appendChild(ok);
         ok.focus();
-      }).catch(function () { save.disabled = false; save.textContent = 'Try again'; });
+      }).catch(function () { save.disabled = false; save.textContent = tr('Try again'); });
     });
     row.appendChild(save);
-    var cancel = el('button', 'gs-secondary', 'Cancel');
+    var cancel = el('button', 'gs-secondary', tr('Cancel'));
     cancel.type = 'button';
     cancel.addEventListener('click', close);
     row.appendChild(cancel);
@@ -533,15 +569,47 @@
     renderFoot();
   }
 
+  // Whole-order wrap or card from the cart page / drawer: swap the order's
+  // line (prop = "order") for the chosen style, or remove it.
+  function orderAddon(cart, style, prop, label) {
+    if (!cart) return Promise.resolve();
+    var json = { 'Content-Type': 'application/json', Accept: 'application/json' };
+    var chain = Promise.resolve();
+    ((cart && cart.items) || []).forEach(function (it) {
+      if ((it.properties || {})[prop] === 'order') {
+        chain = chain.then(function () {
+          return fetch(root() + 'cart/change.js', { method: 'POST', credentials: 'same-origin', headers: json,
+            body: JSON.stringify({ id: it.key, quantity: 0 }) });
+        });
+      }
+    });
+    if (!style) return chain;
+    return chain.then(function () {
+      try { localStorage.setItem('giftsense:wrap', '1'); } catch (e) { /* private mode */ }
+      if (window.GiftSenseArmCart) window.GiftSenseArmCart();
+      track('wrap_added');
+      return fetch(root() + 'cart/add.js', { method: 'POST', credentials: 'same-origin', headers: json,
+        body: JSON.stringify({ items: [{ id: style.variant_id, quantity: 1,
+          properties: (function () { var p = {}; p[prop] = 'order'; p[label] = 'Your order'; return p; })() }] }) });
+    });
+  }
+
+  // After changing cart lines: the cart page reloads; drawers get the common
+  // refresh events (themes differ in what they listen for).
+  function refreshCart() {
+    if (/\/cart\/?$/.test(location.pathname)) { location.reload(); return; }
+    ['cart:refresh', 'cart:updated', 'cart:change'].forEach(function (n) { document.dispatchEvent(new CustomEvent(n)); });
+  }
+
   // Note box + "Write it for me" (tones, first name, rewrites left); edits g.note.
   function noteSection(g, productId) {
     var notes = ctx.config.notes || { tone: 'warm', max_chars: 250, tones: [] };
     var noteWrap = el('div', 'gs-group');
-    noteWrap.appendChild(el('span', 'gs-label', 'Gift note (optional)'));
+    noteWrap.appendChild(el('span', 'gs-label', tr('Gift note (optional)')));
     var note = el('textarea', 'gs-note');
     note.rows = 3;
     note.maxLength = notes.max_chars;
-    note.placeholder = 'Write your message, or let us draft one.';
+    note.placeholder = tr('Write your message, or let us draft one.');
     var counter = el('span', 'gs-hint', '0/' + notes.max_chars);
     note.addEventListener('input', function () { g.note = note.value; counter.textContent = note.value.length + '/' + notes.max_chars; });
     noteWrap.appendChild(note);
@@ -549,7 +617,7 @@
 
     var toneRow = el('div', 'gs-chips gs-tones');
     (notes.tones || []).forEach(function (t) {
-      var b = el('button', 'gs-chip gs-small-chip', t.label);
+      var b = el('button', 'gs-chip gs-small-chip', tr(t.label));
       b.type = 'button';
       b.setAttribute('aria-pressed', t.value === g.tone ? 'true' : 'false');
       b.addEventListener('click', function () {
@@ -563,38 +631,39 @@
     var name = el('input', 'gs-note');
     name.type = 'text';
     name.maxLength = 40;
-    name.placeholder = 'Their first name (optional)';
+    name.placeholder = tr('Their first name (optional)');
     name.addEventListener('input', function () { g.name = name.value.replace(/[^\p{L}\p{N} .'\-]/gu, ''); });
     noteWrap.appendChild(name);
 
-    var draftBtn = el('button', 'gs-secondary gs-small', '✨ Write it for me');
+    var draftBtn = el('button', 'gs-secondary gs-small', tr('✨ Write it for me'));
     draftBtn.type = 'button';
     var draftStatus = el('span', 'gs-hint');
     draftStatus.setAttribute('role', 'status');
     draftBtn.addEventListener('click', function () {
       draftBtn.disabled = true;
-      draftStatus.textContent = 'Writing…';
+      draftStatus.textContent = tr('Writing…');
       fetch(ctx.api + '/note/draft', {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ sid: ctx.sid, product_id: productId || null, recipient: state.answers.recipient,
-          occasion: state.answers.occasion, tone: g.tone, name: g.name.trim() })
+          occasion: state.answers.occasion, tone: g.tone, name: g.name.trim(), locale: ctx.locale })
       }).then(function (r) {
         return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; });
       }).then(function (res) {
         if (!res.ok) {
-          draftStatus.textContent = res.d.detail || 'Couldn’t write a note right now.';
+          draftStatus.textContent = res.d.detail || tr('Couldn’t write a note right now.');
           return;
         }
         g.note = note.value = res.d.note;
         track('note_drafted', productId);
         counter.textContent = note.value.length + '/' + notes.max_chars;
         g.left = res.d.rewrites_left;
-        draftStatus.textContent = g.left > 0 ? 'Edit it any way you like. ' + g.left + ' rewrite' + (g.left === 1 ? '' : 's') + ' left.' : 'Edit it any way you like.';
-        draftBtn.textContent = 'Rewrite';
+        draftStatus.textContent = g.left > 1 ? tr('Edit it any way you like. {n} rewrites left.', { n: g.left })
+          : g.left === 1 ? tr('Edit it any way you like. 1 rewrite left.') : tr('Edit it any way you like.');
+        draftBtn.textContent = tr('Rewrite');
         draftBtn.disabled = g.left === 0;
       }).catch(function () {
-        draftStatus.textContent = 'Couldn’t write a note right now.';
+        draftStatus.textContent = tr('Couldn’t write a note right now.');
       }).then(function () { if (g.left !== 0) draftBtn.disabled = false; });
     });
     var draftRow = el('div', 'gs-cart');
@@ -610,21 +679,21 @@
     var notes = ctx.config.notes || { tone: 'warm', max_chars: 250, tones: [] };
     var g = { mode: 'direct', label: labelFor(state.answers.recipient), note: '', tone: notes.tone, name: '', left: null };
     clear(els.body);
-    els.body.appendChild(el('p', 'gs-status', 'Add “' + pick.title + '” as a gift'));
+    els.body.appendChild(el('p', 'gs-status', tr('Add “{title}” as a gift', { title: pick.title })));
 
     var labelWrap = el('label', 'gs-group');
     var label = el('input', 'gs-note');
     if (opts.askContext && !state.answers.recipient) {
       var intake = ctx.config.intake;
-      els.body.appendChild(contextChips('Who\u2019s it for? (optional)', intake.recipients, 'recipient', function (v) {
+      els.body.appendChild(contextChips(tr('Who\u2019s it for? (optional)'), intake.recipients, 'recipient', function (v) {
         if (!label.value || label.value === g.label) { g.label = label.value = labelFor(v); }
       }));
-      els.body.appendChild(contextChips('What\u2019s the occasion? (optional)', intake.occasions, 'occasion'));
+      els.body.appendChild(contextChips(tr('What\u2019s the occasion? (optional)'), intake.occasions, 'occasion'));
     }
     var modes = el('fieldset', 'gs-group');
-    modes.appendChild(el('legend', 'gs-label', 'Where is this going?'));
+    modes.appendChild(el('legend', 'gs-label', tr('Where is this going?')));
     var modeRow = el('div', 'gs-chips');
-    [['direct', 'Ship it straight to them'], ['self', 'I’ll give it to them']].forEach(function (m) {
+    [['direct', tr('Ship it straight to them')], ['self', tr('I’ll give it to them')]].forEach(function (m) {
       var b = el('button', 'gs-chip', m[1]);
       b.type = 'button';
       b.setAttribute('data-value', m[0]);
@@ -641,28 +710,32 @@
     modes.appendChild(modeRow);
     els.body.appendChild(modes);
 
-    labelWrap.appendChild(el('span', 'gs-label', 'Who’s it for?'));
+    labelWrap.appendChild(el('span', 'gs-label', tr('Who’s it for?')));
     label.type = 'text';
     label.maxLength = 40;
     label.value = g.label;
-    label.placeholder = 'e.g. Mom';
+    label.placeholder = tr('e.g. Mom');
     label.addEventListener('input', function () { g.label = label.value; });
     labelWrap.appendChild(label);
     labelWrap.hidden = true;
     els.body.appendChild(labelWrap);
 
     els.body.appendChild(noteSection(g, pick.product_id));
-    var wrapChoice = wrapSection(g);
+    var messageChoice = messageSection(g);
+    if (messageChoice) els.body.appendChild(messageChoice);
+    var wrapChoice = pick.wrap === false ? null : wrapSection(g);
     if (wrapChoice) els.body.appendChild(wrapChoice);
+    var cardChoice = cardSection(g);
+    if (cardChoice) els.body.appendChild(cardChoice);
     var dateChoice = dateSection(g);
     if (dateChoice) els.body.appendChild(dateChoice);
 
     var row = el('div', 'gs-actions');
-    var addBtn = el('button', 'gs-primary', 'Add gift to cart');
+    var addBtn = el('button', 'gs-primary', tr('Add gift to cart'));
     addBtn.type = 'button';
     addBtn.addEventListener('click', function () { addGift(pick, variantId, g, addBtn); });
     row.appendChild(addBtn);
-    var back = el('button', 'gs-secondary', opts.standalone ? 'Cancel' : 'Back to ideas');
+    var back = el('button', 'gs-secondary', opts.standalone ? tr('Cancel') : tr('Back to ideas'));
     back.type = 'button';
     back.addEventListener('click', function () {
       if (opts.standalone) close(); else renderResults(state.lastPicks || [], false, true);
@@ -675,6 +748,152 @@
     if (firstChip) firstChip.focus();
   }
 
+  // Voice (Growth+) / video (Pro) message: recorded in the browser, uploaded
+  // straight to storage with a presigned URL (/media/upload-url), confirmed
+  // (/media/confirm), and its token rides on the gift group like the note.
+  // The consent line shows before anything is recorded.
+  var RECORD_TYPES = {
+    voice: ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg'],
+    video: ['video/webm;codecs=vp9,opus', 'video/webm', 'video/mp4']
+  };
+
+  function messageSection(g) {
+    var m = ctx.config.media || {};
+    var kinds = (m.kinds || []).filter(function (k) {
+      return window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia &&
+        RECORD_TYPES[k].some(function (t) { return MediaRecorder.isTypeSupported(t); });
+    });
+    if (!kinds.length) return null;
+    g.message = null;
+    var box = el('fieldset', 'gs-group');
+    box.appendChild(el('legend', 'gs-label', kinds.length > 1 ? tr('Add a voice or video message (optional)') : tr('Add a voice message (optional)')));
+    var area = el('div', 'gs-media');
+    var status = el('span', 'gs-hint gs-hint-left');
+    status.setAttribute('role', 'status');
+    box.appendChild(area);
+    box.appendChild(status);
+
+    var recorder = null, stream = null, chunks = [], timer = null, started = 0, kind = null, blob = null, mime = '';
+
+    function stopStream() {
+      if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
+      stream = null;
+      clearInterval(timer);
+    }
+    function button(text, cls, onClick) {
+      var b = el('button', cls || 'gs-secondary gs-small', text);
+      b.type = 'button';
+      b.addEventListener('click', onClick);
+      return b;
+    }
+    function secs(n) { return Math.floor(n / 60) + ':' + ('0' + Math.floor(n % 60)).slice(-2); }
+
+    function idle(msg) {
+      stopStream();
+      clear(area);
+      g.message = null;
+      blob = null;
+      area.appendChild(el('p', 'gs-hint gs-hint-left', tr('Anyone with the QR code or link can watch or listen to this.')));
+      var row = el('div', 'gs-chips');
+      kinds.forEach(function (k) {
+        row.appendChild(button(k === 'voice' ? tr('🎙 Record voice') : tr('🎥 Record video'), null, function () { record(k); }));
+      });
+      area.appendChild(row);
+      status.textContent = msg || '';
+    }
+
+    function record(k) {
+      kind = k;
+      mime = RECORD_TYPES[k].filter(function (t) { return MediaRecorder.isTypeSupported(t); })[0];
+      var max = (m.max_secs || {})[k] || (k === 'voice' ? 120 : 60);
+      var constraints = k === 'voice' ? { audio: true }
+        : { audio: true, video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } };
+      status.textContent = k === 'video' ? tr('Allow camera and microphone access to record.') : tr('Allow microphone access to record.');
+      navigator.mediaDevices.getUserMedia(constraints).then(function (s) {
+        stream = s;
+        chunks = [];
+        recorder = new MediaRecorder(s, { mimeType: mime, audioBitsPerSecond: 64000, videoBitsPerSecond: 2500000 });
+        recorder.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+        recorder.onstop = function () { stopStream(); review(); };
+        clear(area);
+        if (k === 'video') {
+          var live = el('video', 'gs-media-preview');
+          live.muted = true; live.playsInline = true; live.autoplay = true;
+          live.srcObject = s;
+          area.appendChild(live);
+        }
+        var clock = el('span', 'gs-hint gs-hint-left', '● 0:00 / ' + secs(max));
+        area.appendChild(clock);
+        area.appendChild(button(tr('Stop'), 'gs-primary gs-small', function () { recorder.stop(); }));
+        status.textContent = tr('Recording…');
+        started = Date.now();
+        timer = setInterval(function () {
+          var t = (Date.now() - started) / 1000;
+          clock.textContent = '● ' + secs(t) + ' / ' + secs(max);
+          if (t >= max && recorder.state === 'recording') recorder.stop();
+        }, 250);
+        recorder.start(1000);
+      }).catch(function () {
+        idle(k === 'video' ? tr('We couldn’t use your camera. Check the browser’s permission and try again.')
+          : tr('We couldn’t use your microphone. Check the browser’s permission and try again.'));
+      });
+    }
+
+    function review() {
+      var duration = Math.max(1, Math.round((Date.now() - started) / 1000));
+      blob = new Blob(chunks, { type: mime.split(';')[0] });
+      clear(area);
+      var player = el(kind === 'video' ? 'video' : 'audio', 'gs-media-preview');
+      player.controls = true; player.playsInline = true;
+      player.src = URL.createObjectURL(blob);
+      area.appendChild(player);
+      var row = el('div', 'gs-chips');
+      row.appendChild(button(tr('Use this'), 'gs-primary gs-small', function () { upload(duration, row); }));
+      row.appendChild(button(tr('Record again'), null, function () { idle(); }));
+      area.appendChild(row);
+      status.textContent = tr('Listen back, then choose Use this.');
+    }
+
+    function upload(duration, row) {
+      row.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+      status.textContent = tr('Saving your message…');
+      var json = { 'Content-Type': 'application/json', Accept: 'application/json' };
+      var token;
+      fetch(ctx.api + '/media/upload-url', {
+        method: 'POST', credentials: 'same-origin', headers: json,
+        body: JSON.stringify({ sid: ctx.sid, kind: kind, mime: blob.type, size: blob.size, duration_s: duration })
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          if (!r.ok) throw new Error(d.detail || 'save');
+          token = d.token;
+          return fetch(d.upload_url, { method: 'PUT', headers: d.headers, body: blob });
+        });
+      }).then(function (r) {
+        if (!r.ok) throw new Error('save');
+        return fetch(ctx.api + '/media/confirm', {
+          method: 'POST', credentials: 'same-origin', headers: json, body: JSON.stringify({ sid: ctx.sid, token: token })
+        });
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          if (!r.ok) throw new Error(d.detail || 'save');
+          g.message = d.token;
+          track('message_added');
+          clear(area);
+          area.appendChild(el('span', 'gs-hint gs-hint-left', kind === 'video' ? tr('Video message added ✓') : tr('Voice message added ✓')));
+          area.appendChild(button(tr('Remove'), null, function () { idle(); }));
+          status.textContent = kind === 'video' ? tr('The recipient scans the QR code on the gift card to watch.')
+            : tr('The recipient scans the QR code on the gift card to listen.');
+        });
+      }).catch(function (e) {
+        row.querySelectorAll('button').forEach(function (b) { b.disabled = false; });
+        status.textContent = e && e.message && e.message !== 'save' ? e.message : tr('We couldn’t save your message. Please try again.');
+      });
+    }
+
+    idle();
+    return box;
+  }
+
   // Gift wrap: merchant styles from /config. "No wrap" is the default (never
   // pre-select a paid add-on) and every style shows its price.
   // Arrive-by (Growth+): a date picker limited to what the store can make
@@ -683,41 +902,62 @@
     var d = ctx.config.delivery;
     if (!d || !d.earliest) return null;
     var box = el('label', 'gs-group');
-    box.appendChild(el('span', 'gs-label', 'When should it arrive? (optional)'));
+    box.appendChild(el('span', 'gs-label', tr('When should it arrive? (optional)')));
     var input = el('input', 'gs-note gs-date');
     input.type = 'date';
     input.min = d.earliest;
     input.max = d.latest;
     if (existing && existing >= d.earliest && existing <= d.latest) input.value = g.arriveBy = existing;
-    var hint = el('span', 'gs-hint gs-hint-left', 'Estimated delivery. Applies to the whole order.');
+    var hint = el('span', 'gs-hint gs-hint-left', tr('Estimated delivery. Applies to the whole order.'));
     input.addEventListener('change', function () {
       var v = input.value;
       if (v && (v < d.earliest || v > d.latest)) {
-        hint.textContent = 'Please pick a date between ' + d.earliest + ' and ' + d.latest + '.';
+        hint.textContent = tr('Please pick a date between {a} and {b}.', { a: d.earliest, b: d.latest });
         g.arriveBy = '';
         return;
       }
       g.arriveBy = v;
-      hint.textContent = 'Estimated delivery. Applies to the whole order.';
+      hint.textContent = tr('Estimated delivery. Applies to the whole order.');
     });
     box.appendChild(input);
     box.appendChild(hint);
     return box;
   }
 
-  function wrapSection(g) {
-    var styles = ctx.config.wrap || [];
+  // Styles are a wrap, bag or box (the merchant's choice of type); `current`
+  // preselects what the cart already has (cart page / drawer).
+  var KIND_MARK = { wrap: '🎀 ', bag: '🛍 ', box: '📦 ', card: '💌 ' };
+
+  function wrapSection(g, current) { return addonSection(g, current, false); }
+  function cardSection(g, current) { return addonSection(g, current, true); }
+
+  // Packaging (wrap/bag/box, g.wrap) or greeting cards (g.card): one choice
+  // each, "No wrap" / "No card" by default.
+  function addonSection(g, current, cards) {
+    var key = cards ? 'card' : 'wrap';
+    var styles = (ctx.config.wrap || []).filter(function (w) { return (w.kind === 'card') === cards; });
     if (!styles.length) return null;
-    g.wrap = null;
+    g[key] = styles.filter(function (w) { return current && w.name === current; })[0] || null;
+    var mixed = !cards && styles.some(function (w) { return (w.kind || 'wrap') !== 'wrap'; });
     var box = el('fieldset', 'gs-group');
-    box.appendChild(el('legend', 'gs-label', 'Gift wrap (optional)'));
+    box.appendChild(el('legend', 'gs-label', cards ? tr('Greeting card (optional)')
+      : mixed ? tr('Gift packaging (optional)') : tr('Gift wrap (optional)')));
     var row = el('div', 'gs-chips');
     [null].concat(styles).forEach(function (w) {
-      var b = el('button', 'gs-chip gs-small-chip', w ? w.name + ' · ' + (w.price ? '+' + money(w.price) : 'Free') : 'No wrap');
+      var mark = w && !w.image ? (KIND_MARK[w.kind] || '') : '';
+      var b = el('button', 'gs-chip gs-small-chip', w ? mark + w.name + ' · ' + (w.price ? '+' + money(w.price) : tr('Free')) : cards ? tr('No card') : tr('No wrap'));
       b.type = 'button';
-      b.setAttribute('aria-pressed', w === null ? 'true' : 'false');
+      if (w && w.image) {
+        // Shopify CDN: ask for a small square so the panel stays light.
+        var img = el('img', 'gs-wrap-img');
+        img.src = w.image + (w.image.indexOf('?') < 0 ? '?' : '&') + 'width=64&height=64&crop=center';
+        img.alt = ''; img.width = 20; img.height = 20; img.loading = 'lazy';
+        b.insertBefore(img, b.firstChild);
+        b.classList.add('gs-wrap-chip');
+      }
+      b.setAttribute('aria-pressed', w === g[key] ? 'true' : 'false');
       b.addEventListener('click', function () {
-        g.wrap = w;
+        g[key] = w;
         row.querySelectorAll('.gs-chip').forEach(function (c) { c.setAttribute('aria-pressed', c === b ? 'true' : 'false'); });
       });
       row.appendChild(b);
@@ -731,7 +971,7 @@
     var label = (g.label || '').trim().slice(0, 40) || 'Gift';
     var note = (g.note || '').trim();
     button.disabled = true;
-    button.textContent = 'Adding…';
+    button.textContent = tr('Adding…');
     fetch(root() + 'cart.js', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (cart) {
       var attrs = (cart && cart.attributes) || {};
       var groups = [];
@@ -750,6 +990,12 @@
         items.push({ id: g.wrap.variant_id, quantity: 1,
           properties: { _giftsense_wrap_for: groupId, 'Wrap for': wrapLabel } });
       };
+      // A greeting card works the same way, on its own line (_giftsense_card_for).
+      var addCard = function (groupId, cardLabel, already) {
+        if (!g.card || already) return;
+        items.push({ id: g.card.variant_id, quantity: 1,
+          properties: { _giftsense_card_for: groupId, 'Card for': cardLabel } });
+      };
       if (g.mode === 'self') {
         var group = groups.filter(function (x) { return (x.label || '').toLowerCase() === label.toLowerCase(); })[0];
         if (!group) {
@@ -757,19 +1003,30 @@
           groups.push(group);
         }
         if (note) group.note = note;
+        if (g.message) group.message = g.message;
         addWrap(group.id, label, group.wrap);
         if (g.wrap && !group.wrap) group.wrap = g.wrap.name;
+        addCard(group.id, label, group.card);
+        if (g.card && !group.card) group.card = g.card.name;
         props['Gift for'] = label;
         props._giftsense_gift = group.id;
         update._giftsense_gifts = JSON.stringify(groups);
       } else {
         props._giftsense_gift = 'order';
         if (note) update['Gift note'] = note;
+        if (g.message) update._giftsense_message = g.message;
         addWrap('order', 'Your gift', attrs['Gift wrap']);
         if (g.wrap && !attrs['Gift wrap']) update['Gift wrap'] = g.wrap.name;
+        addCard('order', 'Your gift', attrs['Greeting card']);
+        if (g.card && !attrs['Greeting card']) update['Greeting card'] = g.card.name;
       }
       if (g.arriveBy) update['Arrive by'] = g.arriveBy;
-      if (items.length > 1) track('wrap_added', pick.product_id);
+      if (items.length > 1) {
+        track('wrap_added', pick.product_id);
+        // Arms the wrap cart guard (giftsense-cart.js) now and on later pages.
+        try { localStorage.setItem('giftsense:wrap', '1'); } catch (e) { /* private mode */ }
+        if (window.GiftSenseArmCart) window.GiftSenseArmCart();
+      }
       return fetch(root() + 'cart/add.js', {
         method: 'POST', credentials: 'same-origin', headers: json,
         body: JSON.stringify({ items: items })
@@ -782,14 +1039,14 @@
     }).then(function () {
       clear(els.body);
       track('panel_submit', pick.product_id);
-      var done = el('p', 'gs-status', 'Added to your cart as a gift ✓');
+      var done = el('p', 'gs-status', tr('Added to your cart as a gift ✓'));
       done.setAttribute('role', 'status');
       els.body.appendChild(done);
       var row = el('div', 'gs-actions');
-      var view = el('a', 'gs-primary', 'View cart');
+      var view = el('a', 'gs-primary', tr('View cart'));
       view.href = root() + 'cart';
       row.appendChild(view);
-      var more = el('button', 'gs-secondary', 'Keep looking');
+      var more = el('button', 'gs-secondary', tr('Keep looking'));
       more.type = 'button';
       more.addEventListener('click', function () { renderResults(state.lastPicks || [], false, true); });
       row.appendChild(more);
@@ -799,7 +1056,7 @@
       document.dispatchEvent(new CustomEvent('giftsense:added-to-cart', { detail: { variantId: variantId, gift: true } }));
     }).catch(function () {
       button.disabled = false;
-      button.textContent = 'Try again';
+      button.textContent = tr('Try again');
     });
   }
 
@@ -817,12 +1074,12 @@
     clear(els.body);
     if (!picks.length) {
       renderMessage(state.shown.length
-        ? 'That\u2019s all we found for these answers. Try a different budget or occasion.'
-        : 'We couldn\u2019t find a gift for that budget. Try another budget or occasion.');
+        ? tr('That\u2019s all we found for these answers. Try a different budget or occasion.')
+        : tr('We couldn\u2019t find a gift for that budget. Try another budget or occasion.'));
       return;
     }
     var heading = el('p', 'gs-status' + (pending ? ' gs-status--pending' : ''),
-      pending ? 'Here are some ideas \u00B7 personalizing\u2026' : 'Here are some ideas');
+      pending ? tr('Here are some ideas \u00B7 personalizing\u2026') : tr('Here are some ideas'));
     heading.setAttribute('role', 'status');
     els.body.appendChild(heading);
     picks.forEach(function (p) {
@@ -870,5 +1127,30 @@
     }
   }
 
-  window.GiftSenseUI = { open: open, close: close };
+  // "Add to registry" on product pages (Pro): adds the variant selected in the
+  // product form to the logged-in shopper's registry; a second click opens it.
+  function addToRegistry(b, api) {
+    if (b.getAttribute('data-added')) { location.href = api + '/registry'; return; }
+    var field = document.querySelector('form[action*="/cart/add"] [name="id"]');
+    var root = b.closest('[data-product-id]');
+    var vid = String((field && field.value) || root.getAttribute('data-variant-id'));
+    var ids = [], titles = [];
+    try { ids = JSON.parse(b.getAttribute('data-variant-ids')); titles = JSON.parse(b.getAttribute('data-variant-titles')); } catch (e) { /* keep empty */ }
+    var i = ids.map(String).indexOf(vid);
+    var label = b.textContent;
+    b.disabled = true;
+    b.textContent = tr('Adding…');
+    fetch(api + '/registry/items', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ product_id: root.getAttribute('data-product-id'), variant_id: vid,
+        variant_title: i >= 0 ? titles[i] : '' })
+    }).then(function (r) {
+      if (r.status === 401) { location.href = b.getAttribute('data-login-url'); return; }
+      if (r.ok) b.setAttribute('data-added', '1');
+      b.textContent = r.ok ? tr('Added ✓ View your registry') : tr('Couldn’t add. Try again');
+    }).catch(function () { b.textContent = label; }).then(function () { b.disabled = false; });
+  }
+
+  window.GiftSenseUI = { open: open, close: close, addToRegistry: addToRegistry };
 })();

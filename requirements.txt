@@ -15,8 +15,10 @@ redis[asyncio]==5.2.1
 
 
 # LLM providers
-openai==1.77.0
-anthropic==0.52.0
+openai==3.24.0
+anthropic==1.11.0
+boto3==1.43.108
+segno==1.6.6
 
 # Validation and config
 pydantic-settings==2.9.1

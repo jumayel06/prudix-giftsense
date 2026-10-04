@@ -86,7 +86,7 @@ async def test_small_catalog_skips_the_embedding_call(db_session):
     embedder = AsyncMock(wraps=EMB)
     embedder.embed = AsyncMock(side_effect=EMB.embed)
     rec, ms = await catalog_index.recommend_for_shop(db_session, shop.id, Intake(**BRIEF), embedder,
-                                                     "claude-haiku-4-5", chat_fn=picking_chat())
+                                                     "gpt-6-luna", chat_fn=picking_chat())
     assert rec.mode == "small_catalog" and len(rec.picks) == 3 and ms >= 0
     embedder.embed.assert_not_awaited()
 
@@ -101,7 +101,7 @@ async def test_large_catalog_embeds_the_brief_once(db_session):
     embedder = AsyncMock()
     embedder.embed = AsyncMock(side_effect=EMB.embed)
     rec, _ = await catalog_index.recommend_for_shop(db_session, shop.id, Intake(**BRIEF), embedder,
-                                                    "claude-haiku-4-5", chat_fn=picking_chat())
+                                                    "gpt-6-luna", chat_fn=picking_chat())
     assert rec.mode == "vector" and len(rec.picks) == 3
     assert embedder.embed.await_count == 1
 

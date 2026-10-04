@@ -67,3 +67,85 @@ def test_api_version_matches_the_app():
 def test_js_parses():
     for js in (EXT / "assets").glob("*.js"):
         subprocess.run(["node", "--check", str(js)], check=True)
+
+
+# ── Wrap cart guard (giftsense-cart.js), run in node against a fake cart ────
+
+CART_HARNESS = r"""
+const fs = require('fs');
+const cart = JSON.parse(process.argv[1]);
+const calls = [];
+globalThis.window = globalThis;
+globalThis.Shopify = { routes: { root: '/' } };
+globalThis.location = { pathname: '/products/x', reload() { calls.push(['reload']); } };
+globalThis.localStorage = { removeItem(k) { calls.push(['forget', k]); }, getItem() { return '1'; } };
+globalThis.CustomEvent = class { constructor(n) { this.type = n; } };
+globalThis.document = { dispatchEvent(e) { calls.push(['event', e.type]); } };
+globalThis.XMLHttpRequest = function () {}; XMLHttpRequest.prototype.open = function () {};
+globalThis.fetch = (url, opts) => {
+  calls.push([url, opts && opts.body ? JSON.parse(opts.body) : null]);
+  return Promise.resolve({ json: () => Promise.resolve(url.endsWith('cart.js') ? cart : {}) });
+};
+eval(fs.readFileSync(process.argv[2], 'utf8'));
+setTimeout(() => console.log(JSON.stringify(calls)), 50);
+"""
+
+
+def run_guard(cart: dict) -> list:
+    out = subprocess.run(["node", "-e", CART_HARNESS, json.dumps(cart), str(EXT / "assets" / "giftsense-cart.js")],
+                         check=True, capture_output=True, text=True).stdout
+    return json.loads(out)
+
+
+def line(key, **props):
+    return {"key": key, "properties": props}
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
+def test_cart_guard_removes_wrap_whose_gift_is_gone():
+    groups = [{"id": "g1", "label": "Mom", "wrap": "Gold"}, {"id": "g2", "label": "Dad", "wrap": "Kraft"}]
+    cart = {"attributes": {"_giftsense_gifts": json.dumps(groups)}, "items": [
+        line("a", _giftsense_wrap_for="g1"),                  # Mom's gift was removed → orphan
+        line("b", _giftsense_gift="g2"), line("c", _giftsense_wrap_for="g2"),
+    ]}
+    calls = run_guard(cart)
+    changes = [c[1] for c in calls if c[0] == "/cart/change.js"]
+    assert changes == [{"id": "a", "quantity": 0}]
+    update = next(c[1] for c in calls if c[0] == "/cart/update.js")["attributes"]
+    assert json.loads(update["_giftsense_gifts"]) == [{"id": "g1", "label": "Mom"},
+                                                      {"id": "g2", "label": "Dad", "wrap": "Kraft"}]
+    assert ["event", "cart:refresh"] in calls
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
+def test_cart_guard_clears_order_wrap_once_nothing_else_is_left():
+    cart = {"attributes": {"Gift wrap": "Gold"}, "items": [line("w", _giftsense_wrap_for="order")]}
+    calls = run_guard(cart)
+    assert [c[1] for c in calls if c[0] == "/cart/change.js"] == [{"id": "w", "quantity": 0}]
+    assert next(c[1] for c in calls if c[0] == "/cart/update.js") == {"attributes": {"Gift wrap": ""}}
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
+def test_cart_guard_leaves_wrapped_gifts_alone_and_disarms_without_wrap():
+    kept = run_guard({"attributes": {}, "items": [line("b", _giftsense_gift="order"),
+                                                  line("w", _giftsense_wrap_for="order")]})
+    assert [c for c in kept if c[0] != "/cart.js"] == []
+    empty = run_guard({"attributes": {}, "items": [line("x")]})
+    assert ["forget", "giftsense:wrap"] in empty
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
+def test_cart_guard_keeps_a_whole_order_wrap_while_items_remain():
+    """Wrap added from the cart page or drawer covers the whole order, gift-marked or not."""
+    calls = run_guard({"attributes": {"Gift wrap": "Gold"}, "items": [line("w", _giftsense_wrap_for="order"), line("x")]})
+    assert [c for c in calls if c[0] in ("/cart/change.js", "/cart/update.js")] == []
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
+def test_cart_guard_removes_a_greeting_card_whose_gift_is_gone():
+    groups = [{"id": "g1", "label": "Mom", "card": "Birthday"}]
+    calls = run_guard({"attributes": {"_giftsense_gifts": json.dumps(groups)},
+                       "items": [line("c", _giftsense_card_for="g1"), line("x")]})
+    assert [c[1] for c in calls if c[0] == "/cart/change.js"] == [{"id": "c", "quantity": 0}]
+    update = next(c[1] for c in calls if c[0] == "/cart/update.js")["attributes"]
+    assert json.loads(update["_giftsense_gifts"]) == [{"id": "g1", "label": "Mom"}]

@@ -30,6 +30,7 @@ def _row(o: GiftOrder) -> dict:
         "currency": o.currency,
         "recipients": [g["label"] for g in groups if g.get("label")],
         "wraps": sorted({g["wrap"] for g in groups if g.get("wrap")}),
+        "cards": sorted({g["card"] for g in groups if g.get("card")}),
         "has_note": o.note_source is not None,
         "note_source": o.note_source,
         "from_finder": o.sid is not None,

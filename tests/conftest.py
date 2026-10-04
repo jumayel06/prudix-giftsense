@@ -70,7 +70,7 @@ def make_shop(
     billing_cycle_start: datetime | None = None,
     trial_ends_at: datetime | None = None,
     trial_used: bool = False,
-    selected_model: str = "gpt-6-luna",
+    selected_model: str = "standard",
     review_prompt_shown: bool = False,
     store_timezone: str = "UTC",
     refresh_token_encrypted: str | None = None,
@@ -122,7 +122,7 @@ async def add_usage(
     generations: int,
     action: str = "gift_search",
     created_at: datetime | None = None,
-    model: str = "claude-haiku-4-5",
+    model: str = "gpt-6-luna",
 ):
     """Insert a UsageLog row for the given shop.
 

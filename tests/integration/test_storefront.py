@@ -323,3 +323,15 @@ async def test_config_carries_gift_note_settings(db_session):
     assert notes["tone"] == "elegant" and notes["max_chars"] == 180
     assert {t["value"] for t in notes["tones"]} == {"warm", "elegant", "playful", "formal"}
     assert "banned_words" not in notes          # merchant-private
+
+
+@pytest.mark.asyncio
+async def test_picks_say_whether_they_can_be_wrapped(db_session, models):
+    shop = make_shop()
+    db_session.add(shop)
+    await db_session.flush()
+    db_session.add_all([row(shop, "1", tags=["no-gift-wrap"]), row(shop, "2"), row(shop, "3")])
+    await db_session.commit()
+    picks = call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "phase": "instant"}).json()["picks"]
+    by_id = {p["product_id"]: p["wrap"] for p in picks}
+    assert by_id.get("1") is False and by_id.get("2") is True

@@ -14,7 +14,7 @@ from typing import Awaitable, Callable
 import structlog
 
 from app.llm import LLMResponse, chat, moderate
-from app.services.gifting import vocab
+from app.services.gifting import languages, vocab
 from app.services.gift_settings import NOTE_TONES
 
 logger = structlog.get_logger()
@@ -119,12 +119,15 @@ def _prompt(recipient, occasion, name, product_title, product_pitch, product_fac
 async def draft_note(
     *, recipient: str | None, occasion: str | None, tone: str, max_chars: int, banned_words: list[str],
     product_title: str = "", product_pitch: str = "", product_facts: list[str] | None = None, name: str = "",
-    model: str, chat_fn: ChatFn = chat, moderate_fn: ModerateFn = moderate,
+    model: str, chat_fn: ChatFn = chat, moderate_fn: ModerateFn = moderate, locale: str | None = None,
 ) -> NoteResult:
     tone = tone if tone in NOTE_TONES else "warm"
     system = SYSTEM_PROMPT.format(tone=TONE_GUIDE[tone], max_chars=max_chars,
                                   banned=", ".join(banned_words) if banned_words else "(none)")
     prompt = _prompt(recipient, occasion, name, product_title, product_pitch, product_facts or [], banned_words)
+    language = languages.language_name(locale)
+    if language:
+        prompt += f"\nWrite the note in {language}."
     tokens_in = tokens_out = 0
     used_model = model
     fallback = NoteResult(template_note(tone, recipient, occasion, name, max_chars), "template")

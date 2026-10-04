@@ -3,6 +3,12 @@
   section (home, collection, product pages). Opens the same finder as the
   app embed launcher; works with or without the embed turned on.
 {% endcomment %}
+{%- assign gs_lang = request.locale.iso_code | split: '-' | first | downcase -%}
+{%- comment -%} Widget text file for the storefront's language (assets/giftsense-i18n-<lang>.js); English needs none. {%- endcomment -%}
+{%- if gs_lang == 'es' or gs_lang == 'fr' or gs_lang == 'de' or gs_lang == 'it' or gs_lang == 'pt' -%}
+  {%- assign gs_i18n_file = 'giftsense-i18n-' | append: gs_lang | append: '.js' -%}
+  {%- assign gs_i18n = gs_i18n_file | asset_url -%}
+{%- endif -%}
 <div
   class="giftsense-block"
   data-giftsense-root
@@ -10,14 +16,22 @@
   data-api="/apps/giftsense"
   data-ui-src="{{ 'giftsense-ui.js' | asset_url }}"
   data-css-src="{{ 'giftsense.css' | asset_url }}"
+  data-cart-src="{{ 'giftsense-cart.js' | asset_url }}"
   data-currency="{{ shop.currency }}"
   data-locale="{{ request.locale.iso_code }}"
+  {% if gs_i18n %}data-i18n-src="{{ gs_i18n }}"{% endif %}
   style="--gs-accent: {{ block.settings.accent }}; --gs-on-accent: {{ block.settings.on_accent }}; text-align: {{ block.settings.align }};"
   {{ block.shopify_attributes }}
 >
-  {% if block.settings.heading != blank %}<h2 class="giftsense-block__heading">{{ block.settings.heading | escape }}</h2>{% endif %}
-  {% if block.settings.text != blank %}<p class="giftsense-block__text">{{ block.settings.text | escape }}</p>{% endif %}
-  <button type="button" class="giftsense-block__button" data-giftsense-open>{{ block.settings.button | default: 'Find a gift' | escape }}</button>
+  {%- assign gs_heading = block.settings.heading -%}
+  {%- if gs_heading == "Not sure what to get?" -%}{%- assign gs_heading = 'finder.heading' | t -%}{%- endif -%}
+  {%- assign gs_text = block.settings.text -%}
+  {%- if gs_text == "Answer a few quick questions and we'll suggest gifts from our store." -%}{%- assign gs_text = 'finder.text' | t -%}{%- endif -%}
+  {%- assign gs_button = block.settings.button -%}
+  {%- if gs_button == blank or gs_button == 'Find a gift' -%}{%- assign gs_button = 'launcher' | t -%}{%- endif -%}
+  {% if gs_heading != blank %}<h2 class="giftsense-block__heading">{{ gs_heading | escape }}</h2>{% endif %}
+  {% if gs_text != blank %}<p class="giftsense-block__text">{{ gs_text | escape }}</p>{% endif %}
+  <button type="button" class="giftsense-block__button" data-giftsense-open>{{ gs_button | escape }}</button>
 </div>
 <style>
   .giftsense-block{padding:24px 0}

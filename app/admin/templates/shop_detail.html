@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ shop.shop_domain }} · GiftSense admin{% endblock %}
+{% block content %}
+<h1 class="page-title">{{ shop.shop_domain }}</h1>
+<p class="page-subtitle"><span class="pill pill-neutral">{{ shop.plan_tier }}</span> <span class="pill pill-{{ shop.plan_status }}">{{ shop.plan_status }}</span>
+  · AI option <strong>{{ d.ai_tier }}</strong> · installed {{ shop.installed_at.strftime('%Y-%m-%d') if shop.installed_at else '—' }}
+  · owner {{ shop.shop_owner_email or 'unknown' }} · {{ shop.store_timezone }}</p>
+{% if request.query_params.get('saved') %}<div class="card card-emerald">Model pins saved.</div>{% endif %}
+<div class="grid grid-4">
+  <div class="card"><div class="card-title">Generations this cycle</div><div class="kpi-value mono">{{ d.generations_cycle }} / {{ d.generation_limit }}</div></div>
+  <div class="card"><div class="card-title">AI cost this cycle</div><div class="kpi-value mono">${{ "%.4f"|format(d.cost_cycle) }}</div></div>
+  <div class="card"><div class="card-title">Catalog products</div><div class="kpi-value">{{ d.products }}</div></div>
+  <div class="card"><div class="card-title">Gift orders</div><div class="kpi-value">{{ d.gift_orders }}</div></div>
+</div>
+<div class="section"><h2>AI models for this shop</h2>
+<p>Pin a slot to hold this shop on a model during a rollout, or try a new model on one store. Empty follows the slot (and its rollout).</p>
+<form method="post" action="/admin/shops/{{ shop.id }}/pins">
+<table><thead><tr><th>Slot</th><th>Runs on now</th><th>Pin</th></tr></thead><tbody>
+{% for s in d.slots %}<tr><td class="mono">{{ s.slot }}</td><td>{{ s.label }}</td><td>
+  <select name="{{ s.slot }}"><option value="">Follow the slot</option>
+  {% for m in d.pinnable %}<option value="{{ m }}" {% if s.pin == m %}selected{% endif %}>{{ m }}</option>{% endfor %}</select></td></tr>
+{% endfor %}</tbody></table>
+<p><button type="submit">Save pins</button></p></form></div>
+<div class="section"><h2>This month by action</h2>
+<table><thead><tr><th>Action</th><th class="num">Calls</th><th class="num">Cost</th></tr></thead><tbody>
+{% for a in d.by_action %}<tr><td>{{ a.action }}</td><td class="num">{{ a.calls }}</td><td class="num mono">${{ "%.4f"|format(a.cost) }}</td></tr>
+{% else %}<tr><td colspan="3" class="text-muted">No AI use this month.</td></tr>{% endfor %}</tbody></table></div>
+<div class="section"><h2>Recent AI calls</h2>
+<table><thead><tr><th>When</th><th>Action</th><th>Model</th><th class="num">Gens</th><th class="num">Tokens</th><th class="num">Cost</th><th class="num">ms</th></tr></thead><tbody>
+{% for u in d.recent %}<tr><td class="text-muted">{{ u.created_at.strftime('%m-%d %H:%M') if u.created_at else '' }}</td><td>{{ u.action_type }}</td><td>{{ u.model_used }}</td>
+<td class="num">{{ u.generations_consumed }}</td><td class="num mono">{{ u.tokens_input }}/{{ u.tokens_output }}</td><td class="num mono">${{ "%.5f"|format(u.cost_usd or 0) }}</td><td class="num">{{ u.duration_ms }}</td></tr>
+{% endfor %}</tbody></table></div>
+<div class="section"><h2>Catalog syncs</h2>
+<table><thead><tr><th>Started</th><th>Kind</th><th>Status</th><th class="num">Processed</th><th class="num">Analyzed</th><th>Error</th></tr></thead><tbody>
+{% for s in d.syncs %}<tr><td class="text-muted">{{ s.started_at.strftime('%m-%d %H:%M') if s.started_at else '' }}</td><td>{{ s.kind }}</td><td>{{ s.status }}</td><td class="num">{{ s.processed }}/{{ s.total }}</td><td class="num">{{ s.enriched }}</td><td class="text-critical">{{ s.error or '' }}</td></tr>
+{% endfor %}</tbody></table></div>
+{% if d.tickets %}<div class="section"><h2>Support tickets</h2>
+<table><tbody>{% for t in d.tickets %}<tr><td>#{{ t.ticket_number }}</td><td>{{ t.subject }}</td><td>{{ t.status }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+{% endblock %}

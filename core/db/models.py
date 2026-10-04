@@ -295,6 +295,9 @@ class GiftOrder(Base):
     arrive_by: Mapped[date | None] = mapped_column(Date, nullable=True)
     ship_by: Mapped[date | None] = mapped_column(Date, nullable=True)
     hold_status: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Registry purchases on this order: the registry and those lines' revenue.
+    registry_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    registry_revenue: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
@@ -324,3 +327,108 @@ class OrderCountDaily(Base):
     day: Mapped[date] = mapped_column(Date, nullable=False)
     orders: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     revenue: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+
+
+class GiftMedia(Base):
+    """A shopper's voice or video message (docs/TECHNICAL_PLAN.md §6.6). The
+    file lives in R2 at `storage_key`; the row holds no customer data.
+
+    `token` goes into the cart (the gift group's `message`, or the
+    `_giftsense_message` attribute) and links the recording to its order on
+    orders/create. `view_token` is the unguessable id of the recipient page.
+    status: pending (upload URL issued) → uploaded (confirmed in R2) → linked
+    (on an order; `expires_at` set). Unlinked ones are purged after 7 days,
+    linked ones at `expires_at` (app/services/media.py). Registered in
+    app/services/gdpr.py (order id) and deleted with the shop (app/purge.py)."""
+    __tablename__ = "gift_media"
+    __table_args__ = (Index("ix_gift_media_purge", "status", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    shop_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("shops.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    token: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    view_token: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    sid: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    order_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
+    kind: Mapped[str] = mapped_column(String, nullable=False)                 # voice | video
+    storage_key: Mapped[str] = mapped_column(String, nullable=False)
+    mime: Mapped[str] = mapped_column(String, nullable=False)
+    bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    duration_s: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    view_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    uploaded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class Registry(Base):
+    """A shopper's gift registry (Pro, docs/TECHNICAL_PLAN.md §6.9). The owner
+    is the App Proxy's `logged_in_customer_id`, the only customer data we
+    keep (no name, email or address). One registry per customer per shop.
+    Guests open it by `share_token`. Registered in app/services/gdpr.py
+    (customer id) and deleted with the shop (app/purge.py)."""
+    __tablename__ = "registries"
+    __table_args__ = (UniqueConstraint("shop_id", "customer_id", name="uq_registries_shop_customer"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    shop_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("shops.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    customer_id: Mapped[str] = mapped_column(String, nullable=False)
+    share_token: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    title: Mapped[str] = mapped_column(String, nullable=False, default="")
+    occasion: Mapped[str] = mapped_column(String, nullable=False, default="just_because")
+    event_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # AI suggestions, cached for the day: {"day": "YYYY-MM-DD", "picks": [...]}
+    suggestions: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    views: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class RegistryItem(Base):
+    """One wanted product variant on a registry. Display fields are a snapshot
+    taken when it was added (title/variant/image/price), so the guest page
+    renders without Admin API calls; carts use the live price."""
+    __tablename__ = "registry_items"
+    __table_args__ = (UniqueConstraint("registry_id", "variant_id", name="uq_registry_items_variant"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    registry_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("registries.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    shop_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("shops.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    product_id: Mapped[str] = mapped_column(String, nullable=False)
+    variant_id: Mapped[str] = mapped_column(String, nullable=False)
+    title: Mapped[str] = mapped_column(String, nullable=False, default="")
+    variant_title: Mapped[str] = mapped_column(String, nullable=False, default="")
+    image_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    url: Mapped[str | None] = mapped_column(String, nullable=True)
+    price: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
+    wanted_qty: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    bought_qty: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class SupportTicket(Base):
+    """A merchant's support request from the dashboard (POST /api/support/ticket),
+    ported from Prudix Commerce. Emailed to support@prudix.app; handled in
+    /admin/support. Deleted with the shop (app/purge.py)."""
+    __tablename__ = "support_tickets"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    ticket_number: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    shop_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("shops.id", ondelete="CASCADE"), nullable=False, index=True,
+    )
+    category: Mapped[str] = mapped_column(String, nullable=False)          # bug | billing | feature | other
+    subject: Mapped[str] = mapped_column(String, nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    screenshot_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    status: Mapped[str] = mapped_column(String, nullable=False, default="open", server_default="open")  # open | in_progress | resolved
+    admin_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -116,6 +116,9 @@ tr.margin td{font-weight:700;color:var(--good)}
 .wk{display:grid;grid-template-columns:88px 1fr;gap:12px;padding:10px 0 10px 18px;position:relative}
 .wk::before{content:"";position:absolute;left:-7px;top:16px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--teal)}
 .wk.gate::before{background:var(--gold);border-color:var(--gold)}
+.wk.done::before{background:var(--teal);border-color:var(--teal)}
+.wk .st{display:inline-block;width:max-content;justify-self:start;align-self:start;margin:2px 0;padding:1px 8px;border-radius:999px;font-size:.72rem;font-weight:700;vertical-align:middle;background:#e6f4f1;color:#0f766e}
+.wk .st.open{background:#fef3c7;color:#92400e}
 .wk .when{font-family:var(--mono);font-size:.85rem;color:var(--muted);padding-top:2px}
 .wk .what{display:grid;gap:2px}
 .wk .what b{font-family:var(--display);font-size:1.05rem;font-weight:600}
@@ -141,7 +144,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
 <header class="top">
   <span class="eyebrow">Prudix GiftSense · Agreed plan · 27 Sep 2026</span>
   <h1>GiftSense build plan</h1>
-  <p class="lede">Every feature we plan to launch with, what it does in plain words, which plan it belongs to, and what each merchant costs us in the worst case. Registries and recipient's choice from the original spec's later phases are in the first release. Corporate and group gifting are left out for now.</p>
+  <p class="lede">Every feature we plan to launch with, what it does in plain words, which plan it belongs to, and what each merchant costs us in the worst case. Registries from the original spec's later phases are in the first release; recipient's choice was moved to after launch (2026-10-04). Corporate and group gifting are left out for now.</p>
 </header>
 
 <nav class="jump" aria-label="Sections">
@@ -160,10 +163,10 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
 <section id="summary">
   <h2>Summary</h2>
   <div class="facts">
-    <div class="fact"><span class="eyebrow">Features</span><strong>15 features, one release</strong><p>Gift finder, notes, wrap, delivery dates, voice and video messages, recipient's choice, registries and analytics.</p></div>
+    <div class="fact"><span class="eyebrow">Features</span><strong>14 features, one release</strong><p>Gift finder, notes, wrap and greeting cards, delivery dates, voice and video messages, registries and analytics. Recipient's choice comes after launch.</p></div>
     <div class="fact"><span class="eyebrow">Plans</span><strong>3 plans: $19 · $49 · $99</strong><p>Suggested prices. Every limit is a setting, so prices and limits can change later without code changes.</p></div>
     <div class="fact"><span class="eyebrow">Worst-case profit</span><strong>84% – 91% per merchant</strong><p>Even if a merchant uses 100% of every AI limit, every month. Normal usage will be much higher.</p></div>
-    <div class="fact"><span class="eyebrow">Timeline</span><strong>About 10 weeks</strong><p>Copying the setup work from Prudix Commerce saves roughly 3–4 weeks of plumbing.</p></div>
+    <div class="fact"><span class="eyebrow">Timeline</span><strong>About 10 weeks</strong><p>Copying the setup work from Prudix Commerce saves roughly 3–4 weeks of plumbing. As of 4 Oct 2026, weeks 1–9 are built.</p></div>
   </div>
   <div class="note">
     <h4>How we guarantee the cost limit</h4>
@@ -204,7 +207,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
       <summary><span class="fnum">3</span><span class="ftitle"><h4>Storefront placements</h4><p>Everywhere the gift experience can appear on the store, with no code needed from the merchant.</p></span><span class="tags"><span class="pill p-starter">Starter</span></span><span class="chev" aria-hidden="true">▼</span></summary>
       <div class="fbody">
         <div class="cols">
-          <div><h5>Options</h5><ul><li>Floating "Find a gift" bubble on every page.</li><li>"Find a gift" button the merchant drops into the homepage or a collection page.</li><li>Optional popup (after a delay or when the shopper is about to leave). Off by default.</li><li>"This is a gift" block on product pages and the cart page.</li><li>Optional "Is this a gift?" prompt when the shopper clicks Checkout. This works with slide-out carts too.</li></ul></div>
+          <div><h5>Options</h5><ul><li>Floating "Find a gift" bubble on every page. It moves itself above other apps' floating buttons (chat, AI assistants) in the same corner, and the merchant can raise it further.</li><li>"Find a gift" button the merchant drops into the homepage or a collection page.</li><li>"This is a gift" and "Add to registry" on product pages; "Add a gift note" on the cart page.</li><li>"Add a gift note or wrap" in the theme's slide-out cart drawer, above Checkout.</li><li><i>After launch:</i> an optional popup, and gift options inside Shopify checkout (Plus stores).</li></ul></div>
           <div><h5>How it works</h5><ul><li>Added through the theme editor, like any theme app.</li><li>Colors, text and position are customizable.</li><li>Starter shows a small "Gift finder by GiftSense" link; Growth and Pro can hide it.</li><li>Loads a tiny script first and the rest only when used, so the store stays fast. Shopify checks this for the "Built for Shopify" badge.</li></ul></div>
         </div>
         <div class="meta"><span><b>AI cost:</b> none</span><span><b>Reuse:</b> theme extension layout and widget code from Commerce</span></div>
@@ -215,7 +218,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
       <summary><span class="fnum">4</span><span class="ftitle"><h4>Shopper's own language</h4><p>Widget text and AI replies follow the language the shopper is browsing in.</p></span><span class="tags"><span class="pill p-starter">Starter</span></span><span class="chev" aria-hidden="true">▼</span></summary>
       <div class="fbody">
         <div class="cols">
-          <div><h5>How it works</h5><ul><li>Button and question text is translated once into common languages.</li><li>AI reasons and notes are written in the shopper's language at no extra cost.</li><li>Budgets are shown in the shopper's currency.</li></ul></div>
+          <div><h5>How it works</h5><ul><li>Widget text is translated into Spanish, French, German, Italian and Portuguese (English is the default). Each language file loads only for shoppers browsing in it.</li><li>AI reasons and notes are written in the shopper's language, any language, at no extra cost.</li><li>Default button labels follow the store's language until the merchant changes them.</li><li><i>Not yet:</i> budgets are shown in the store's currency, not converted to the shopper's.</li></ul></div>
         </div>
         <div class="meta"><span><b>AI cost:</b> none extra</span><span><b>Reuse:</b> language handling from Commerce's translation feature</span></div>
       </div>
@@ -248,10 +251,10 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
     </details>
 
     <details class="feat">
-      <summary><span class="fnum">7</span><span class="ftitle"><h4>Gift wrap</h4><p>2–3 wrap styles with prices, chosen per gift.</p></span><span class="tags"><span class="pill p-starter">Starter</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <summary><span class="fnum">7</span><span class="ftitle"><h4>Gift wrap and greeting cards</h4><p>Up to 3 wrap styles (wrap, bag or box) and 2 greeting cards, with prices and photos, chosen per gift.</p></span><span class="tags"><span class="pill p-starter">Starter</span></span><span class="chev" aria-hidden="true">▼</span></summary>
       <div class="fbody">
         <div class="cols">
-          <div><h5>How it works</h5><ul><li>The merchant turns styles on or off and sets names, photos and prices.</li><li>Wrap is never pre-selected and its price is always shown. Shopify requires the shopper to choose any extra charge.</li><li>The app creates a hidden "Gift wrap" product, so wrap shows up as a normal paid line in cart and checkout.</li><li>Removing a gift from the cart also removes its wrap.</li><li>The order is tagged so staff can filter orders that need wrapping.</li></ul></div>
+          <div><h5>How it works</h5><ul><li>The merchant sets names, types (wrap, bag, box, greeting card), photos and prices.</li><li>Wrap and cards are never pre-selected and the price is always shown. Shopify requires the shopper to choose any extra charge.</li><li>The app creates one hidden "Gift wrap" product, so wrap and cards show up as normal paid lines in cart and checkout.</li><li>Shoppers can also add wrap or a card for the whole order from the cart page or cart drawer.</li><li>Products tagged <code>no-gift-wrap</code> (oversized, digital) never offer wrap.</li><li>Removing a gift from the cart also removes its wrap and card.</li><li>The order is tagged so staff can filter orders that need wrapping.</li></ul></div>
         </div>
         <div class="meta"><span><b>AI cost:</b> none</span><span><b>Reuse:</b> product-writing helpers from Commerce</span></div>
       </div>
@@ -292,15 +295,15 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
       <summary><span class="fnum">11</span><span class="ftitle"><h4>Voice and video messages</h4><p>The shopper records a message. The recipient scans a QR code on the card to listen or watch. Voice on Growth, voice and video on Pro.</p></span><span class="tags"><span class="pill p-growth">Growth: voice</span><span class="pill p-pro">Pro: video</span></span><span class="chev" aria-hidden="true">▼</span></summary>
       <div class="fbody">
         <div class="cols">
-          <div><h5>What the shopper sees</h5><ul><li>"Record a voice note" next to the note box (Growth and Pro), up to 2 minutes.</li><li>"Record a video" as well on Pro, up to 60 seconds.</li><li>Or "Record after checkout": the order confirmation page shows a link and QR code to record on their phone later.</li></ul></div>
-          <div><h5>How it works</h5><ul><li>Before recording, the shopper sees: "Anyone with the QR code or link can watch or listen to this."</li><li>Recordings are stored in cheap cloud storage (Cloudflare R2), behind private links that search engines can't find.</li><li>The record-after-checkout block on the order confirmation page shows no GiftSense branding (a Shopify rule for checkout pages).</li><li>The QR code goes on the printed card (feature 9) and opens a private page with the store's branding.</li><li>Recordings are deleted automatically after a set time (default 90 days after delivery).</li><li>Recordings for abandoned carts are deleted after 7 days.</li></ul></div>
+          <div><h5>What the shopper sees</h5><ul><li>"Record a voice note" next to the note box (Growth and Pro), up to 2 minutes.</li><li>"Record a video" as well on Pro, up to 60 seconds.</li><li><i>After launch:</i> "Record after checkout" from the order confirmation page (needs Shopify to approve network access for that extension).</li></ul></div>
+          <div><h5>How it works</h5><ul><li>Before recording, the shopper sees: "Anyone with the QR code or link can watch or listen to this."</li><li>Recordings are stored in cheap cloud storage (Cloudflare R2), behind private links that search engines can't find.</li><li>The QR code goes on the printed card (feature 9) and can also go on Shopify's own packing slips with a copy-paste snippet (useful for 3PLs). It opens a private page on the store's own domain with the store's name.</li><li>Merchants see usage, plays and deletion dates on a Voice &amp; video page.</li><li>Recordings are deleted automatically after a set time (default 90 days after delivery).</li><li>Recordings for abandoned carts are deleted after 7 days.</li></ul></div>
         </div>
         <div class="meta"><span><b>Cost:</b> about $0.0005 per voice note, $0.002 per video (storage and processing)</span><span><b>Reuse:</b> none (new)</span></div>
       </div>
     </details>
 
     <details class="feat">
-      <summary><span class="fnum">12</span><span class="ftitle"><h4>Recipient's choice</h4><p>The recipient can swap size or color before the gift ships.</p></span><span class="tags"><span class="pill p-pro">Pro</span></span><span class="chev" aria-hidden="true">▼</span></summary>
+      <summary><span class="fnum">12</span><span class="ftitle"><h4>Recipient's choice (after launch)</h4><p>Moved out of v1 on 2026-10-04: most catalogs have no size or color to choose, and the gift receipt already covers exchanges. Built later if apparel and shoe stores ask for it.</p></span><span class="tags"><span class="pill p-pro">Pro</span></span><span class="chev" aria-hidden="true">▼</span></summary>
       <div class="fbody">
         <div class="cols">
           <div><h5>What happens</h5><ul><li>The buyer ticks "Let them choose size or color".</li><li>After checkout, the buyer gets a private link to send to the recipient. We don't send emails.</li><li>The recipient opens it, sees the gift without a price, and picks a size or color.</li><li>The app updates the order automatically, then releases it for shipping.</li></ul></div>
@@ -318,7 +321,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
       <summary><span class="fnum">13</span><span class="ftitle"><h4>Gift registries with AI suggestions</h4><p>Shoppers build wedding, baby or birthday lists, share them, and guests buy from them.</p></span><span class="tags"><span class="pill p-pro">Pro</span><span class="pill p-ai">AI</span></span><span class="chev" aria-hidden="true">▼</span></summary>
       <div class="fbody">
         <div class="cols">
-          <div><h5>What shoppers see</h5><ul><li>"Add to registry" on product pages (account login required).</li><li>A shareable registry page showing what's still wanted and what's already bought.</li><li>Guests buying from a registry get the note and wrap steps automatically.</li><li>Guests enter the delivery address in Shopify's normal checkout, so the app never sees or stores addresses.</li><li>AI suggestions for the owner: "Couples who added this also need…", picked from the store's own products.</li></ul></div>
+          <div><h5>What shoppers see</h5><ul><li>"Add to registry" on product pages (account login required).</li><li>A shareable registry page showing what's still wanted and what's already bought; guests add items to their cart from it.</li><li>An owner page to set the occasion and date, change quantities and copy the share link.</li><li>Guests enter the delivery address in Shopify's normal checkout, so the app never sees or stores addresses.</li><li>AI suggestions for the owner, picked from the store's own products and cached for the day.</li><li>We keep only Shopify's customer id for the owner: no names, emails or addresses.</li></ul></div>
           <div><h5>Why merchants care</h5><ul><li>Every shared registry brings new shoppers to the store.</li><li>A registry report shows new visitors and sales from shared lists.</li></ul></div>
         </div>
         <div class="meta"><span><b>AI cost:</b> uses AI generations, the same as a gift search</span><span><b>Reuse:</b> matching engine from feature 1</span></div>
@@ -344,8 +347,8 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
       <summary><span class="fnum">15</span><span class="ftitle"><h4>Full analytics and weekly email</h4><p>Conversion compared to the rest of the store, note and wrap attach rates, top occasions and budgets, and a Monday summary email.</p></span><span class="tags"><span class="pill p-growth">Growth</span></span><span class="chev" aria-hidden="true">▼</span></summary>
       <div class="fbody">
         <div class="cols">
-          <div><h5>Shown</h5><ul><li>Gift finder conversion compared to the whole store.</li><li>How often shoppers keep the AI note as written, lightly edit it, or rewrite it.</li><li>Wrap, note and video attach rates.</li><li>Top occasions, recipients and budgets; direct vs. self-shipped gifts; gifts per order.</li><li>Registry results: new visitors and sales from shared lists.</li></ul></div>
-          <div><h5>Weekly email</h5><ul><li>Sent every Monday: "GiftSense drove $X in sales this week".</li><li>This is the main thing that keeps merchants past their first bill.</li></ul></div>
+          <div><h5>Shown</h5><ul><li>Gift finder conversion compared to the whole store.</li><li>How often shoppers keep the AI note as written, lightly edit it, or rewrite it.</li><li>Wrap, note and video attach rates.</li><li>Top occasions, recipients and budgets; direct vs. self-shipped gifts; gifts per order.</li><li>Registry results: guest visits and sales from shared lists.</li><li>7, 30 or 90 days, each compared with the period before.</li></ul></div>
+          <div><h5>Weekly email</h5><ul><li>Sent every Monday in the Prudix email design: gift orders and revenue from the gift finder compared with last week, a daily chart, and up to two next steps for the store.</li><li>This is the main thing that keeps merchants past their first bill.</li></ul></div>
         </div>
         <div class="meta"><span><b>AI cost:</b> none</span><span><b>Reuse:</b> weekly email system (Postmark, templates, unsubscribe) from Commerce's digests</span></div>
       </div>
@@ -356,6 +359,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
     <h4>Not in this release</h4>
     <ul>
       <li><b>Corporate and bulk gifting</b> and <b>group gifting</b>: small, unproven demand; the most work to build; and they need names and addresses, which triggers Shopify's stricter customer-data review. If merchants ask for corporate gifting, a light first version ("paste a list of names and hints, AI writes a note for each, print the cards") needs no addresses and can ship as an update.</li>
+      <li><b>After launch, if merchants ask</b> (from the 2026-10-04 competitor cross-check, <code>docs/COMPETITIVE_CROSSCHECK.md</code>): recipient's choice, recording a message after checkout, gift options inside Shopify checkout (Plus), shipping one order to several addresses, and sending the note by SMS or email (needs recipient contact data, so a customer-data decision first).</li>
       <li>Permanently out of scope, as in the spec: standalone gift cards, loyalty/rewards, and free-gift or BOGO promotions.</li>
     </ul>
   </div>
@@ -406,7 +410,6 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
         <li>Everything in Growth</li>
         <li>Adds the Premium AI option</li>
         <li>Gift registries with AI suggestions</li>
-        <li>Recipient's choice (swap size or color before shipping)</li>
         <li>Video messages</li>
         <li>Priority support</li>
         <li><span class="num">4,500</span> AI generations a month</li>
@@ -448,7 +451,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
     <h4>Why a merchant moves up</h4>
     <ul>
       <li><b>Starter to Growth:</b> arrive-by dates for birthdays and holidays, voice messages, a weekly email that shows the sales GiftSense made, the Advanced AI option (more thoughtful picks and the most accurate gift reasons in testing), and about 3× the AI generations.</li>
-      <li><b>Growth to Pro:</b> the strongest AI (Premium), registries that bring in new shoppers every time a list is shared, recipient's choice that avoids wrong-size exchanges, video messages, and about 2.5× the AI generations.</li>
+      <li><b>Growth to Pro:</b> the strongest AI (Premium), registries that bring in new shoppers every time a list is shared, video messages, and about 2.5× the AI generations.</li>
     </ul>
   </div>
 
@@ -471,7 +474,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
         <tr><td>10. Gift receipt (hide prices)</td><td class="c yes">✓</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
         <tr><td>11. Voice messages</td><td class="c no">–</td><td class="c yes">✓</td><td class="c yes">✓</td></tr>
         <tr><td>11. Video messages</td><td class="c no">–</td><td class="c no">–</td><td class="c yes">✓</td></tr>
-        <tr><td>12. Recipient's choice</td><td class="c no">–</td><td class="c no">–</td><td class="c yes">✓</td></tr>
+        <tr><td>12. Recipient's choice</td><td class="c no" colspan="3">after launch</td></tr>
         <tr class="sep"><td colspan="4">Registries</td></tr>
         <tr><td>13. Gift registries with AI suggestions</td><td class="c no">–</td><td class="c no">–</td><td class="c yes">✓</td></tr>
         <tr class="sep"><td colspan="4">Proving it pays off</td></tr>
@@ -637,18 +640,18 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
 
 <section id="timeline">
   <h2>Timeline</h2>
-  <p class="sub">Test-driven, the same way as Commerce: tests first, full suite green after every task. About 10 weeks in total.</p>
+  <p class="sub">Test-driven, the same way as Commerce: tests first, full suite green after every task. About 10 weeks in total. <b>Status 4 Oct 2026:</b> weeks 1–9 built (847 tests green); live testing on the dev store, speed checks and theme QA next, then submission.</p>
   <div class="timeline">
-    <div class="wk"><span class="when">Week 1</span><span class="what"><b>Foundation, copied</b><span>Repo setup, install, billing, webhooks, privacy, database, admin panel, CI. Start the gift-matching engine.</span></span></div>
-    <div class="wk gate"><span class="when">Week 2</span><span class="what"><b>Gift-matching quality check (go / no-go)</b><span>Test on 5 sample catalogs and about 50 shopper profiles. Must reach at least 3.5 good picks out of 5, zero over-budget picks and zero made-up products. Real AI costs measured here.</span></span></div>
-    <div class="wk"><span class="when">Week 3</span><span class="what"><b>Gift Finder on the store</b><span>Catalog sync, test area, storefront placements, limits and fallbacks.</span></span></div>
-    <div class="wk"><span class="when">Week 4</span><span class="what"><b>Notes, several gifts per order, printing</b><span>Gift panel, AI notes, order data in Shopify, gift card printing.</span></span></div>
-    <div class="wk"><span class="when">Week 5</span><span class="what"><b>Wrap, arrive-by dates, gift receipt, basic analytics</b><span>Wrap product, shipping holds, tags.</span></span></div>
-    <div class="wk"><span class="when">Week 6</span><span class="what"><b>Voice and video messages</b><span>Recorder, storage, QR codes, recipient page, record-after-checkout page.</span></span></div>
-    <div class="wk"><span class="when">Week 7</span><span class="what"><b>Recipient's choice</b><span>Choice page, automatic order update, deadline handling.</span></span></div>
-    <div class="wk"><span class="when">Week 8</span><span class="what"><b>Gift registries</b><span>Registry pages, purchase tracking, AI suggestions.</span></span></div>
-    <div class="wk"><span class="when">Week 9</span><span class="what"><b>Full analytics, weekly email, polish</b><span>Store speed checks, testing on 5 popular themes, languages.</span></span></div>
-    <div class="wk gate"><span class="when">Week 10</span><span class="what"><b>App Store submission</b><span>Review checklist, listing, demo store, submit.</span></span></div>
+    <div class="wk done"><span class="when">Week 1</span><span class="what"><b>Foundation, copied</b><span class="st">Built</span><span>Repo setup, install, billing, webhooks, privacy, database, admin panel, CI. Start the gift-matching engine.</span></span></div>
+    <div class="wk gate"><span class="when">Week 2</span><span class="what"><b>Gift-matching quality check (go / no-go)</b><span class="st">GO</span><span>Test on 5 sample catalogs and about 50 shopper profiles. Must reach at least 3.5 good picks out of 5, zero over-budget picks and zero made-up products. Real AI costs measured here.</span></span></div>
+    <div class="wk done"><span class="when">Week 3</span><span class="what"><b>Gift Finder on the store</b><span class="st">Built</span><span>Catalog sync, test area, storefront placements, limits and fallbacks.</span></span></div>
+    <div class="wk done"><span class="when">Week 4</span><span class="what"><b>Notes, several gifts per order, printing</b><span class="st">Built</span><span>Gift panel, AI notes, order data in Shopify, gift card printing.</span></span></div>
+    <div class="wk done"><span class="when">Week 5</span><span class="what"><b>Wrap, arrive-by dates, gift receipt, basic analytics</b><span class="st">Built</span><span>Wrap product, shipping holds, tags.</span></span></div>
+    <div class="wk done"><span class="when">Week 6</span><span class="what"><b>Voice and video messages</b><span class="st">Built</span><span>Recorder, storage, QR codes (gift cards and packing slips), recipient page. Record-after-checkout moved to after launch.</span></span></div>
+    <div class="wk done"><span class="when">Week 7</span><span class="what"><b>Voice and video messages, finished</b><span class="st">Built</span><span>Recipient's choice moved to after launch.</span></span></div>
+    <div class="wk done"><span class="when">Week 8</span><span class="what"><b>Gift registries</b><span class="st">Built</span><span>Registry pages, purchase tracking, AI suggestions, merchant report.</span></span></div>
+    <div class="wk"><span class="when">Week 9</span><span class="what"><b>Full analytics, weekly email, polish</b><span class="st">Mostly built</span><span>Full analytics, weekly email, 5 languages, internal admin, support tickets, cart drawer, greeting cards. Still open: store speed check and testing on 5 popular themes.</span></span></div>
+    <div class="wk gate"><span class="when">Week 10</span><span class="what"><b>App Store submission</b><span class="st open">Next</span><span>Review checklist, privacy policy update, listing, demo store, screencast, submit.</span></span></div>
   </div>
 </section>
 
@@ -665,7 +668,6 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
       <tbody>
         <tr><td class="num">read_products, write_products</td><td>Read the catalog; create the hidden gift-wrap product</td></tr>
         <tr><td class="num">read_orders, write_orders</td><td>Add gift details and tags to orders</td></tr>
-        <tr><td class="num">write_order_edits</td><td>Recipient's choice (swap size or color)</td></tr>
         <tr><td class="num">write_merchant_managed_fulfillment_orders</td><td>Hold orders until the ship-by date</td></tr>
         <tr><td class="num">read_themes</td><td>Check the widget is switched on (Commerce has this too)</td></tr>
       </tbody>
@@ -694,7 +696,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem;border-top:1px solid 
     <li>7-day free trial with per-plan limits; one trial per store.</li>
     <li>Several gifts per order: "straight to them" or "to me".</li>
     <li>Voice messages on Growth, video on Pro.</li>
-    <li>Recipient's choice only for store-currency orders; no holds for 3PL-shipped items.</li>
+    <li>No holds for 3PL-shipped items.</li>
   </ul>
 </section>
 

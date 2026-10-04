@@ -30,7 +30,7 @@ PLAN_DEFAULT_AI_TIER = {
 FEATURE_CATEGORIES = {
     "Finding the gift":    ["gift_finder", "catalog_control", "storefront_placements", "shopper_language"],
     "Preparing the gift":  ["ai_notes", "gift_groups", "gift_wrap", "arrive_by", "gift_cards_print",
-                            "gift_receipt", "voice_messages", "video_messages", "recipients_choice"],
+                            "gift_receipt", "voice_messages", "video_messages"],
     "Registries":          ["registries"],
     "Proving it pays off": ["basic_analytics", "full_analytics", "weekly_email"],
     "Extras":              ["hide_branding", "priority_support"],
@@ -49,7 +49,6 @@ FEATURE_LABELS = {
     "gift_receipt":          "Gift receipt (hide prices)",
     "voice_messages":        "Voice messages",
     "video_messages":        "Video messages",
-    "recipients_choice":     "Recipient's choice (swap size or color)",
     "registries":            "Gift registries with AI suggestions",
     "basic_analytics":       "Basic analytics",
     "full_analytics":        "Full analytics",
@@ -67,7 +66,7 @@ _GROWTH_FEATURES = _STARTER_FEATURES + [
     "arrive_by", "voice_messages", "full_analytics", "weekly_email", "hide_branding",
 ]
 _PRO_FEATURES = _GROWTH_FEATURES + [
-    "video_messages", "recipients_choice", "registries", "priority_support",
+    "video_messages", "registries", "priority_support",
 ]
 
 PLANS = {

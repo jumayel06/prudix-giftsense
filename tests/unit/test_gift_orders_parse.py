@@ -95,3 +95,12 @@ def test_delivery_mode_is_implied_without_the_old_attribute():
     legacy = go.parse_gift_order(order([line(props={"_giftsense_gift": "order"})],
                                        attrs={"_giftsense_mode": "self"}))
     assert legacy.delivery_mode == "self"                     # older carts still parse the same
+
+
+def test_greeting_cards_are_read_per_group_and_for_the_order():
+    import json as _json
+    p = go.parse_gift_order(order([line(props={"_giftsense_gift": "g1"})], attrs={
+        "_giftsense_gifts": _json.dumps([{"id": "g1", "label": "Mom", "wrap": "Gold", "card": "Birthday card"}]),
+        "Greeting card": "Thank-you card"}))
+    assert p.groups[0]["card"] == "Birthday card" and p.card == "Thank-you card"
+    assert go.metafield_value(p)["card"] == "Thank-you card"

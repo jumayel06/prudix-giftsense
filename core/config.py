@@ -6,7 +6,7 @@ class Settings(BaseSettings):
 
     shopify_api_key: str = ""
     shopify_api_secret: str = ""
-    shopify_api_version: str = "2026-07"
+    shopify_api_version: str = "2026-10"
 
     # App runtime connection. In prod this points at Supabase's TRANSACTION-mode
     # pooler (port 6543), which multiplexes many clients over few Postgres

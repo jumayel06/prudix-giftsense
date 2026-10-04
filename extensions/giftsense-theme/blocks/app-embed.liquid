@@ -5,6 +5,14 @@
   (giftsense-ui.js + giftsense.css) loads on the shopper's first click.
   All calls go through the App Proxy (/apps/giftsense/*), signed by Shopify.
 {% endcomment %}
+{%- assign gs_label = block.settings.label -%}
+{%- if gs_label == blank or gs_label == 'Find a gift' -%}{%- assign gs_label = 'launcher' | t -%}{%- endif -%}
+{%- assign gs_lang = request.locale.iso_code | split: '-' | first | downcase -%}
+{%- comment -%} Widget text file for the storefront's language (assets/giftsense-i18n-<lang>.js); English needs none. {%- endcomment -%}
+{%- if gs_lang == 'es' or gs_lang == 'fr' or gs_lang == 'de' or gs_lang == 'it' or gs_lang == 'pt' -%}
+  {%- assign gs_i18n_file = 'giftsense-i18n-' | append: gs_lang | append: '.js' -%}
+  {%- assign gs_i18n = gs_i18n_file | asset_url -%}
+{%- endif -%}
 <div
   id="giftsense-embed"
   class="giftsense-embed"
@@ -12,10 +20,16 @@
   data-api="/apps/giftsense"
   data-ui-src="{{ 'giftsense-ui.js' | asset_url }}"
   data-css-src="{{ 'giftsense.css' | asset_url }}"
+  data-cart-src="{{ 'giftsense-cart.js' | asset_url }}"
+  data-drawer-src="{{ 'giftsense-drawer.js' | asset_url }}"
+  data-drawer-label="{{ 'options.add_gift_note' | t | escape }}"
+  data-drawer-label-wrap="{{ 'options.add_gift_note_or_wrap' | t | escape }}"
   data-currency="{{ shop.currency }}"
   data-locale="{{ request.locale.iso_code }}"
-  data-label="{{ block.settings.label | default: 'Find a gift' | escape }}"
+  {% if gs_i18n %}data-i18n-src="{{ gs_i18n }}"{% endif %}
+  data-label="{{ gs_label | escape }}"
   data-position="{{ block.settings.position }}"
+  data-offset="{{ block.settings.offset }}"
   style="--gs-accent: {{ block.settings.accent }}; --gs-on-accent: {{ block.settings.on_accent }};"
   hidden
 ></div>
@@ -39,6 +53,11 @@
     {
       "type": "select", "id": "position", "label": "Button position", "default": "right",
       "options": [ { "value": "right", "label": "Bottom right" }, { "value": "left", "label": "Bottom left" } ]
+    },
+    {
+      "type": "range", "id": "offset", "label": "Raise the button", "min": 0, "max": 200, "step": 10, "unit": "px",
+      "default": 0,
+      "info": "GiftSense moves up by itself when another app's button (chat, AI assistant) is in the same corner. Use this to raise it further."
     },
     { "type": "color", "id": "accent", "label": "Button and highlight color", "default": "#111827" },
     { "type": "color", "id": "on_accent", "label": "Button text color", "default": "#ffffff" }
