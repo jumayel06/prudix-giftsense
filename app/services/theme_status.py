@@ -61,7 +61,9 @@ def _load_theme_json(text: str):
 
 
 def _block_pattern(app_handle: str | None, block: str) -> re.Pattern:
-    handle = rf"{re.escape(re.sub(r'-\d+$', '', app_handle))}(?:-\d+)?" if app_handle else r"[^/]+"
+    # (No backslashes inside the f-string braces: Python 3.11, which CI runs, rejects them.)
+    base = re.escape(re.sub(r"-\d+$", "", app_handle)) if app_handle else None
+    handle = rf"{base}(?:-\d+)?" if base else r"[^/]+"
     return re.compile(rf"^shopify://apps/{handle}/blocks/{block}/")
 
 
