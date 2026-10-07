@@ -81,6 +81,16 @@ function Hero({ stats, home, navigate }) {
   )
 }
 
+// Cancelled plans don't renew: count down to when access ends instead.
+function cycleNote(stats) {
+  if (stats.plan_status === 'cancelled') {
+    if (!stats.access_until) return 'Access ended'
+    const days = Math.max(0, Math.ceil((new Date(stats.access_until) - Date.now()) / 86400000))
+    return `${days} day${days === 1 ? '' : 's'} of access left`
+  }
+  return `${stats.days_remaining} days left this cycle`
+}
+
 function StatusCard({ icon, title, children, action }) {
   return (
     <Card>
@@ -107,7 +117,7 @@ function UsageCard({ stats, navigate }) {
       <Text as="p" variant="headingLg">{`${used.toLocaleString()} `}<Text as="span" tone="subdued" variant="bodyMd">{`of ${limit.toLocaleString()}`}</Text></Text>
       <ProgressBar progress={pct} tone={pct >= 100 ? 'critical' : pct >= 75 ? 'highlight' : 'primary'} size="small" />
       <Text as="p" tone="subdued" variant="bodySm">
-        {isTrial ? 'Used in your trial' : `${stats.days_remaining} days left this cycle`}
+        {isTrial ? 'Used in your trial' : cycleNote(stats)}
         {` · ${stats.ai_tier_label}${stats.ai_model_label ? ` (${stats.ai_model_label})` : ''}`}
       </Text>
     </StatusCard>
@@ -299,6 +309,11 @@ export default function HomePage({ stats }) {
         {stats.plan_status === 'cancelled' && stats.access_until && (
           <Banner tone="warning" title={`Your plan is cancelled. Access continues until ${new Date(stats.access_until).toLocaleDateString()}.`}>
             <Button onClick={() => navigate('/plans')}>Choose a plan</Button>
+          </Banner>
+        )}
+        {stats.plan_status === 'frozen' && (
+          <Banner tone="warning" title="GiftSense is paused because your Shopify store's billing is paused.">
+            It resumes automatically when Shopify reactivates your store. Your settings and data are kept.
           </Banner>
         )}
         {stats.scheduled_plan_name && stats.scheduled_change_at && (

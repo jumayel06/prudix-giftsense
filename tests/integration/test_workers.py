@@ -140,8 +140,8 @@ class TestReconcileScheduledPlanChanges:
     dropped. Reconciles a past-due `scheduled_change_at` against Shopify's live
     active subscription."""
 
-    def _mock_httpx_active_sub(self, name: str | None):
-        subs = [] if name is None else [{"id": "gid://shopify/AppSubscription/1", "name": name, "status": "ACTIVE"}]
+    def _mock_httpx_active_sub(self, name: str | None, sub_id: str = "1"):
+        subs = [] if name is None else [{"id": f"gid://shopify/AppSubscription/{sub_id}", "name": name, "status": "ACTIVE"}]
         resp = MagicMock(
             status_code=200,
             json=lambda: {"data": {"currentAppInstallation": {"activeSubscriptions": subs}}},
@@ -185,6 +185,30 @@ class TestReconcileScheduledPlanChanges:
         assert any(e.event_type == "change_reconciled" and e.plan_tier == "growth" for e in events)
 
     @pytest.mark.asyncio
+    async def test_cancel_after_reconciled_switch_is_honoured(self, db_session):
+        """End to end: after the job applies a missed switch, a CANCELLED for the
+        new subscription must take effect (it used to look stale: the job kept
+        the old charge id). Commerce billing audit 41f8b2f."""
+        from tests.integration.test_webhooks import _headers, _make_webhook_body, _make_client
+        shop = make_shop(plan_tier="pro", plan_status="active", shopify_charge_id="c1")
+        shop.scheduled_plan_tier = "growth"
+        shop.scheduled_change_at = datetime(2026, 9, 1, tzinfo=timezone.utc)
+        db_session.add(shop)
+        await db_session.commit()
+        await self._run(db_session, self._mock_httpx_active_sub("GiftSense Growth Monthly Plan", sub_id="c2"))
+        s = (await db_session.execute(select(Shop).where(Shop.id == shop.id))).scalar_one()
+        assert (s.plan_tier, s.shopify_charge_id) == ("growth", "c2")
+
+        payload = {"app_subscription": {"admin_graphql_api_id": "gid://shopify/AppSubscription/c2",
+                                        "status": "cancelled", "name": "GiftSense Growth Monthly Plan"}}
+        body = _make_webhook_body("app_subscriptions/update", payload)
+        for client in _make_client(db_session):
+            assert client.post("/webhooks", content=body,
+                               headers=_headers(body, "app_subscriptions/update")).status_code == 200
+        await db_session.refresh(s)
+        assert s.plan_status == "cancelled"
+
+    @pytest.mark.asyncio
     async def test_already_applied_just_clears_schedule(self, db_session):
         from core.db.models import BillingEvent
         shop = make_shop(plan_tier="growth", plan_status="active", shopify_charge_id="c1")
@@ -193,8 +217,8 @@ class TestReconcileScheduledPlanChanges:
         db_session.add(shop)
         await db_session.commit()
 
-        # Webhook already flipped the tier; Shopify agrees it's Growth.
-        await self._run(db_session, self._mock_httpx_active_sub("GiftSense Growth Monthly Plan"))
+        # Webhook already flipped the tier AND the charge; Shopify agrees.
+        await self._run(db_session, self._mock_httpx_active_sub("GiftSense Growth Monthly Plan", sub_id="c1"))
 
         s = (await db_session.execute(select(Shop).where(Shop.id == shop.id))).scalar_one()
         assert s.plan_tier == "growth"

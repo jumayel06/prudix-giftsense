@@ -243,6 +243,29 @@ async def test_sync_product_upserts_and_removes(db_session):
 
 
 @pytest.mark.asyncio
+async def test_sync_product_survives_a_concurrent_insert(db_session):
+    """The bulk sync inserts the same new product while the webhook job is
+    mid-flight: the unique-key clash is retried as an update, not a failed job."""
+    shop = await add_shop(db_session)
+    real, calls = cs.upsert_products, []
+
+    async def blind_first_pass(db, s, items):
+        calls.append(1)
+        if len(calls) == 1:  # we didn't see the bulk row: both sides insert
+            db.add(CatalogProductRow(shop_id=s.id, product_id="5", title="From bulk", handle="p-5", content_hash="x"))
+            db.add(CatalogProductRow(shop_id=s.id, product_id="5", title="dup", handle="p-5", content_hash="y"))
+            return
+        return await real(db, s, items)
+
+    with patch.object(cs, "upsert_products", side_effect=blind_first_pass):
+        gql = AsyncMock(return_value=gql_response({"product": node(5, title="From webhook")}))
+        assert await cs.sync_product(db_session, shop, "tok", "5", FakeEmbedder(), FakeChat(), gql=gql) == "upserted"
+
+    got = await rows(db_session, shop)
+    assert len(calls) == 2 and list(got) == ["5"] and got["5"].title == "From webhook"
+
+
+@pytest.mark.asyncio
 async def test_finish_bulk_imports_only_once_when_called_twice(db_session):
     shop = await add_shop(db_session)
     db_session.add(CatalogSync(id=uuid.uuid4(), shop_id=shop.id, kind="initial", status="running",

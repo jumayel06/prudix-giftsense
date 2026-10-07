@@ -12,7 +12,7 @@
   <div style="font-weight:600;margin-top:.4rem;">{{ t.subject }}</div>
   <div style="margin-top:.6rem;padding:.75rem 1rem;background:var(--slate-50);border-radius:8px;white-space:pre-wrap;">{{ t.message }}</div>
   {% if t.screenshot_url %}<div style="margin-top:.5rem;"><a href="{{ t.screenshot_url }}" target="_blank" rel="noopener noreferrer">Screenshot ↗</a></div>{% endif %}
-  <form method="post" action="/admin/support/{{ t.id }}/update" style="margin-top:.75rem;display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;">
+  <form method="post" action="{{ admin_path }}/support/{{ t.id }}/update" style="margin-top:.75rem;display:flex;gap:.75rem;align-items:flex-end;flex-wrap:wrap;">
     <select name="status">{% for s in statuses %}<option value="{{ s }}" {% if t.status == s %}selected{% endif %}>{{ s.replace('_', ' ') }}</option>{% endfor %}</select>
     <input type="text" name="admin_notes" value="{{ t.admin_notes or '' }}" placeholder="Internal note…" style="flex:1;min-width:200px;">
     <button type="submit">Save</button>

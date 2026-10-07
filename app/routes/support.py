@@ -75,7 +75,8 @@ async def notify(ticket: SupportTicket, shop: Shop) -> None:
     """Email support@ (reply-to the store owner). Never fails the request."""
     esc = html.escape
     host = settings.get_app_host()
-    admin_url = f"https://{host}/admin/support" if host else "/admin/support"
+    from app.admin.auth import admin_path
+    admin_url = f"https://{host}{admin_path()}/support" if host else f"{admin_path()}/support"
     label = CATEGORY_LABELS.get(ticket.category, ticket.category)
     owner = shop.shop_owner_email
     rows = [("Store", shop.shop_domain), ("Plan", f"{shop.plan_tier} ({shop.plan_status})"), ("Category", label),

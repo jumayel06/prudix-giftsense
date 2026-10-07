@@ -641,7 +641,7 @@ class TestSubscriptionUpdateEdgeCases:
         payload = {
             "app_subscription": {
                 "admin_graphql_api_id": "gid://shopify/AppSubscription/999",
-                "status": "frozen",
+                "status": "some_future_status",  # frozen is handled since the billing audit
             }
         }
         body = _make_webhook_body("app_subscriptions/update", payload)
@@ -661,7 +661,7 @@ class TestSubscriptionUpdateEdgeCases:
         )
         event = result.scalar_one_or_none()
         assert event is not None
-        assert event.event_type == "frozen"
+        assert event.event_type == "some_future_status"
         assert event.created_at is not None
 
 

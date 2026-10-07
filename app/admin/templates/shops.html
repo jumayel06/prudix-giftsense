@@ -9,12 +9,12 @@
     {% for s in ('active','trial_active','pending','cancelled','expired','declined','uninstalled','purged') %}<option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
   <select name="tier"><option value="">All plans</option>
     {% for t in ('starter','growth','pro') %}<option value="{{ t }}" {% if tier_filter == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
-  <button type="submit">Filter</button>{% if search or status_filter or tier_filter %} <a class="clear" href="/admin/shops">Clear</a>{% endif %}
+  <button type="submit">Filter</button>{% if search or status_filter or tier_filter %} <a class="clear" href="{{ admin_path }}/shops">Clear</a>{% endif %}
 </form>
 {% if shops %}
 <table><thead><tr><th>Shop</th><th>Plan</th><th>Status</th><th class="num">Products</th><th class="num">Gens this month</th><th class="num">AI cost</th><th class="num">Margin</th><th>Installed</th><th>Last AI use</th></tr></thead><tbody>
 {% for s in shops %}<tr>
-  <td><a href="/admin/shops/{{ s.id }}">{{ s.shop_domain }}</a></td>
+  <td><a href="{{ admin_path }}/shops/{{ s.id }}">{{ s.shop_domain }}</a></td>
   <td><span class="pill pill-neutral">{{ s.plan_tier }}</span></td>
   <td><span class="pill pill-{{ s.plan_status }}">{{ s.plan_status }}</span></td>
   <td class="num">{{ s.products }}</td><td class="num mono">{{ s.generations_mtd }}</td>

@@ -23,6 +23,7 @@ from typing import Awaitable, Callable
 import httpx
 import structlog
 from sqlalchemy import delete, func, or_, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import defer
 
@@ -527,8 +528,19 @@ async def sync_product(
         await delete_missing_one(db, shop.id, str(product_id))
         await db.commit()
         return "removed"
+    shop_id = shop.id
     await upsert_products(db, shop, [parsed])
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # A bulk sync (or a duplicate webhook) inserted this product between our
+        # read and commit (Prudix Commerce hit the same race, 2026-10-02). The
+        # rollback expires `shop`, so reload it before touching it again, then
+        # the second pass updates the winner's row.
+        await db.rollback()
+        shop = (await db.execute(select(Shop).where(Shop.id == shop_id))).scalar_one()
+        await upsert_products(db, shop, [parsed])
+        await db.commit()
     if await analyze_pending(db, shop, embedder, chat_fn) is None:
         return "analysis_busy"          # another run is analyzing this shop
     return "upserted"

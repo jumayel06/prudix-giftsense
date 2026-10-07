@@ -190,7 +190,9 @@ class TestBillingCallback:
         assert s.uninstalled_at is None
 
     @pytest.mark.asyncio
-    async def test_declined_charge_sets_declined_status(self, db_session):
+    async def test_declined_charge_keeps_a_pending_install_pending(self, db_session):
+        """A merchant who declines at install still has no plan → stays pending
+        (plan picker next time), not "declined" (Payment Failed dashboard)."""
         shop = make_shop(plan_tier="none", plan_status="pending")
         shop.billing_cycle_start = None  # pending install — never billed yet
         shop.access_token_encrypted = encrypt_token("access_token_abc")
@@ -211,7 +213,7 @@ class TestBillingCallback:
             select(Shop).where(Shop.shop_domain == TEST_SHOP_DOMAIN)
         )
         s = result.scalar_one()
-        assert s.plan_status == "declined"
+        assert s.plan_status == "pending"
         # Declined charge must not set billing fields
         assert s.plan_tier == "none"          # unchanged from fixture
         assert s.trial_used is False          # unchanged
@@ -715,7 +717,12 @@ class TestDeferredCallback:
             cycle = cycle.replace(tzinfo=timezone.utc)
         if change.tzinfo is None:
             change = change.replace(tzinfo=timezone.utc)
-        assert (change - cycle).days == 30
+        # The change lands at the end of the CURRENT 30-day period — a whole
+        # number of cycles after the anchor, and never in the past (the anchor
+        # isn't advanced on renewal; "anchor + 30d" was stale from month 2).
+        assert (change - cycle).days % 30 == 0
+        assert change > datetime.now(timezone.utc)
+        assert change - datetime.now(timezone.utc) <= timedelta(days=30)
         events = (await db_session.execute(select(BillingEvent).where(BillingEvent.shop_id == shop.id))).scalars().all()
         assert any(e.event_type == "change_scheduled" and e.plan_tier == "growth" for e in events)
 
@@ -725,6 +732,7 @@ class TestDeferredCallback:
         # before the deferred callback runs. The callback must NOT write a stale
         # "changes on X" schedule — it should detect the change already happened.
         shop = make_shop(plan_tier="growth", plan_status="active")  # webhook already flipped it
+        shop.shopify_charge_id = "557"                              # …to this subscription
         shop.access_token_encrypted = encrypt_token("tok")
         shop.trial_used = True
         shop.billing_cycle_start = datetime(2026, 9, 1, tzinfo=timezone.utc)

@@ -7,7 +7,7 @@ Everything that must be flipped, set, rotated or verified before GiftSense goes 
 ## 🚦 Before launch — set up the production environment
 
 ### Infrastructure
-- [ ] Railway project with two services from this repo: `web` (start.sh) and `worker` (`arq app.workers.main.WorkerSettings`). Health check path `/health` set in the Railway UI. `WEB_CONCURRENCY=2`, `PORT=8000`.
+- [ ] Railway project with two services from this repo: `web` (start.sh) and `worker` (`arq app.workers.main.WorkerSettings --custom-log-dict app.workers.main.ARQ_LOG_CONFIG`: ARQ logs on stdout, so Railway doesn't tag them as errors). Health check path `/health` set in the Railway UI. `WEB_CONCURRENCY=2`, `PORT=8000`.
 - [ ] Supabase **prod** project (Pro plan, `Prudix - Prod` org): encrypted backups (a customer-data-form claim), no auto-pause. Enable `vector` (the first migration also does it). Data API **off**.
 - [ ] Upstash Redis prod DB: pay-as-you-go, `rediss://`, eviction **off**, budget cap set.
 - [ ] Cloudflare R2 prod bucket for voice/video (private; presigned URLs only).
@@ -28,6 +28,8 @@ Everything that must be flipped, set, rotated or verified before GiftSense goes 
 - [ ] Fresh prod-only `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` with spend caps
 - [ ] Fresh `TOKEN_ENCRYPTION_KEY` (never reuse dev)
 - [ ] `INTERNAL_ADMIN_USERNAME` (not `admin`) + strong `INTERNAL_ADMIN_PASSWORD`
+- [ ] Admin 2FA + hidden path (same as Commerce): run `.venv/bin/python scripts/admin_totp_setup.py`, add the key to your authenticator + password manager, set `ADMIN_TOTP_SECRET`; set `ADMIN_PATH=/ops-<random>` (`openssl rand -hex 4`) and bookmark it; after deploy sign in on laptop AND phone. Lock-out recovery: delete `ADMIN_TOTP_SECRET` (password-only) or clear `ADMIN_PATH` (back to /admin)
+- [ ] `INSTALL_NOTIFY_EMAIL` = prudix.team@gmail.com (the default); after the first real subscription, confirm the "New merchant subscribed" email arrived
 - [ ] Postmark: `support@prudix.app` verified as a sender signature (support tickets are sent from it, reply-to the merchant) and the inbox monitored; `digest@prudix.app` verified for the weekly and theme-missing emails
 - [ ] `SENTRY_DSN`, `SENTRY_PROJECT_URL`
 - [ ] `POSTMARK_SERVER_TOKEN`, `POSTMARK_FROM_EMAIL`, `POSTMARK_WEBHOOK_USER`, `POSTMARK_WEBHOOK_PASSWORD`
@@ -54,15 +56,17 @@ Everything that must be flipped, set, rotated or verified before GiftSense goes 
 - [ ] Install the **prod** app (Partner Dashboard → GiftSense → select store), not a `shopify app dev` session. Confirm `shop_provisioned_via_token_exchange` in logs, a `pending` row, and the plan picker.
 - [ ] Protected customer data: request **Level 1** only (orders). Filed for the **dev** app 2026-09-27 — reasons: Store management, App functionality, Analytics; no protected fields (name/email/phone/address). Survey: all Purpose = Yes; Consent = Yes (agreements), Yes (consent decisions), N/A (data sale), N/A (automated decisions); Storage = Yes, Yes. **Refile identically for the prod app.**
 - [ ] Make the survey answers true before submission: update prudix.app/privacy (umbrella policy) with a GiftSense section listing the order data we process and why, the shopper recordings, registries (Shopify customer id + chosen products only, deleted on customers/redact and uninstall), and the retention periods (30 days after uninstall; recordings 90 days after delivery; sessions 90 days; drafts 30 days); confirm the Terms of Service cover GiftSense.
-- [ ] Every retention period promised above has a purge cron implemented and running (media, sessions, drafts), like Commerce's `purge_old_concierge_questions`.
+- [~] Every retention period promised above has a purge cron implemented and running (media, sessions, drafts), like Commerce's `purge_old_concierge_questions`. Code done 2026-10-04 (`purge_expired_media`, `purge_old_gift_sessions`); **open:** confirm both log daily in prod worker logs.
 - [ ] Demo store: install prod, approve a test plan while `BILLING_TEST_MODE=true`, set up real gift finder content; **storefront password in the reviewer notes**.
 - [ ] 🚨 **SUBMISSION GATE — `BILLING_TEST_MODE=false`** in Railway, then verify one real charge screen shows a real (non-test) charge.
+- [ ] Billing audit dev checks (ported 2026-10-07): (1) cancel during a trial → status `cancelled`, no AI, read-only 7 days; (2) switch plan during a trial → `active`, full plan limit, no trial; (3) cancel a paid plan → Home shows "access continues until" ≈ 30 days after approval; (4) uninstall with an unapproved charge pending → store stays `uninstalled` after Shopify expires the charge (~48h)
 - [ ] Full billing walk-through on a clean store: install → trial → convert → upgrade → downgrade (deferred) → cancel → reinstall (trial blocked) → resubscribe.
 - [ ] Upgrade Postmark to a paid plan on submission day.
 
 ## 🔒 Security hardening
 - [ ] Verify Shopify webhooks reject bad HMAC on a real prod-signed payload
 - [ ] Sentry scrubber: no tokens, HMACs or DB/Redis URLs in events
+- [ ] In prod, open the app in Admin → DevTools → Network → the document response has `Content-Security-Policy: frame-ancestors https://<shop>.myshopify.com https://admin.shopify.com`
 
 ## 📈 After first traffic
 - [ ] Worker logs show daily `reconcile_uninstalled_shops_complete`, hourly `reconcile_scheduled_plan_changes_complete` and `reconcile_trial_conversions_complete`

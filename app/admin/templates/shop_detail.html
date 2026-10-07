@@ -14,7 +14,7 @@
 </div>
 <div class="section"><h2>AI models for this shop</h2>
 <p>Pin a slot to hold this shop on a model during a rollout, or try a new model on one store. Empty follows the slot (and its rollout).</p>
-<form method="post" action="/admin/shops/{{ shop.id }}/pins">
+<form method="post" action="{{ admin_path }}/shops/{{ shop.id }}/pins">
 <table><thead><tr><th>Slot</th><th>Runs on now</th><th>Pin</th></tr></thead><tbody>
 {% for s in d.slots %}<tr><td class="mono">{{ s.slot }}</td><td>{{ s.label }}</td><td>
   <select name="{{ s.slot }}"><option value="">Follow the slot</option>

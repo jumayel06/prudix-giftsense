@@ -20,7 +20,7 @@
 </tbody></table></div>
 <div class="section"><h2>Costliest shops this month</h2>
 <table><thead><tr><th>Shop</th><th>Plan</th><th class="num">AI cost</th><th class="num">Price</th><th class="num">Margin</th></tr></thead><tbody>
-{% for s in f.costliest %}<tr><td><a href="/admin/shops/{{ s.id }}">{{ s.shop_domain }}</a></td><td>{{ s.plan_tier }}</td><td class="num mono">${{ "%.4f"|format(s.cost_mtd) }}</td>
+{% for s in f.costliest %}<tr><td><a href="{{ admin_path }}/shops/{{ s.id }}">{{ s.shop_domain }}</a></td><td>{{ s.plan_tier }}</td><td class="num mono">${{ "%.4f"|format(s.cost_mtd) }}</td>
 <td class="num mono">{% if s.price %}${{ "%.0f"|format(s.price) }}{% else %}—{% endif %}</td>
 <td class="num mono {% if s.margin_pct is not none and s.margin_pct < 80 %}text-critical{% endif %}">{% if s.margin_pct is none %}—{% else %}{{ "%.0f"|format(s.margin_pct) }}%{% endif %}</td></tr>
 {% endfor %}</tbody></table></div>

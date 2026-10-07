@@ -10,7 +10,8 @@ import {
 import enTranslations from '@shopify/polaris/locales/en.json'
 import '@shopify/polaris/build/esm/styles.css'
 
-import { shopifyFetch, fetchJson } from './utils/shopifyFetch'
+import { shopifyFetch } from './utils/shopifyFetch'
+import { prefetchPlans, rememberBootStats } from './utils/bootData'
 import HomePage from './pages/HomePage'
 import CatalogPage from './pages/CatalogPage'
 import PlaygroundPage from './pages/PlaygroundPage'
@@ -62,7 +63,7 @@ function SidebarNav({ planStatus, planTier, onMobileClose }) {
   const { pathname } = useLocation()
   const [plans, setPlans] = useState(null)
 
-  useEffect(() => { fetchJson('/api/plans').then(d => setPlans(d.plans)).catch(() => setPlans(null)) }, [])
+  useEffect(() => { prefetchPlans().then(d => setPlans(d ? d.plans : null)) }, [])
 
   // Hide nav while the merchant is on the plan picker (no plan yet).
   if (planStatus === 'pending') return null
@@ -177,10 +178,14 @@ function AppShell() {
   // Boot: /api/stats provisions the shop on first load (session-token exchange
   // in get_current_shop) and tells us where to route. Pending → plan picker.
   useEffect(() => {
+    // Start the (public, static) plans fetch now, in parallel: on install the
+    // plan picker needs it right after this stats call lands.
+    prefetchPlans()
     shopifyFetch('/api/stats')
       .then(r => (r.ok ? r.json() : null))
       .then(d => {
         if (d) {
+          rememberBootStats(d)
           setStats(d)
           if (d.plan_status === 'pending' && pathname !== '/plans') {
             navigate('/plans', { replace: true })

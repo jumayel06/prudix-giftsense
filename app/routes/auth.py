@@ -141,6 +141,8 @@ async def auth_callback(
         existing_shop.refresh_token_expires_at = token_data["refresh_token_expires_at"]
         existing_shop.plan_status = "pending"
         existing_shop.plan_tier = "none"
+        existing_shop.scheduled_plan_tier = None
+        existing_shop.scheduled_change_at = None
         existing_shop.uninstalled_at = None
         existing_shop.installed_at = now
         # Clear billing state defensively — uninstall webhook should have done this,

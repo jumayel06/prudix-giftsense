@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Page, Spinner, Banner } from '@shopify/polaris'
 import { shopifyFetch, fetchJson } from '../utils/shopifyFetch'
+import { prefetchPlans, takeBootStats } from '../utils/bootData'
 
 // Adapted from Prudix Commerce's PlanPickerPage: monthly-only, and every
 // feature row / label / AI option comes from /api/plans (app/config.py),
@@ -56,18 +57,24 @@ function PlanCard({ plan, catalog, recommended, trialUsed, currentTier, planStat
   const isLoading = loading === plan.tier
   const isCurrent = plan.tier === currentTier
   const isTrialActive = isCurrent && planStatus === 'trial_active'
+  // A cancelled / expired subscription can't be resumed (Shopify cancellations
+  // are final), so the old plan is offered as a normal new subscription.
+  const isLapsed = ['cancelled', 'expired'].includes(planStatus)
+  const isPreviousPlan = isCurrent && isLapsed
   const [hovered, setHovered] = useState(false)
 
   function ctaLabel() {
     if (isCurrent && isTrialActive) return 'Start paying now'
+    if (isPreviousPlan) return `Resubscribe to ${plan.name}`
     if (isCurrent) return 'Current plan'
     if (!trialUsed && plan.trial_days > 0) return 'Start free trial'
-    const hasActivePlan = currentTier && !['none', 'pending', 'uninstalled'].includes(currentTier)
+    const hasActivePlan = currentTier && !['none', 'pending', 'uninstalled'].includes(currentTier) && !isLapsed
     return hasActivePlan ? `Switch to ${plan.name}` : `Choose ${plan.name}`
   }
 
-  const isDisabled = isLoading || (isCurrent && !isTrialActive)
-  const ribbon = isTrialActive ? 'Trial active' : isCurrent ? 'Current plan' : PLAN_RIBBONS[plan.tier]
+  const isDisabled = isLoading || (isCurrent && !isTrialActive && !isPreviousPlan)
+  const ribbon = isTrialActive ? 'Trial active' : isPreviousPlan ? 'Your previous plan'
+    : isCurrent ? 'Current plan' : PLAN_RIBBONS[plan.tier]
 
   return (
     <div
@@ -182,11 +189,11 @@ function PlanCard({ plan, catalog, recommended, trialUsed, currentTier, planStat
           disabled={isDisabled}
           style={{
             width: '100%', padding: '12px',
-            background: isCurrent && !isTrialActive ? '#f1f5f9'
-              : recommended || isTrialActive || plan.tier === 'pro' ? accent : 'white',
-            color: isCurrent && !isTrialActive ? '#94a3b8'
-              : (recommended || isTrialActive || plan.tier === 'pro') ? 'white' : accent,
-            border: `2px solid ${isCurrent && !isTrialActive ? '#e2e8f0' : accent}`,
+            background: isCurrent && !isTrialActive && !isPreviousPlan ? '#f1f5f9'
+              : recommended || isTrialActive || isPreviousPlan || plan.tier === 'pro' ? accent : 'white',
+            color: isCurrent && !isTrialActive && !isPreviousPlan ? '#94a3b8'
+              : (recommended || isTrialActive || isPreviousPlan || plan.tier === 'pro') ? 'white' : accent,
+            border: `2px solid ${isCurrent && !isTrialActive && !isPreviousPlan ? '#e2e8f0' : accent}`,
             borderRadius: '9px', fontSize: '14px', fontWeight: 700,
             cursor: isDisabled ? 'default' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
@@ -213,9 +220,12 @@ export default function PlanPickerPage() {
   const [confirmPlan, setConfirmPlan] = useState(null)
 
   useEffect(() => {
+    // Reuse what the App shell just loaded (first visit after app load);
+    // otherwise fetch fresh.
+    const bootStats = takeBootStats()
     Promise.all([
-      fetch('/api/plans').then(r => (r.ok ? r.json() : null)),
-      fetchJson('/api/stats').catch(() => null),
+      prefetchPlans(),
+      bootStats ? Promise.resolve(bootStats) : fetchJson('/api/stats').catch(() => null),
     ]).then(([plansData, statsData]) => {
       if (plansData) setCatalog(plansData)
       else setError('Failed to load plans. Please refresh.')

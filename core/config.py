@@ -50,11 +50,17 @@ class Settings(BaseSettings):
     # never charged. See PROD_RELEASE_CHECKLIST.md launch-day gate.
     billing_test_mode: bool = False
 
-    # Internal admin dashboard (HTTP Basic Auth at /admin/*). Env-driven — no
+    # Internal admin dashboard (login form + optional TOTP at ADMIN_PATH). Env-driven — no
     # baked default (the guessable "admin" was a weak default; prod uses a
     # non-obvious username). Both come from Railway (prod) / .env (local).
     internal_admin_username: str = ""
     internal_admin_password: str = ""
+    # URL prefix of the admin dashboard. Set a hard-to-guess value in prod
+    # (e.g. "/ops-7f3k9q"); "/admin" then 404s like any unknown path.
+    admin_path: str = "/admin"
+    # Base32 TOTP secret (scripts/admin_totp_setup.py). Set → the login form
+    # also asks for a 6-digit authenticator code. Empty → password only.
+    admin_totp_secret: str = ""
 
     # Estimated fixed monthly infrastructure cost (Railway + Supabase + Upstash + R2).
     # Used in the admin Financials page to compute net profit. Update as plans change.
@@ -82,6 +88,8 @@ class Settings(BaseSettings):
     # postmark_server_token is empty, the digest worker logs instead of sending.
     postmark_server_token: str = ""
     postmark_from_email: str = "digest@prudix.app"
+    # Internal "merchant approved billing" email to the team. Empty disables it.
+    install_notify_email: str = "prudix.team@gmail.com"
 
     # Postmark webhook Basic Auth credentials — configured on the Postmark
     # server's Webhooks tab (Bounce + SpamComplaint events post here).

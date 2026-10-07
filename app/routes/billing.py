@@ -11,10 +11,11 @@ import httpx
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai_models import AI_TIERS, ai_tier_for
+from app.plan_guard import current_period_bounds
 from app.config import (
     CYCLE_DAYS,
     FEATURE_CATEGORIES,
@@ -227,6 +228,12 @@ async def billing_callback(
     shop_record = result.scalar_one_or_none()
     if not shop_record:
         raise HTTPException(status_code=404, detail="Shop not found")
+    if shop_record.plan_status in ("uninstalled", "purged") or not shop_record.access_token_encrypted:
+        # A stale approval link opened after uninstall: there's no token to check
+        # the charge with (decrypting the empty token used to 500). Send them
+        # back to the app — a reinstall re-provisions and shows the plan picker.
+        logger.info("billing_callback_store_not_installed", shop=shop, plan_status=shop_record.plan_status)
+        return RedirectResponse(f"https://{shop}/admin/apps/{settings.shopify_api_key}")
 
     access_token = await get_valid_access_token(shop_record, db)
     gid = f"gid://shopify/AppSubscription/{charge_id}"
@@ -315,23 +322,29 @@ async def billing_callback(
     # would drop to the lower plan (and reset their generation quota) early.
     # Just record the schedule so the UI can show a "plan changes on X" banner.
     if defer_change and status == "active":
-        # Race guard: on accelerated (development) stores the "next billing
-        # cycle" is minutes away, so Shopify's activation webhook can apply this
-        # change before this callback commits. Re-read the shop; if the change
-        # already took effect, don't write a now-stale schedule/banner.
-        await db.refresh(shop_record)
-        if shop_record.plan_tier == plan:
-            shop_record.scheduled_plan_tier = None
-            shop_record.scheduled_change_at = None
+        # End of the CURRENT billing period (the anchor isn't advanced on renewal,
+        # so "anchor + 30 days" would be in the past from month 2).
+        bounds = current_period_bounds(shop_record, now)
+        scheduled_at = bounds[1] if bounds else now + timedelta(days=CYCLE_DAYS)
+
+        # Race guard, atomic: on accelerated (development) stores the "next
+        # billing cycle" is minutes away, so Shopify's activation webhook can
+        # apply this change before — or while — this callback runs. Write the
+        # schedule only if the shop is NOT already on this subscription (the
+        # webhook sets shopify_charge_id to it). Keyed on the charge, not the
+        # tier. (Commerce 4fd350f.)
+        result = await db.execute(
+            update(Shop)
+            .where(Shop.id == shop_record.id)
+            .where(or_(Shop.shopify_charge_id.is_(None), Shop.shopify_charge_id != str(charge_id)))
+            .values(scheduled_plan_tier=plan, scheduled_change_at=scheduled_at)
+        )
+        if result.rowcount == 0:
             await db.commit()
             logger.info("billing_deferred_already_applied", shop=shop, plan=plan)
             return RedirectResponse(f"https://{shop}/admin/apps/{settings.shopify_api_key}")
-
-        cycle_start = shop_record.billing_cycle_start or now
-        if cycle_start.tzinfo is None:
-            cycle_start = cycle_start.replace(tzinfo=timezone.utc)
         shop_record.scheduled_plan_tier = plan
-        shop_record.scheduled_change_at = cycle_start + timedelta(days=CYCLE_DAYS)
+        shop_record.scheduled_change_at = scheduled_at
         db.add(BillingEvent(
             id=uuid.uuid4(),
             shop_id=shop_record.id,
@@ -348,6 +361,9 @@ async def billing_callback(
 
     # "active" = charge approved (Shopify reports ACTIVE during a trial too).
     if status == "active":
+        # First approval (not an upgrade / re-open of a live plan) → team email below.
+        first_approval = shop_record.plan_status not in ("active", "trial_active")
+        was_returning = bool(shop_record.trial_used)
         previous_tier = shop_record.plan_tier
         shop_record.shopify_charge_id = str(charge_id)
         shop_record.billing_cycle_start = now
@@ -397,6 +413,10 @@ async def billing_callback(
             )
         await db.commit()
         logger.info("billing_activated", shop=shop, plan=plan, status=event_type)
+        if first_approval:
+            from app.services.install_notify import notify_first_subscription
+            notify_first_subscription(shop_record, plan=plan, trial=event_type == "trial_started",
+                                      annual=False, returning=was_returning, charge_id=str(charge_id))
         # Start analyzing the catalog now (kick_catalog_syncs cron is the fallback;
         # after a plan change this re-exports so newly allowed products are added).
         await enqueue("catalog_start_sync", str(shop_record.id),
@@ -405,7 +425,9 @@ async def billing_callback(
     elif status == "declined":
         # Don't overwrite an already-active subscription. A merchant on Pro who declines
         # a Growth upgrade is still on Pro — only set declined if there's no active plan.
-        if shop_record.plan_status not in ("active", "trial_active"):
+        # A pending shop stays pending (plan picker, not a "Payment Failed" dashboard),
+        # and a cancelled shop keeps its paid-period / grace access.
+        if shop_record.plan_status not in ("active", "trial_active", "pending", "cancelled"):
             shop_record.plan_status = "declined"
             await db.commit()
         logger.info("billing_declined", shop=shop, current_status=shop_record.plan_status)

@@ -8,6 +8,14 @@ External services (OpenAI, Anthropic, Shopify API, httpx) are always mocked —
 no real API calls in tests.
 """
 
+import os
+
+# Admin routes are mounted at import time from ADMIN_PATH, so pin the admin
+# settings before any app import: a developer's local .env (e.g. a hidden
+# ADMIN_PATH or a real TOTP secret) must not change test behaviour.
+os.environ["ADMIN_PATH"] = "/admin"
+os.environ["ADMIN_TOTP_SECRET"] = ""
+
 import hashlib
 import hmac
 import base64
@@ -193,6 +201,18 @@ def patch_settings(monkeypatch):
     monkeypatch.setattr(core_config.settings, "openai_api_key", "sk-test")
     monkeypatch.setattr(core_config.settings, "anthropic_api_key", "sk-ant-test")
     monkeypatch.setattr(core_config.settings, "app_env", "test")
+    # Internal billing-approval email is off by default in tests; test_install_notify enables it.
+    monkeypatch.setattr(core_config.settings, "install_notify_email", "")
+    monkeypatch.setattr(core_config.settings, "admin_path", "/admin")
+    monkeypatch.setattr(core_config.settings, "admin_totp_secret", "")
+    # Shop meta (timezone / owner email) fetch runs inline in tests, against the
+    # test DB session; test_first_load_speed covers the background path.
+    monkeypatch.setattr("core.shopify_deps.META_IN_BACKGROUND", False)
+    # Team-email dedupe memory is per test.
+    monkeypatch.setattr("app.services.install_notify._claimed", {})
+    # Never reach a real Redis from tests (a developer's .env may set REDIS_URL);
+    # code paths fall back to their in-process stores.
+    monkeypatch.setattr(core_config.settings, "redis_url", "")
     # /billing/callback retries an unconfirmed subscription lookup; no real sleeps in tests.
     monkeypatch.setattr("app.routes.billing._SUBSCRIPTION_LOOKUP_DELAY_SECS", 0)
 

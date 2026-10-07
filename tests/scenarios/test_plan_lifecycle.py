@@ -567,7 +567,9 @@ class TestUninstallDuringTrial:
         Merchant uninstalled during trial → reinstalls → trial_used=True
         → billing/callback must activate as paid, not trial.
         """
-        shop = make_shop(plan_tier="growth", plan_status="uninstalled")
+        # Reinstall reactivates the row first (pending, fresh token, trial_used kept);
+        # billing webhooks/callbacks for a still-"uninstalled" row are ignored.
+        shop = make_shop(plan_tier="none", plan_status="pending")
         shop.trial_used = True
         shop.access_token_encrypted = encrypt_token("new_tok")
         db_session.add(shop)
@@ -697,7 +699,9 @@ class TestUninstallAfterDowngrade:
     @pytest.mark.asyncio
     async def test_reinstall_after_downgrade_uninstall_gets_no_trial(self, db_session):
         """Merchant who downgraded then uninstalled still cannot get another trial."""
-        shop = make_shop(plan_tier="growth", plan_status="uninstalled")
+        # Reinstall reactivates the row first (pending, fresh token, trial_used kept);
+        # billing webhooks/callbacks for a still-"uninstalled" row are ignored.
+        shop = make_shop(plan_tier="none", plan_status="pending")
         shop.trial_used = True
         shop.access_token_encrypted = encrypt_token("tok2")
         db_session.add(shop)
@@ -778,7 +782,7 @@ class TestRootPathRouting:
 class TestBillingCallbackEdgeCases:
 
     @pytest.mark.asyncio
-    async def test_declined_billing_sets_declined_status(self, db_session):
+    async def test_declined_billing_keeps_pending(self, db_session):
         shop = make_shop(plan_tier="growth", plan_status="pending")
         shop.access_token_encrypted = encrypt_token("tok")
         db_session.add(shop)
@@ -792,10 +796,9 @@ class TestBillingCallbackEdgeCases:
                 )
 
         await db_session.refresh(shop)
-        assert shop.plan_status == "declined"
-        # Declined does NOT get a grace period (only cancelled/expired does)
+        assert shop.plan_status == "pending"     # still no plan → plan picker
         assert shop.grace_period_ends_at is None
-        # Billing callback only sets plan_status on declined — nothing else changes
+        # Nothing else changes on a decline
         assert shop.shopify_charge_id is None   # not set on declined
         assert shop.plan_tier == "growth"       # unchanged from fixture
         assert shop.data_purge_at is None
@@ -922,6 +925,17 @@ class TestGracePeriodGeneration:
         if grace.tzinfo is None:
             grace = grace.replace(tzinfo=timezone.utc)
         assert grace > datetime.now(timezone.utc)
+        # 35 days in, the merchant was charged again at day 30 → they paid
+        # through day 60, so the cancel keeps full access until then.
+        # Paid end = grace - GRACE_PERIOD_DAYS.
+        from app.config import GRACE_PERIOD_DAYS as _G
+        paid_end = grace - _td(days=_G)
+        assert paid_end > datetime.now(timezone.utc)
+        assert (paid_end - expired_cycle).days in (59, 60)
+
+        # Move past the paid period into the read-only grace window.
+        shop.grace_period_ends_at = datetime.now(timezone.utc) + _td(days=3)
+        await db_session.commit()
 
         # --- Step 2: Generation blocked (past paid period, grace is view-only) ---
         # Commerce hit /api/generate here; GiftSense AI routes all go through

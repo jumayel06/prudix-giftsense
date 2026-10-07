@@ -29,7 +29,7 @@ from app.workers.catalog import (
     reconcile_catalogs,
 )
 from core.config import settings
-from core.db.models import BillingEvent, GiftEvent, ProcessedWebhook, Shop
+from core.db.models import BillingEvent, GiftEvent, GiftSession, ProcessedWebhook, Shop
 from core.db.session import AsyncSessionLocal
 from core.shopify_auth import get_valid_access_token
 from core.shopify_graphql import shopify_graphql_post
@@ -123,7 +123,7 @@ async def reconcile_uninstalled_shops(ctx: dict) -> None:
     async with AsyncSessionLocal() as db:
         shops = (await db.execute(
             select(Shop).where(
-                Shop.plan_status.in_(["active", "trial_active", "grace", "pending"]),
+                Shop.plan_status.in_(["active", "trial_active", "grace", "pending", "frozen"]),
                 Shop.access_token_encrypted != "",
             )
         )).scalars().all()
@@ -148,6 +148,30 @@ async def reconcile_uninstalled_shops(ctx: dict) -> None:
 
 
 GIFT_EVENTS_RETENTION_DAYS = 90
+
+
+GIFT_SESSIONS_RETENTION_DAYS = 90
+NOTE_DRAFTS_RETENTION_DAYS = 30
+
+
+async def purge_old_gift_sessions(ctx: dict, now: datetime | None = None) -> dict:
+    """Retention promised in the privacy policy / data-protection answers:
+    gift-finder sessions (brief, picks) 90 days after their last use, the AI
+    note drafts kept on them 30 days. Ages by updated_at, so a session in use
+    is never cut short."""
+    from sqlalchemy import update
+    now = now or datetime.now(timezone.utc)
+    async with AsyncSessionLocal() as db:
+        gone = await db.execute(delete(GiftSession).where(
+            GiftSession.updated_at < now - timedelta(days=GIFT_SESSIONS_RETENTION_DAYS)))
+        cleared = await db.execute(update(GiftSession).where(
+            GiftSession.note_drafts.is_not(None),
+            GiftSession.updated_at < now - timedelta(days=NOTE_DRAFTS_RETENTION_DAYS),
+        ).values(note_drafts=None).execution_options(synchronize_session=False))
+        await db.commit()
+    result = {"sessions_deleted": gone.rowcount or 0, "drafts_cleared": cleared.rowcount or 0}
+    logger.info("purge_old_gift_sessions_complete", **result)
+    return result
 
 
 async def purge_old_gift_events(ctx: dict) -> None:
@@ -221,11 +245,21 @@ async def reconcile_scheduled_plan_changes(ctx: dict) -> None:
                 actual_tier = derive_tier_from_subscription_name(
                     active.get("name"), fallback=shop.plan_tier,
                 )
-                if actual_tier != shop.plan_tier:
+                active_charge_id = str(active.get("id") or "").rsplit("/", 1)[-1]
+                # The switch happened if Shopify's live subscription differs from
+                # ours by tier OR by charge. The charge id must follow too:
+                # otherwise every later webhook for the real subscription
+                # (CANCELLED, FROZEN, …) looks stale and is ignored.
+                # (Commerce billing audit 41f8b2f.)
+                if actual_tier != shop.plan_tier or (
+                    active_charge_id and active_charge_id != (shop.shopify_charge_id or "")
+                ):
                     # The activation webhook was missed: apply the switch now,
                     # anchoring the new cycle at the boundary Shopify actually
                     # switched so the quota window isn't stretched.
                     shop.plan_tier = actual_tier
+                    if active_charge_id:
+                        shop.shopify_charge_id = active_charge_id
                     shop.plan_status = "active"
                     shop.grace_period_ends_at = None
                     shop.billing_cycle_start = _as_utc(shop.scheduled_change_at) or now
@@ -332,6 +366,22 @@ async def reconcile_trial_conversions(ctx: dict) -> None:
     )
 
 
+# ARQ's own log lines ("Starting worker for N functions", job start/finish)
+# go to stderr by default, and Railway tags every stderr line as severity
+# "error". Same format as ARQ's default, but on stdout, so real errors stand
+# out. Used via `arq ... --custom-log-dict app.workers.main.ARQ_LOG_CONFIG`.
+ARQ_LOG_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "arq.standard": {"level": "INFO", "class": "logging.StreamHandler",
+                         "formatter": "arq.standard", "stream": "ext://sys.stdout"},
+    },
+    "formatters": {"arq.standard": {"format": "%(asctime)s: %(message)s", "datefmt": "%H:%M:%S"}},
+    "loggers": {"arq": {"handlers": ["arq.standard"], "level": "INFO"}},
+}
+
+
 class WorkerSettings:
     redis_settings = RedisSettings.from_dsn(settings.redis_url)
     on_startup = startup
@@ -367,6 +417,7 @@ class WorkerSettings:
         cron(reconcile_trial_conversions, minute=40),
         cron(purge_uninstalled_shops, hour=3, minute=0),
         cron(purge_old_gift_events, hour=3, minute=30),
+        cron(purge_old_gift_sessions, hour=3, minute=40),
         cron(purge_expired_media, hour={3, 15}, minute=45, timeout=600),
         # Weekly GiftSense email (Growth+), Mondays 13:00 UTC.
         cron(send_weekly_digests, weekday=0, hour=13, minute=0, timeout=1800),

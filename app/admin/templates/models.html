@@ -16,6 +16,6 @@
 {% for x in m.models %}<tr><td>{{ x.label }} <span class="text-faint mono">{{ x.id }}</span></td><td>{{ x.provider }}</td><td class="num mono">{{ x.price[0] }} · {{ x.price[1] }}</td>
 <td>{{ x.status }}</td><td>{{ x.fallback or x.replacement or '—' }}</td><td>{{ x.provider_retires_on or '—' }}</td></tr>{% endfor %}</tbody></table></div>
 <div class="section"><h2>Pinned shops</h2>
-{% if m.pinned %}<table><tbody>{% for domain, id, pins in m.pinned %}<tr><td><a href="/admin/shops/{{ id }}">{{ domain }}</a></td><td class="mono">{% for slot, model in pins.items() %}{{ slot }} → {{ model }}{% if not loop.last %}, {% endif %}{% endfor %}</td></tr>{% endfor %}</tbody></table>
+{% if m.pinned %}<table><tbody>{% for domain, id, pins in m.pinned %}<tr><td><a href="{{ admin_path }}/shops/{{ id }}">{{ domain }}</a></td><td class="mono">{% for slot, model in pins.items() %}{{ slot }} → {{ model }}{% if not loop.last %}, {% endif %}{% endfor %}</td></tr>{% endfor %}</tbody></table>
 {% else %}<p class="text-muted">No shop has a pin.</p>{% endif %}</div>
 {% endblock %}

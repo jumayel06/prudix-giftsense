@@ -19,6 +19,8 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai_models import ai_tier_for
+from app.plan_guard import current_period_bounds
 from app.config import (
     PLAN_DEFAULT_AI_TIER,
     CYCLE_DAYS,
@@ -378,6 +380,8 @@ async def _handle_uninstalled(
     shop.grace_period_ends_at = None
     shop.plan_status = "uninstalled"
     shop.plan_tier = "none"
+    shop.scheduled_plan_tier = None
+    shop.scheduled_change_at = None
     shop.uninstalled_at = now
     shop.data_purge_at = now + timedelta(days=DATA_RETENTION_DAYS)
     await db.commit()
@@ -404,9 +408,23 @@ async def _handle_subscription_update(shop_domain: str, payload: dict, db: Async
     status = charge.get("status", "").lower()  # Shopify sends uppercase enum values (ACTIVE, CANCELLED…)
     charge_id = _extract_numeric_id(str(charge.get("admin_graphql_api_id", charge.get("id", ""))))
 
+    if shop.plan_status in ("uninstalled", "purged"):
+        # Late billing webhooks for a store that's gone (e.g. the unapproved
+        # charge Shopify EXPIRES ~48h after an uninstall, or a delayed ACTIVE).
+        # Applying them would move the store out of "uninstalled", and the purge
+        # cron only deletes "uninstalled" stores. A reinstall reactivates the
+        # store before any new approval, so nothing real is lost.
+        # (Commerce billing audit 5413537.)
+        logger.info("subscription_update_ignored_not_installed", shop=shop_domain,
+                    status=status, charge_id=charge_id, plan_status=shop.plan_status)
+        return
+
     now = datetime.now(timezone.utc)
+    first_activation_notify = None  # set on a merchant's first approval → team email after commit
 
     if status == "active":
+        had_no_plan = shop.plan_tier in (None, "", "none")  # before plan_tier is overwritten below
+        previous_charge_id = shop.shopify_charge_id
         shop.shopify_charge_id = charge_id
 
         # Derive plan tier from subscription name so upgrades/downgrades are picked up.
@@ -424,11 +442,40 @@ async def _handle_subscription_update(shop_domain: str, payload: dict, db: Async
         shop.scheduled_change_at = None
 
         force_active_write = False
-        if shop.plan_status == "trial_active":
+        if shop.plan_status == "frozen" and previous_charge_id == charge_id:
+            # Shopify unfroze the same subscription (store paid its bills).
+            # Restore what it was — still in trial if the trial hadn't ended —
+            # without restarting the quota window.
             trial_end = shop.trial_ends_at
             if trial_end and trial_end.tzinfo is None:
                 trial_end = trial_end.replace(tzinfo=timezone.utc)
+            bounds = current_period_bounds(shop, now)
+            if bounds:
+                shop.billing_cycle_start = bounds[0]
+            shop.grace_period_ends_at = None
             if trial_end and trial_end > now:
+                shop.plan_status = "trial_active"
+            else:
+                shop.plan_status = "active"
+                force_active_write = True
+            event_type = "unfrozen"
+        elif shop.plan_status == "trial_active":
+            trial_end = shop.trial_ends_at
+            if trial_end and trial_end.tzinfo is None:
+                trial_end = trial_end.replace(tzinfo=timezone.utc)
+            if trial_end and trial_end > now and previous_charge_id and previous_charge_id != charge_id:
+                # A DIFFERENT subscription went active mid-trial: the merchant
+                # switched plan during the trial. The new charge has no trial
+                # (trial_used) and Shopify bills it now, so apply it as paid, not
+                # as a trial confirmation. (If this lands before /billing/callback,
+                # the callback's replay guard then no-ops on the same charge.)
+                shop.plan_status = "active"
+                shop.grace_period_ends_at = None
+                shop.billing_cycle_start = now
+                shop.selected_model = ai_tier_for(derived_tier, shop.selected_model)
+                event_type = "trial_switched_to_paid"
+                force_active_write = True
+            elif trial_end and trial_end > now:
                 # Trial still running — this is the initial "subscription active" confirmation.
                 # Preserve trial_active; billing cycle resets when the trial actually converts.
                 event_type = "trial_confirmed"
@@ -439,7 +486,11 @@ async def _handle_subscription_update(shop_domain: str, payload: dict, db: Async
                 shop.billing_cycle_start = now
                 event_type = "trial_converted"
                 force_active_write = True
-        elif shop.plan_status in ("pending", "none", None, ""):
+        elif shop.plan_status in ("pending", "none", None, "") or (
+            # Rows marked declined/expired while they never had a plan (before
+            # Commerce 9162918): same as pending (trial rule + team email).
+            shop.plan_status in ("declined", "expired") and had_no_plan
+        ):
             # First activation arriving before (or instead of) the billing
             # callback: the callback refuses to activate until Shopify reports
             # the charge ACTIVE, so this path applies the trial itself, using the
@@ -447,6 +498,7 @@ async def _handle_subscription_update(shop_domain: str, payload: dict, db: Async
             # trialled). If the callback runs afterwards, its replay guard sees
             # the same charge_id already live and does nothing.
             plan_cfg = PLANS.get(derived_tier, {})
+            was_returning = bool(shop.trial_used)
             if derived_tier in PLAN_DEFAULT_AI_TIER:
                 shop.selected_model = PLAN_DEFAULT_AI_TIER[derived_tier]  # AI tier, as the callback sets
             if not shop.trial_used and plan_cfg.get("trial_days", 0) > 0:
@@ -463,6 +515,39 @@ async def _handle_subscription_update(shop_domain: str, payload: dict, db: Async
                 shop.billing_cycle_start = now
                 event_type = "activated"
                 force_active_write = True
+            first_activation_notify = dict(plan=derived_tier, trial=event_type == "trial_started",
+                                           annual=False, returning=was_returning)
+        elif shop.plan_status not in ("active", "trial_active") and previous_charge_id != charge_id:
+            # A NEW subscription for a store with no live plan (cancelled, or
+            # expired / declined after having had one): a re-subscribe. Mirror the
+            # billing callback's rule — trial only if never trialled — and email
+            # the team, in case this webhook lands before the callback (whose
+            # replay guard would then no-op).
+            plan_cfg = PLANS.get(derived_tier, {})
+            was_returning = bool(shop.trial_used)
+            prior_status = shop.plan_status
+            shop.selected_model = ai_tier_for(derived_tier, shop.selected_model)
+            if not shop.trial_used and plan_cfg.get("trial_days", 0) > 0:
+                shop.plan_status = "trial_active"
+                shop.trial_used = True
+                shop.trial_started_at = now
+                shop.trial_ends_at = now + timedelta(days=plan_cfg["trial_days"])
+                shop.grace_period_ends_at = None
+                shop.billing_cycle_start = now
+                event_type = "trial_started"
+            else:
+                shop.plan_status = "active"
+                shop.grace_period_ends_at = None
+                shop.billing_cycle_start = now
+                event_type = "activated"
+                force_active_write = True
+            # No team email when the store was "cancelled": during a plan switch
+            # Shopify can deliver the OLD subscription's CANCELLED before the new
+            # one's ACTIVE, so this may be an upgrade, not a re-subscribe. The
+            # billing callback still emails real re-subscribes.
+            if prior_status != "cancelled":
+                first_activation_notify = dict(plan=derived_tier, trial=event_type == "trial_started",
+                                               annual=False, returning=was_returning)
         else:
             # Already active. Shopify sometimes fires multiple webhooks for the same
             # subscription event with different IDs (bypassing idempotency). Distinguish
@@ -472,9 +557,19 @@ async def _handle_subscription_update(shop_domain: str, payload: dict, db: Async
             if cycle and cycle.tzinfo is None:
                 cycle = cycle.replace(tzinfo=timezone.utc)
             is_duplicate_activation = cycle and (now - cycle).total_seconds() < 60
+            same_live_subscription = previous_charge_id == charge_id and shop.plan_status == "active"
             shop.plan_status = "active"
             shop.grace_period_ends_at = None
-            shop.billing_cycle_start = now
+            if same_live_subscription:
+                # Same subscription already live: a renewal (if Shopify sends one)
+                # or a stray repeat. Align to the CURRENT period instead of "now",
+                # so a mid-cycle repeat can't hand out a fresh quota.
+                bounds = current_period_bounds(shop, now)
+                shop.billing_cycle_start = bounds[0] if bounds else now
+            else:
+                # A different / new subscription (plan switch taking effect):
+                # its billing cycle starts now.
+                shop.billing_cycle_start = now
             event_type = "activation_confirmed" if is_duplicate_activation else "renewed"
             force_active_write = True
 
@@ -514,10 +609,15 @@ async def _handle_subscription_update(shop_domain: str, payload: dict, db: Async
             # Grace period starts after the paid billing period ends, not immediately.
             # Merchant keeps full access for the rest of the period they paid for,
             # then gets 7 read-only days before being fully locked out.
-            cycle_start = shop.billing_cycle_start or now
-            if cycle_start.tzinfo is None:
-                cycle_start = cycle_start.replace(tzinfo=timezone.utc)
-            paid_period_end = cycle_start + timedelta(days=CYCLE_DAYS)
+            # The paid period is the one CONTAINING now: the anchor isn't advanced
+            # on renewal, so "anchor + 30 days" is already past from month 2.
+            # A cancel during a trial has nothing paid: access ends now, then
+            # the read-only grace. (Commerce billing audit aa7350c.)
+            if shop.plan_status == "trial_active":
+                paid_period_end = now
+            else:
+                bounds = current_period_bounds(shop, now)
+                paid_period_end = bounds[1] if bounds else now + timedelta(days=CYCLE_DAYS)
             new_grace = paid_period_end + timedelta(days=GRACE_PERIOD_DAYS)
             # Race-safe conditional UPDATE: only write cancellation if the
             # shop is STILL on the cancelled charge_id. If a concurrent
@@ -547,16 +647,37 @@ async def _handle_subscription_update(shop_domain: str, payload: dict, db: Async
         # not affect the shop's current active subscription.
         if shop.shopify_charge_id and shop.shopify_charge_id != charge_id:
             event_type = "declined_stale_ignored"
+        elif shop.plan_status == "pending":
+            # Never had a plan: nothing changed — stay pending so the merchant
+            # gets the plan picker next time (not a "Payment Failed" dashboard).
+            event_type = "declined_while_pending"
         else:
             shop.plan_status = "declined"
             event_type = "declined"
     elif status == "expired":
         if shop.shopify_charge_id and shop.shopify_charge_id != charge_id:
             event_type = "expired_stale_ignored"
+        elif shop.plan_status == "pending":
+            # Shopify expires an unapproved charge ~48h after the merchant walked
+            # away. They never had a plan: stay pending (plan picker on return) —
+            # no "expired" status and no grace period (= no free read access).
+            event_type = "expired_while_pending"
         else:
             shop.plan_status = "expired"
             shop.grace_period_ends_at = now + timedelta(days=GRACE_PERIOD_DAYS)
             event_type = "expired"  # expired = trial expired, no paid period to honor
+    elif status == "frozen":
+        # Shopify froze the subscription (the store hasn't paid its Shopify bills).
+        # Stop AI and background work (workers only process active / trial_active)
+        # but keep all data; an ACTIVE for the same subscription restores it
+        # (above). Stale charges are ignored like the other statuses.
+        if shop.shopify_charge_id and shop.shopify_charge_id != charge_id:
+            event_type = "frozen_stale_ignored"
+        elif shop.plan_status in ("active", "trial_active"):
+            shop.plan_status = "frozen"
+            event_type = "frozen"
+        else:
+            event_type = "frozen_ignored"
     else:
         event_type = status
 
@@ -569,10 +690,13 @@ async def _handle_subscription_update(shop_domain: str, payload: dict, db: Async
     ))
     await db.commit()
     logger.info("subscription_updated", shop=shop_domain, status=status)
+    if first_activation_notify:
+        from app.services.install_notify import notify_first_subscription
+        notify_first_subscription(shop, charge_id=charge_id, **first_activation_notify)
 
     # Catalog: a paid plan lifts the trial product cap; a webhook-first
     # activation starts the first sync (kick_catalog_syncs is the fallback).
-    if event_type == "trial_converted":
+    if event_type in ("trial_converted", "trial_switched_to_paid"):
         await enqueue("catalog_start_sync", str(shop.id), "trial_converted")
     elif event_type in ("trial_started", "activated"):
         await enqueue("catalog_start_sync", str(shop.id), "initial")

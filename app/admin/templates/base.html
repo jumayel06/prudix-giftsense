@@ -523,18 +523,21 @@
     <span class="sidebar-badge">GiftSense admin</span>
 
     <nav>
-      <a href="/admin/" class="{% if active == 'overview' %}active{% endif %}">Overview</a>
-      <a href="/admin/financials" class="{% if active == 'financials' %}active{% endif %}">Money</a>
-      <a href="/admin/shops" class="{% if active == 'shops' %}active{% endif %}">Shops</a>
-      <a href="/admin/models" class="{% if active == 'models' %}active{% endif %}">AI models</a>
-      <a href="/admin/support" class="{% if active == 'support' %}active{% endif %}">Support{% if open_count is defined and open_count %} <span class="sidebar-badge">{{ open_count }}</span>{% endif %}</a>
-      <a href="/admin/system" class="{% if active == 'system' %}active{% endif %}">System</a>
+      <a href="{{ admin_path }}/" class="{% if active == 'overview' %}active{% endif %}">Overview</a>
+      <a href="{{ admin_path }}/financials" class="{% if active == 'financials' %}active{% endif %}">Money</a>
+      <a href="{{ admin_path }}/shops" class="{% if active == 'shops' %}active{% endif %}">Shops</a>
+      <a href="{{ admin_path }}/models" class="{% if active == 'models' %}active{% endif %}">AI models</a>
+      <a href="{{ admin_path }}/support" class="{% if active == 'support' %}active{% endif %}">Support{% if open_count is defined and open_count %} <span class="sidebar-badge">{{ open_count }}</span>{% endif %}</a>
+      <a href="{{ admin_path }}/system" class="{% if active == 'system' %}active{% endif %}">System</a>
       {% if sentry_project_url %}
         <a href="{{ sentry_project_url }}" class="external" target="_blank" rel="noopener noreferrer">Errors &nearr;</a>
       {% endif %}
     </nav>
 
     <footer>
+      <form method="post" action="{{ admin_path }}/logout" style="margin:0 0 10px;">
+        <button type="submit" style="background:none;border:1px solid var(--slate-500);color:var(--slate-300);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;">Sign out</button>
+      </form>
       <span class="env-chip">{{ env }}</span><br>
       <span style="margin-top: 6px; display: inline-block;">generated {{ generated_at }}</span>
     </footer>

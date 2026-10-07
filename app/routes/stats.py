@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services import theme_status
 from app.ai_models import AI_TIERS, ai_tier_for, model_for_shop, model_label
 from app.config import CYCLE_DAYS, PLANS
-from app.plan_guard import effective_cycle_start
+from app.plan_guard import _paid_period_ends_at, effective_cycle_start
 from core.config import settings
 from core.db.models import Shop, UsageLog
 from core.db.session import get_db
@@ -40,17 +40,23 @@ async def get_stats(
     now = datetime.now(timezone.utc)
 
     cycle_start = effective_cycle_start(shop_record)
-    used_q = select(func.coalesce(func.sum(UsageLog.generations_consumed), 0)).where(
-        UsageLog.shop_id == shop_record.id
-    )
-    if cycle_start:
-        used_q = used_q.where(UsageLog.created_at >= cycle_start)
-    generations_used = int((await db.execute(used_q)).scalar() or 0)
+    if shop_record.plan_status == "pending":
+        # Installed, no plan yet: the first call of every install, made while
+        # the merchant waits for the plan picker, which only reads plan/trial
+        # fields. Skip the usage queries (same shape, zeroed). From Commerce 084b679.
+        generations_used = total_used = 0
+    else:
+        used_q = select(func.coalesce(func.sum(UsageLog.generations_consumed), 0)).where(
+            UsageLog.shop_id == shop_record.id
+        )
+        if cycle_start:
+            used_q = used_q.where(UsageLog.created_at >= cycle_start)
+        generations_used = int((await db.execute(used_q)).scalar() or 0)
 
-    total_used = int((await db.execute(
-        select(func.coalesce(func.sum(UsageLog.generations_consumed), 0))
-        .where(UsageLog.shop_id == shop_record.id)
-    )).scalar() or 0)
+        total_used = int((await db.execute(
+            select(func.coalesce(func.sum(UsageLog.generations_consumed), 0))
+            .where(UsageLog.shop_id == shop_record.id)
+        )).scalar() or 0)
 
     days_elapsed = max(0, (now - cycle_start).days) if cycle_start else 0
     days_remaining = max(0, CYCLE_DAYS - days_elapsed)
@@ -83,10 +89,12 @@ async def get_stats(
     # Cancelled shops: the date access actually ends (end of the paid month,
     # then the 7-day read-only grace).
     access_until = None
-    if shop_record.plan_status == "cancelled" and shop_record.billing_cycle_start:
-        paid_end = _utc(shop_record.billing_cycle_start) + timedelta(days=CYCLE_DAYS)
+    if shop_record.plan_status == "cancelled":
+        # Same source of truth as the access rules (plan_guard): the paid end
+        # fixed at cancellation, then the read-only grace.
+        paid_end = _paid_period_ends_at(shop_record)
         grace = _utc(shop_record.grace_period_ends_at)
-        if now < paid_end:
+        if paid_end and now < paid_end:
             access_until = paid_end.isoformat()
         elif grace and now < grace:
             access_until = grace.isoformat()

@@ -17,8 +17,10 @@ from app.routes import (
 )
 from app.routes import settings as settings_routes
 from app.routes import stats
-from app.admin.auth import require_admin
+from app.admin.auth import admin_path, require_admin
+from app.admin.login import router as admin_login_router
 from app.admin.router import router as admin_router
+from app.csp import FrameAncestorsMiddleware
 from core.config import settings
 
 # ── Logging configuration ────────────────────────────────────────────────────
@@ -153,14 +155,14 @@ app = FastAPI(
 
 @app.get("/openapi.json", include_in_schema=False)
 async def openapi_json(_: str = Depends(require_admin)):
-    """OpenAPI schema — admin Basic Auth only (never public)."""
+    """OpenAPI schema — signed-in admins only (never public)."""
     return app.openapi()
 
 
 @app.get("/docs", include_in_schema=False)
 async def swagger_docs(_: str = Depends(require_admin)):
-    """Swagger UI — admin Basic Auth only. The browser reuses the same creds to
-    fetch /openapi.json (same origin + realm), so the schema stays gated too."""
+    """Swagger UI — signed-in admins only. The admin session cookie (path=/)
+    also gates the /openapi.json fetch."""
     return get_swagger_ui_html(openapi_url="/openapi.json", title="GiftSense API docs")
 
 _origins = ["https://admin.shopify.com"]
@@ -182,6 +184,10 @@ app.add_middleware(
 )
 
 
+# Shopify-required `frame-ancestors` CSP on HTML pages (see app/csp.py).
+app.add_middleware(FrameAncestorsMiddleware)
+
+
 app.include_router(auth.router)
 app.include_router(billing.router)
 app.include_router(catalog.router)
@@ -197,7 +203,8 @@ app.include_router(registry.router)
 app.include_router(registries_admin.router)
 app.include_router(support.router)
 app.include_router(qr.router)
-app.include_router(admin_router)
+app.include_router(admin_login_router, prefix=admin_path())
+app.include_router(admin_router, prefix=admin_path())
 app.include_router(settings_routes.router)
 app.include_router(stats.router)
 app.include_router(webhooks.router)
@@ -254,7 +261,8 @@ async def health():
 _DIST = os.path.join(os.path.dirname(__file__), "..", "dashboard", "dist")
 _INDEX = os.path.join(_DIST, "index.html")
 
-_API_PREFIXES = ("/api/", "/auth", "/admin", "/billing", "/webhooks", "/health", "/debug", "/docs", "/assets", "/qr/",
+# "/admin" stays listed so the old path is a plain JSON 404 once ADMIN_PATH moves.
+_API_PREFIXES = ("/api/", "/auth", "/admin", admin_path(), "/billing", "/webhooks", "/health", "/debug", "/docs", "/assets", "/qr/",
                  "/print/")
 
 # A page load from Shopify Admin always carries at least one of these (the

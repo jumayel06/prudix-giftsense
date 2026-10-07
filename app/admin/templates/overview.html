@@ -25,6 +25,6 @@
   <div class="card"><div class="card-title">AI generations, 24 h</div><div class="kpi-value mono">{{ k.generations_24h }}</div></div>
   <div class="card"><div class="card-title">Gift orders, 30 days</div><div class="kpi-value mono">{{ k.gift_orders_30d }}</div></div>
   <div class="card"><div class="card-title">Registries / messages</div><div class="kpi-value mono">{{ k.registries }} / {{ k.messages }}</div></div>
-  <div class="card {% if k.open_tickets %}card-rose{% endif %}"><div class="card-title">Open support tickets</div><div class="kpi-value"><a href="/admin/support">{{ k.open_tickets }}</a></div></div>
+  <div class="card {% if k.open_tickets %}card-rose{% endif %}"><div class="card-title">Open support tickets</div><div class="kpi-value"><a href="{{ admin_path }}/support">{{ k.open_tickets }}</a></div></div>
 </div></div>
 {% endblock %}

@@ -116,18 +116,21 @@ class TestHealth:
     @pytest.mark.asyncio
     async def test_docs_not_public(self):
         """Swagger UI is admin-gated in every environment — anonymous access is
-        rejected (401 with creds configured, 503 when they aren't). Never 200."""
+        sent to the admin login (303 with creds configured, 503 when they aren't).
+        Never 200."""
         async for c in _client():
             resp = await c.get("/docs")
-        assert resp.status_code in (401, 503)
+        assert resp.status_code in (303, 503)
+        if resp.status_code == 303:
+            assert "/login?next=%2Fdocs" in resp.headers["location"]
 
     @pytest.mark.asyncio
     async def test_openapi_schema_not_public(self):
-        """The OpenAPI schema is admin-gated too — the browser reuses admin creds
-        to load it from the Swagger page. Anonymous access never returns 200."""
+        """The OpenAPI schema is admin-gated too — the admin session cookie
+        authorises it from the Swagger page. Anonymous access never returns 200."""
         async for c in _client():
             resp = await c.get("/openapi.json")
-        assert resp.status_code in (401, 503)
+        assert resp.status_code in (303, 503)
 
     @pytest.mark.asyncio
     async def test_returns_503_when_both_down(self):

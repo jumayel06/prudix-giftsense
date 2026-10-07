@@ -11,6 +11,8 @@ They then use shop_record.shop_domain and call get_valid_access_token(shop_recor
 exactly as before.
 """
 
+import asyncio
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -24,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
 from core.db.models import Shop
+from core.db import session as db_session_module
 from core.db.session import get_db
 from core.shopify_auth import (
     encrypt_token,
@@ -66,6 +69,40 @@ async def _fetch_and_store_shop_meta(shop_record: Shop, access_token: str, db: A
         logger.warning("shop_meta_fetch_failed", shop=shop_record.shop_domain, error=str(e))
 
 
+# Set False in tests (conftest) so the meta fetch runs inline against the test
+# DB session; test_first_load_speed exercises the background path explicitly.
+META_IN_BACKGROUND = True
+_meta_tasks: set[asyncio.Task] = set()  # strong refs so tasks aren't GC'd mid-flight
+
+
+async def _fetch_shop_meta_after_response(shop_id: uuid.UUID, access_token: str) -> None:
+    """Background version of `_fetch_and_store_shop_meta`, so the first response
+    (and the plan picker) doesn't wait on a second Shopify call. Nothing on the
+    first load needs timezone / owner email (digests and the billing-approval
+    email read them much later). Own DB session — the request's session may
+    already be closed. Ported from Prudix Commerce 084b679."""
+    try:
+        async with db_session_module.AsyncSessionLocal() as db:
+            shop = (await db.execute(select(Shop).where(Shop.id == shop_id))).scalar_one_or_none()
+            if shop is not None:
+                await _fetch_and_store_shop_meta(shop, access_token, db)
+    except Exception as e:  # noqa: BLE001 — best-effort, never surfaces
+        logger.warning("shop_meta_background_failed", shop_id=str(shop_id), error=str(e))
+
+
+async def _store_shop_meta(shop_record: Shop, access_token: str, db: AsyncSession) -> None:
+    """Schedule the meta fetch as an independent task. Not a FastAPI
+    BackgroundTask on purpose: those are dropped when the route raises, and this
+    must run however the first request ends (the row is already committed)."""
+    if not META_IN_BACKGROUND:
+        await _fetch_and_store_shop_meta(shop_record, access_token, db)
+        return
+    task = asyncio.get_running_loop().create_task(
+        _fetch_shop_meta_after_response(shop_record.id, access_token))
+    _meta_tasks.add(task)
+    task.add_done_callback(_meta_tasks.discard)
+
+
 async def _provision_shop_via_token_exchange(shop_domain: str, session_token: str, db: AsyncSession) -> Shop:
     """Provision a freshly installed shop under Shopify managed install.
 
@@ -74,7 +111,9 @@ async def _provision_shop_via_token_exchange(shop_domain: str, session_token: st
     access token, create the shops row with plan_status='pending' (so the
     frontend routes to the plan picker), and cache store meta.
     """
+    started = time.monotonic()
     token_data = await exchange_session_token_for_offline_token(shop_domain, session_token)
+    exchange_ms = int((time.monotonic() - started) * 1000)
 
     shop_record = Shop(
         id=uuid.uuid4(),
@@ -98,8 +137,9 @@ async def _provision_shop_via_token_exchange(shop_domain: str, session_token: st
         return result.scalar_one()
 
     await db.refresh(shop_record)
-    logger.info("shop_provisioned_via_token_exchange", shop=shop_domain)
-    await _fetch_and_store_shop_meta(shop_record, token_data["access_token"], db)
+    await _store_shop_meta(shop_record, token_data["access_token"], db)
+    logger.info("shop_provisioned_via_token_exchange", shop=shop_domain,
+                exchange_ms=exchange_ms, total_ms=int((time.monotonic() - started) * 1000))
     return shop_record
 
 
@@ -113,7 +153,9 @@ async def _reactivate_shop_on_reinstall(shop_record: Shop, session_token: str, d
     branch. Crucially we DO NOT touch `trial_used` (no second free trial) or the
     merchant's preferences / integration tokens.
     """
+    started = time.monotonic()
     token_data = await exchange_session_token_for_offline_token(shop_record.shop_domain, session_token)
+    exchange_ms = int((time.monotonic() - started) * 1000)
 
     shop_record.access_token_encrypted = encrypt_token(token_data["access_token"])
     shop_record.refresh_token_encrypted = encrypt_token(token_data["refresh_token"]) if token_data["refresh_token"] else None
@@ -121,6 +163,8 @@ async def _reactivate_shop_on_reinstall(shop_record: Shop, session_token: str, d
     shop_record.refresh_token_expires_at = token_data["refresh_token_expires_at"]
     shop_record.plan_status = "pending"
     shop_record.plan_tier = "none"
+    shop_record.scheduled_plan_tier = None
+    shop_record.scheduled_change_at = None
     shop_record.shopify_charge_id = None
     shop_record.billing_cycle_start = None
     shop_record.trial_started_at = None
@@ -131,8 +175,9 @@ async def _reactivate_shop_on_reinstall(shop_record: Shop, session_token: str, d
     shop_record.installed_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(shop_record)
-    logger.info("shop_reactivated_on_reinstall", shop=shop_record.shop_domain)
-    await _fetch_and_store_shop_meta(shop_record, token_data["access_token"], db)
+    await _store_shop_meta(shop_record, token_data["access_token"], db)
+    logger.info("shop_reactivated_on_reinstall", shop=shop_record.shop_domain,
+                exchange_ms=exchange_ms, total_ms=int((time.monotonic() - started) * 1000))
     return shop_record
 
 

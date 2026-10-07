@@ -93,3 +93,4 @@ def test_root_static_files_are_still_served(client, listing_slug):
         pytest.skip("no root-level static file in dist")
     resp = client.get(f"/{static}", follow_redirects=False)
     assert resp.status_code == 200
+

@@ -185,3 +185,35 @@ def test_links_never_have_an_empty_app_segment(monkeypatch):
     assert "/apps//" not in html and "/apps//" not in text and "/apps/abc123/wrap" in html
     monkeypatch.setattr(email_style.core_settings, "shopify_app_handle", "giftsense-dev")
     assert digest_email.app_url("snow.myshopify.com") == "https://admin.shopify.com/store/snow/apps/giftsense-dev/analytics"
+
+
+# ── Retention ───────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_sessions_and_note_drafts_follow_the_promised_retention(db_session):
+    from datetime import timedelta as td
+    from app.workers.main import purge_old_gift_sessions
+    from core.db.models import GiftSession
+    shop = make_shop()
+    db_session.add(shop)
+    await db_session.flush()
+    now = datetime.now(timezone.utc)
+    rows = {
+        "old": GiftSession(shop_id=shop.id, sid=uuid.uuid4(), intake={}, last_picks=[], updated_at=now - td(days=91)),
+        "drafty": GiftSession(shop_id=shop.id, sid=uuid.uuid4(), intake={}, last_picks=[],
+                              note_drafts={"order": {"count": 1, "last": "Hi"}}, updated_at=now - td(days=31)),
+        "fresh": GiftSession(shop_id=shop.id, sid=uuid.uuid4(), intake={}, last_picks=[],
+                             note_drafts={"order": {"count": 1, "last": "Hi"}}, updated_at=now - td(days=2)),
+    }
+    db_session.add_all(rows.values())
+    await db_session.commit()
+    with patch("app.workers.main.AsyncSessionLocal") as sess:
+        sess.return_value.__aenter__.return_value = db_session
+        sess.return_value.__aexit__.return_value = False
+        result = await purge_old_gift_sessions({}, now)
+    assert result == {"sessions_deleted": 1, "drafts_cleared": 1}
+    from sqlalchemy import select as _select
+    left = {str(r.sid): r for r in (await db_session.execute(_select(GiftSession))).scalars()}
+    assert str(rows["old"].sid) not in left
+    await db_session.refresh(rows["drafty"]); await db_session.refresh(rows["fresh"])
+    assert rows["drafty"].note_drafts is None and rows["fresh"].note_drafts is not None

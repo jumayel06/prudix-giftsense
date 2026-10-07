@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import CYCLE_DAYS, PLANS, TRIAL_AI_BUDGET_MIN_USD, TRIAL_CATALOG_BUDGET_USD
+from app.config import CYCLE_DAYS, GRACE_PERIOD_DAYS, PLANS, TRIAL_AI_BUDGET_MIN_USD, TRIAL_CATALOG_BUDGET_USD
 from core.config import settings
 from core.db.models import Shop, UsageLog
 
@@ -15,29 +15,56 @@ GENERATE_STATUSES = {"active", "trial_active"}
 VIEW_STATUSES = {"active", "trial_active", "cancelled", "expired"}
 
 
-def _paid_period_ends_at(shop: Shop) -> datetime | None:
-    """Return the end of the billing period the merchant already paid for, or None."""
-    if not shop.billing_cycle_start:
-        return None
-    start = shop.billing_cycle_start
-    if start.tzinfo is None:
-        start = start.replace(tzinfo=timezone.utc)
-    return start + timedelta(days=CYCLE_DAYS)
+def _utc(dt: datetime) -> datetime:
+    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
 
 
-def effective_cycle_start(shop: Shop) -> datetime | None:
-    """Return the start of the shop's CURRENT monthly generation cycle.
+def current_period_bounds(shop: Shop, at: datetime | None = None) -> tuple[datetime, datetime] | None:
+    """(start, end) of the 30-day billing period that contains `at`, stepping
+    forward from `billing_cycle_start`.
 
-    GiftSense is monthly-only, so `billing_cycle_start` advances every cycle via
-    the app_subscriptions/update renewal webhook and is used verbatim. (Commerce
-    also rolls a 30-day anchor forward for annual plans; not needed here.)
+    Shopify bills EVERY_30_DAYS from activation, but its renewal is not
+    announced by a webhook (app_subscriptions/update fires only on status /
+    capped-amount changes), so the stored anchor stays at the original approval
+    date for the life of the subscription. Never treat `billing_cycle_start` as
+    the CURRENT period — derive it here. (Commerce billing audit aa7350c.)
     """
     if not shop.billing_cycle_start:
         return None
-    start = shop.billing_cycle_start
-    if start.tzinfo is None:
-        start = start.replace(tzinfo=timezone.utc)
-    return start
+    start = _utc(shop.billing_cycle_start)
+    period = timedelta(days=CYCLE_DAYS)
+    at = _utc(at) if at else datetime.now(timezone.utc)
+    if at <= start:
+        return start, start + period
+    period_start = start + ((at - start) // period) * period
+    return period_start, period_start + period
+
+
+def _paid_period_ends_at(shop: Shop) -> datetime | None:
+    """End of the period a CANCELLED merchant already paid for, or None.
+
+    Fixed at cancellation time: the cancelled webhook stores
+    grace_period_ends_at = paid end + GRACE_PERIOD_DAYS, so this can't keep
+    rolling forward after a cancel. Rows without a grace date fall back to the
+    first period after the anchor."""
+    if shop.grace_period_ends_at:
+        return _utc(shop.grace_period_ends_at) - timedelta(days=GRACE_PERIOD_DAYS)
+    if not shop.billing_cycle_start:
+        return None
+    return _utc(shop.billing_cycle_start) + timedelta(days=CYCLE_DAYS)
+
+
+def effective_cycle_start(shop: Shop, now: datetime | None = None) -> datetime | None:
+    """Start of the shop's CURRENT 30-day generation cycle (the quota window).
+
+    Rolls forward from `billing_cycle_start` in CYCLE_DAYS steps, matching
+    Shopify's EVERY_30_DAYS billing. It used to return the anchor verbatim,
+    assuming a renewal webhook advanced it each month — Shopify doesn't send
+    one, which froze the window at the approval date and blocked paying
+    merchants in month 2. If a webhook does reset the anchor, this stays correct.
+    """
+    period = current_period_bounds(shop, now)
+    return period[0] if period else None
 
 
 def _in_paid_period(shop: Shop) -> bool:
@@ -75,6 +102,15 @@ async def require_feature(feature: str, shop_domain: str, db: AsyncSession) -> t
     """
     shop, plan = await get_shop_plan(shop_domain, db)
 
+    if shop.plan_status == "frozen":
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "subscription_frozen",
+                "message": "Your Shopify store's billing is paused, so GiftSense is paused too. "
+                           "It resumes automatically when Shopify reactivates your store.",
+            },
+        )
     if shop.plan_status not in VIEW_STATUSES:
         raise HTTPException(
             status_code=403,

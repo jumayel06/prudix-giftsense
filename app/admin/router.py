@@ -1,4 +1,4 @@
-"""Internal admin (/admin/*), HTTP Basic Auth (app/admin/auth.py). Trimmed
+"""Internal admin (at ADMIN_PATH, default /admin), signed-in session (app/admin/auth.py, login.py). Trimmed
 from Prudix Commerce to GiftSense: Overview, Money, Shops (+ per-shop AI
 model pins), AI models (slots, rollout, usage by model), Support, System.
 
@@ -18,15 +18,25 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.admin import queries as q
-from app.admin.auth import require_admin
+from app.admin.auth import admin_path, require_admin
 from app.ai_models import MODELS, SLOTS
 from app.services import media
 from core.config import settings
 from core.db.models import CatalogSync, Shop, SupportTicket
 from core.db.session import get_db
 
-router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
+# Mounted at ADMIN_PATH in app/main.py (prefix is env-configurable).
+router = APIRouter(tags=["admin"], dependencies=[Depends(require_admin)])
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
+
+
+class _AdminPath:
+    """`{{ admin_path }}` in templates, resolved at render time."""
+    def __str__(self) -> str:
+        return admin_path()
+
+
+templates.env.globals["admin_path"] = _AdminPath()
 STATUSES = ("open", "in_progress", "resolved")
 
 
@@ -102,7 +112,7 @@ async def save_pins(shop_id: uuid.UUID, request: Request, db: AsyncSession = Dep
             pins[slot] = model
     shop.model_pins = pins or None
     await db.commit()
-    return RedirectResponse(f"/admin/shops/{shop_id}?saved=1", status_code=303)
+    return RedirectResponse(f"{admin_path()}/shops/{shop_id}?saved=1", status_code=303)
 
 
 @router.get("/models", response_class=HTMLResponse)
@@ -133,7 +143,7 @@ async def support_update(ticket_id: uuid.UUID, request: Request, status: str = F
     ticket.status, ticket.admin_notes = status, admin_notes.strip()[:5000] or None
     ticket.resolved_at = datetime.now(timezone.utc) if status == "resolved" else None
     await db.commit()
-    return RedirectResponse("/admin/support", status_code=303)
+    return RedirectResponse(f"{admin_path()}/support", status_code=303)
 
 
 HEALTH_KEY = "arq:queue:health-check"
