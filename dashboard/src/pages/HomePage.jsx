@@ -22,19 +22,7 @@ function money(amount, currency) {
   }
 }
 
-function greeting() {
-  const h = new Date().getHours()
-  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
-}
-
 const short = iso => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-
-function Change({ value, points }) {
-  if (value == null) return <span className="gs-home-change gs-home-change--flat">new</span>
-  const n = Math.round(value * 100)
-  if (n === 0) return <span className="gs-home-change gs-home-change--flat">no change</span>
-  return <span className={`gs-home-change ${n > 0 ? 'gs-home-change--up' : 'gs-home-change--down'}`}>{`${n > 0 ? '▲' : '▼'} ${Math.abs(n)}${points ? ' pts' : '%'}`}</span>
-}
 
 function Hero({ stats, home, navigate }) {
   const s = home?.summary
@@ -44,7 +32,6 @@ function Hero({ stats, home, navigate }) {
     <div className="gs-home-hero">
       <div className="gs-home-hero__top">
         <div>
-          <p className="gs-home-hero__eyebrow">{`${greeting()}${home ? `, ${home.store}` : ''}`}</p>
           <h1 className="gs-home-hero__title">Your gifting, at a glance</h1>
           <div className="gs-home-hero__chips">
             <span className="gs-home-chip">{`${stats.plan_name} plan`}</span>
@@ -63,16 +50,16 @@ function Hero({ stats, home, navigate }) {
       </div>
       <div className="gs-home-hero__stats">
         {[
-          ['Gift orders', s ? s.gift_orders.toLocaleString() : '—', s && <Change value={s.changes.gift_orders} />,
+          ['Gift orders', s ? s.gift_orders.toLocaleString() : '—',
             s?.all_orders ? `${Math.round((100 * s.gift_orders) / s.all_orders)}% of all orders` : 'last 30 days'],
-          ['Revenue from the gift finder', s ? money(s.attributed_revenue, s.currency) : '—', s && <Change value={s.changes.attributed_revenue} />, 'last 30 days'],
-          ['Gift finder sessions', s ? s.sessions.toLocaleString() : '—', s && <Change value={s.changes.sessions} />, 'last 30 days'],
+          ['Revenue from the gift finder', s ? money(s.attributed_revenue, s.currency) : '—', 'last 30 days'],
+          ['Gift finder sessions', s ? s.sessions.toLocaleString() : '—', 'last 30 days'],
           ['Search to order', s?.conversion_rate != null ? `${Math.round(s.conversion_rate * 100)}%` : '—',
-            s && s.conversion_rate != null && <Change value={s.changes.conversion_rate} />, 'sessions with ideas that ordered'],
-        ].map(([label, value, change, help]) => (
+            'sessions with ideas that ordered'],
+        ].map(([label, value, help]) => (
           <div key={label} className="gs-home-stat">
             <span className="gs-home-stat__label">{label}</span>
-            <span className="gs-home-stat__value">{value}{change}</span>
+            <span className="gs-home-stat__value">{value}</span>
             <span className="gs-home-stat__help">{help}</span>
           </div>
         ))}
@@ -189,7 +176,7 @@ const TOOLKIT = [
   { key: 'notes', icon: NoteIcon, title: 'AI gift notes', text: 'Shoppers get a ready-to-print note in your tone.', to: '/notes' },
   { key: 'wrap', icon: PackageIcon, title: 'Gift wrap', text: 'Paid or free wrap, offered right in the gift panel.', to: '/wrap' },
   { key: 'arrive_by', icon: CalendarIcon, title: 'Arrive-by dates', text: 'Orders wait until it’s time to ship, so gifts land on the day.', to: '/delivery', plan: 'Growth' },
-  { key: 'messages', icon: MicrophoneIcon, title: 'Voice & video', text: 'A recorded message behind a QR code on the gift card.', to: '/messages', plan: 'Growth' },
+  { key: 'messages', icon: MicrophoneIcon, title: 'Voice & video', text: 'A recorded message behind a QR code on the gift card.', to: '/messages/voice', plan: 'Growth' },
   { key: 'registries', icon: ListBulletedIcon, title: 'Registries', text: 'Shared wish lists that bring new shoppers to your store.', to: '/registries', plan: 'Pro' },
   { key: 'printing', icon: PrintIcon, title: 'Gift cards & receipts', text: 'Print notes and price-free receipts from any order.', to: '/orders' },
 ]

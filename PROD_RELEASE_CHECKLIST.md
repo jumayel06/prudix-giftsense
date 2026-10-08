@@ -9,7 +9,7 @@ Everything that must be flipped, set, rotated or verified before GiftSense goes 
 ### Infrastructure
 - [ ] Railway project with two services from this repo: `web` (start.sh) and `worker` (`arq app.workers.main.WorkerSettings --custom-log-dict app.workers.main.ARQ_LOG_CONFIG`: ARQ logs on stdout, so Railway doesn't tag them as errors). Health check path `/health` set in the Railway UI. `WEB_CONCURRENCY=2`, `PORT=8000`.
 - [ ] Supabase **prod** project (Pro plan, `Prudix - Prod` org): encrypted backups (a customer-data-form claim), no auto-pause. Enable `vector` (the first migration also does it). Data API **off**.
-- [ ] Upstash Redis prod DB: pay-as-you-go, `rediss://`, eviction **off**, budget cap set.
+- [ ] Upstash Redis prod DB: pay-as-you-go, `rediss://`, eviction **off**, budget cap set. **A separate database from Commerce's** (same Upstash account, no new plan): both workers use ARQ's default queue `arq:queue`, so a shared database would let each app's worker pick up the other's jobs, and Upstash has no numbered DBs like local `/1`.
 - [ ] Cloudflare R2 prod bucket for voice/video (private; presigned URLs only).
 - [ ] R2 prod bucket **CORS**: AllowedOrigins `*`, AllowedMethods `PUT` (the recipient page's `<audio>`/`<video>` loads presigned GETs, which need no CORS), AllowedHeaders `Content-Type`, MaxAge 3600. Shoppers' browsers PUT recordings straight to R2 from any merchant domain; without CORS every upload fails. Same config on the dev bucket.
 - [ ] R2 API token scoped to the one bucket (Object Read & Write), not account-wide.

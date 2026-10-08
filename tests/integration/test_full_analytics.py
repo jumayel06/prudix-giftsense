@@ -81,6 +81,9 @@ async def test_starter_gets_basic_30_days_only(db_session):
     data = dashboard_get(db_session, "/api/analytics?days=90").json()
     assert data["full"] is False and data["days"] == 30
     assert "wrap_attach_rate" not in data and "previous" not in data
+    # Basic = finder use, gift orders and their sales; every rate/breakdown is Growth+.
+    assert set(data) == {"days", "currency", "sessions", "gift_orders", "attributed_orders",
+                         "attributed_revenue", "gift_revenue", "daily", "full"}
 
 
 @pytest.mark.asyncio

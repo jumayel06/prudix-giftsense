@@ -1,13 +1,13 @@
 """GET /api/home: everything the dashboard Home page shows, in one call.
 
-  summary        last 30 days (sessions, gift orders, finder revenue…) with the
-                 30 days before for ▲/▼, and gift orders per day for 14 days
+  summary        last 30 days (sessions, gift orders, finder revenue…) and gift
+                 orders per day for 14 days; comparisons live on Analytics
   recent_orders  the 5 newest gift orders (order facts only)
   catalog        products, how many the gift finder has read, last sync
   storefront     whether the gift finder is on in the live theme
   features       the gifting toolkit's state per feature, with plan access
 """
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
@@ -28,7 +28,6 @@ async def home(shop: Shop = Depends(get_current_shop), db: AsyncSession = Depend
     now = datetime.now(timezone.utc)
     features = PLANS.get(shop.plan_tier, PLANS["starter"])["features"]
     month = await analytics.summary(db, shop, 30, now)
-    before = await analytics.summary(db, shop, 30, now - timedelta(days=30), daily=False)
     keys = ("sessions", "gift_orders", "attributed_revenue", "conversion_rate")
 
     orders = (await db.execute(select(GiftOrder).where(GiftOrder.shop_id == shop.id)
@@ -46,9 +45,8 @@ async def home(shop: Shop = Depends(get_current_shop), db: AsyncSession = Depend
 
     return {
         "store": shop.shop_domain.removesuffix(".myshopify.com"),
-        "summary": {**{k: month[k] for k in keys}, "currency": month["currency"] or before["currency"] or "USD",
+        "summary": {**{k: month[k] for k in keys}, "currency": month["currency"] or (orders[0].currency if orders else "") or "USD",
                     "all_orders": month["all_orders"],
-                    "changes": {k: analytics.change(month[k], before[k]) for k in keys},
                     "daily": month["daily"][-14:]},
         "recent_orders": [{
             "order_id": o.order_id, "order_name": o.order_name, "gift_revenue": float(o.gift_revenue or 0),

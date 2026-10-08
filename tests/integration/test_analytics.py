@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from app.main import app
-from core.db.models import GiftEvent, GiftOrder, GiftSession, OrderCountDaily
+from core.db.models import GiftEvent, GiftOrder, GiftSession, OrderCountDaily, UsageLog
 from core.db.session import get_db
 from tests.conftest import TEST_SHOP_DOMAIN, make_shop
 from tests.integration.test_storefront import call as proxy_call
@@ -78,12 +78,12 @@ async def test_every_order_is_counted_per_day(db_session):
 
 # ── Dashboard analytics ──────────────────────────────────────────────────────
 
-def dashboard_get(db_session, path="/api/analytics"):
+def dashboard_get(db_session, path="/api/analytics", **params):
     async def override_db():
         yield db_session
     app.dependency_overrides[get_db] = override_db
     try:
-        return TestClient(app).get(f"{path}?shop={TEST_SHOP_DOMAIN}")
+        return TestClient(app).get(path, params={"shop": TEST_SHOP_DOMAIN, **params})
     finally:
         app.dependency_overrides.clear()
 
@@ -132,6 +132,79 @@ async def test_empty_shop_has_zeros_not_errors(db_session):
     await seeded(db_session)
     data = dashboard_get(db_session).json()
     assert data["sessions"] == 0 and data["completion_rate"] is None and data["conversion_rate"] is None
+
+
+# ── Generation history (GET /api/analytics/generations) ─────────────────────
+
+@pytest.mark.asyncio
+async def test_generation_log_pairs_refunds_and_drops_completions(db_session):
+    shop = await seeded(db_session)
+    now = datetime.now(timezone.utc)
+    db_session.add_all([
+        # Charged + its completion supplement (0 gens) — completion is dropped.
+        UsageLog(shop_id=shop.id, action_type="gift_search", generations_consumed=1,
+                 model_used="gpt-6-luna", created_at=now),
+        UsageLog(shop_id=shop.id, action_type="gift_search", generations_consumed=0,
+                 model_used="gpt-6-luna", created_at=now),
+        # Charged, then refunded (failure) — shows as "Refunded".
+        UsageLog(shop_id=shop.id, action_type="gift_note", generations_consumed=1,
+                 model_used="gpt-6-sol", created_at=now - timedelta(minutes=2)),
+        UsageLog(shop_id=shop.id, action_type="gift_note", generations_consumed=-1,
+                 model_used="gpt-6-sol", created_at=now - timedelta(minutes=1)),
+    ])
+    await db_session.commit()
+
+    data = dashboard_get(db_session, "/api/analytics/generations").json()
+    assert data["total"] == 2
+    gens = data["generations"]
+    assert [g["feature"] for g in gens] == ["Gift finder searches", "AI gift notes"]
+    assert [g["status"] for g in gens] == ["Completed", "Refunded"]
+    assert gens[0]["model"] == "GPT-6 Luna" and gens[1]["model"] == "GPT-6 Sol"
+    assert set(data["facets"]["features"]) == {"Gift finder searches", "AI gift notes"}
+    assert {m["value"] for m in data["facets"]["models"]} == {"gpt-6-luna", "gpt-6-sol"}
+
+
+@pytest.mark.asyncio
+async def test_generation_log_filters_by_feature_and_model(db_session):
+    shop = await seeded(db_session)
+    now = datetime.now(timezone.utc)
+    db_session.add_all([
+        UsageLog(shop_id=shop.id, action_type="gift_search", generations_consumed=1, model_used="gpt-6-luna", created_at=now),
+        UsageLog(shop_id=shop.id, action_type="playground", generations_consumed=1, model_used="gpt-6-sol", created_at=now),
+    ])
+    await db_session.commit()
+
+    by_feature = dashboard_get(db_session, "/api/analytics/generations", feature="Try it (dashboard)").json()
+    assert by_feature["total"] == 1 and by_feature["generations"][0]["feature"] == "Try it (dashboard)"
+
+    by_model = dashboard_get(db_session, "/api/analytics/generations", model="gpt-6-luna").json()
+    assert by_model["total"] == 1 and by_model["generations"][0]["model"] == "GPT-6 Luna"
+
+
+@pytest.mark.asyncio
+async def test_generation_log_paginates(db_session):
+    shop = await seeded(db_session)
+    now = datetime.now(timezone.utc)
+    db_session.add_all([
+        UsageLog(shop_id=shop.id, action_type="gift_search", generations_consumed=1, model_used="gpt-6-luna",
+                 created_at=now - timedelta(minutes=i))
+        for i in range(3)
+    ])
+    await db_session.commit()
+
+    page1 = dashboard_get(db_session, "/api/analytics/generations", limit=2).json()
+    assert page1["total"] == 3 and len(page1["generations"]) == 2 and page1["has_more"] is True
+
+    page2 = dashboard_get(db_session, "/api/analytics/generations", limit=2, offset=2).json()
+    assert len(page2["generations"]) == 1 and page2["has_more"] is False
+
+
+@pytest.mark.asyncio
+async def test_generation_log_empty_shop(db_session):
+    await seeded(db_session)
+    data = dashboard_get(db_session, "/api/analytics/generations").json()
+    assert data == {"generations": [], "total": 0, "has_more": False, "window_capped": False,
+                    "facets": {"features": [], "models": []}}
 
 
 @pytest.mark.asyncio

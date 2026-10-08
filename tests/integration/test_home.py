@@ -32,7 +32,7 @@ async def test_home_summary(db_session):
     d = dashboard_get(db_session, "/api/home").json()
     s = d["summary"]
     assert s["gift_orders"] == 1 and s["sessions"] == 1 and s["attributed_revenue"] == 40
-    assert s["changes"]["gift_orders"] == 0.0 and len(s["daily"]) == 14       # 1 vs 1 in the 30 days before
+    assert len(s["daily"]) == 14 and "changes" not in s                       # comparisons are on Analytics only
     assert [o["order_name"] for o in d["recent_orders"]] == ["#1009", "#1008"]
     assert d["recent_orders"][0]["recipients"] == ["Mom"] and d["recent_orders"][0]["has_wrap"] is True
     assert d["catalog"] == {"products": 2, "analyzed": 0, "excluded": 1, "sync_status": None, "synced_at": None}

@@ -28,7 +28,11 @@ function VibePicker({ options, value, max, onChange }) {
   )
 }
 
-function PickCard({ pick, rank }) {
+function PickCard({ pick, rank, shop }) {
+  // pick.url is storefront-relative (e.g. "/products/handle") — fine for the
+  // widget, which runs on the storefront itself, but this card renders inside
+  // the embedded admin, so it needs the shop's domain to resolve correctly.
+  const href = pick.url && shop ? `https://${shop}${pick.url}` : null
   return (
     <Card>
       <InlineStack gap="400" blockAlign="start" wrap={false}>
@@ -36,8 +40,8 @@ function PickCard({ pick, rank }) {
         <BlockStack gap="150">
           <InlineStack gap="200" blockAlign="center">
             <Text as="span" tone="subdued">#{rank}</Text>
-            {pick.url
-              ? <Link url={pick.url} target="_blank"><Text as="span" fontWeight="semibold">{pick.title}</Text></Link>
+            {href
+              ? <Link url={href} target="_blank"><Text as="span" fontWeight="semibold">{pick.title}</Text></Link>
               : <Text as="span" fontWeight="semibold">{pick.title}</Text>}
           </InlineStack>
           <Text as="span">
@@ -86,11 +90,13 @@ export default function PlaygroundPage() {
   const [running, setRunning] = useState(false)
   const [error, setError] = useState(null)
   const [usage, setUsage] = useState(null)
+  const [shop, setShop] = useState(null)
 
   useEffect(() => {
     fetchJson('/api/catalog/playground/options')
       .then(o => { setOpts(o); setUsage(o.usage) })
       .catch(() => setError('Could not load the form. Please refresh.'))
+    fetchJson('/api/settings').then(d => setShop(d.shop_domain)).catch(() => {})
   }, [])
 
   const set = key => value => setBrief(b => ({ ...b, [key]: value }))
@@ -193,7 +199,7 @@ export default function PlaygroundPage() {
                   <Banner tone="info"><p>The AI didn't answer in time, so these picks use standard reasons. Shoppers never see an empty result.</p></Banner>
                 )}
                 <InlineGrid columns={1} gap="300">
-                  {result.picks.map((p, i) => <PickCard key={p.product_id} pick={p} rank={i + 1} />)}
+                  {result.picks.map((p, i) => <PickCard key={p.product_id} pick={p} rank={i + 1} shop={shop} />)}
                 </InlineGrid>
               </>
             )}

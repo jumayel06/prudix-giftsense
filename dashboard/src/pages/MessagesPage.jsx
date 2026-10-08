@@ -25,7 +25,15 @@ const adminOrderUrl = id => `shopify://admin/orders/${id}`
 const day = iso => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 const secs = n => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`
 
-export default function MessagesPage() {
+const COPY = {
+  voice: { title: 'Voice messages', verb: 'record a voice message', plural: 'voice messages' },
+  video: { title: 'Video messages', verb: 'record a short video', plural: 'video messages' },
+}
+
+// One page per kind (/messages/voice, /messages/video). The monthly limit is
+// shared between the two, so the usage card counts both.
+export default function MessagesPage({ kind = 'voice' }) {
+  const copy = COPY[kind]
   const navigate = useNavigate()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
@@ -36,19 +44,19 @@ export default function MessagesPage() {
 
   if (!data) {
     return (
-      <Page title="Voice & video">
+      <Page title={copy.title}>
         {error ? <Banner tone="critical" title={error} /> : <Card><SkeletonBodyText lines={6} /></Card>}
       </Page>
     )
   }
 
-  if (!data.voice) {
+  if (!data[kind]) {
     return (
-      <Page title="Voice & video" subtitle="A recorded message the recipient plays by scanning a QR code on the gift card.">
+      <Page title={copy.title} subtitle="A recorded message the recipient plays by scanning a QR code on the gift card.">
         <Card>
           <BlockStack gap="300">
-            <Text as="p">Shoppers record a voice message (or a video, on Pro) right in the gift panel. The printed gift card gets a QR code that opens the message on a page with your store&apos;s name.</Text>
-            <Text as="p" tone="subdued">Voice messages are on the Growth plan; voice and video on Pro.</Text>
+            <Text as="p">Shoppers {copy.verb} right in the gift panel. The printed gift card gets a QR code that opens the message on a page with your store&apos;s name.</Text>
+            <Text as="p" tone="subdued">Your current plan doesn&apos;t include {copy.plural}.</Text>
             <InlineStack><Button variant="primary" onClick={() => navigate('/plans')}>See plans</Button></InlineStack>
           </BlockStack>
         </Card>
@@ -58,9 +66,10 @@ export default function MessagesPage() {
 
   const pct = data.limit ? Math.min(100, Math.round((data.used / data.limit) * 100)) : 0
   const kinds = data.video ? 'voice and video messages' : 'voice messages'
+  const messages = data.messages.filter(m => m.kind === kind)
 
   return (
-    <Page title="Voice & video" subtitle="A recorded message the recipient plays by scanning a QR code on the gift card.">
+    <Page title={copy.title} subtitle="A recorded message the recipient plays by scanning a QR code on the gift card.">
       <Layout>
         {!data.available && (
           <Layout.Section>
@@ -88,23 +97,22 @@ export default function MessagesPage() {
         </Layout.Section>
         <Layout.Section>
           <Card padding="0">
-            {data.messages.length === 0 ? (
-              <EmptyState heading="No messages yet" image="">
+            {messages.length === 0 ? (
+              <EmptyState heading={`No ${copy.plural} yet`} image="">
                 <p>Messages show here once an order with a recording comes in. Print the order&apos;s gift cards (Print → GiftSense gift notes) to get the QR code.</p>
               </EmptyState>
             ) : (
               <IndexTable
                 resourceName={{ singular: 'message', plural: 'messages' }}
-                itemCount={data.messages.length}
+                itemCount={messages.length}
                 selectable={false}
-                headings={[{ title: 'Order' }, { title: 'Type' }, { title: 'Length' }, { title: 'Plays' }, { title: 'Recorded' }, { title: 'Deleted on' }]}
+                headings={[{ title: 'Order' }, { title: 'Length' }, { title: 'Plays' }, { title: 'Recorded' }, { title: 'Deleted on' }]}
               >
-                {data.messages.map((m, i) => (
+                {messages.map((m, i) => (
                   <IndexTable.Row id={String(i)} key={i} position={i}>
                     <IndexTable.Cell>
                       {m.order_id ? <Link url={adminOrderUrl(m.order_id)}>{m.order_name || `Order ${m.order_id}`}</Link> : '—'}
                     </IndexTable.Cell>
-                    <IndexTable.Cell>{m.kind === 'video' ? 'Video' : 'Voice'}</IndexTable.Cell>
                     <IndexTable.Cell>{secs(m.duration_s)}</IndexTable.Cell>
                     <IndexTable.Cell>{m.views}</IndexTable.Cell>
                     <IndexTable.Cell>{m.created_at ? day(m.created_at) : '—'}</IndexTable.Cell>

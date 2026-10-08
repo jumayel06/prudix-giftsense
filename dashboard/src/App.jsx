@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { flushSync } from 'react-dom'
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom'
-import { AppProvider, Frame, Navigation, SkeletonPage, SkeletonBodyText, Badge } from '@shopify/polaris'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { AppProvider, Frame, Navigation, SkeletonPage, SkeletonBodyText } from '@shopify/polaris'
 import { TitleBar } from '@shopify/app-bridge-react'
 import {
   HomeIcon, CreditCardIcon, SettingsIcon, ChatIcon, ProductIcon, WandIcon, StoreIcon, ChartVerticalIcon,
-  NoteIcon, PackageIcon, OrderIcon, CalendarIcon, MicrophoneIcon, ListBulletedIcon,
+  NoteIcon, PackageIcon, OrderIcon, CalendarIcon, MicrophoneIcon, CameraIcon, ListBulletedIcon,
 } from '@shopify/polaris-icons'
 import enTranslations from '@shopify/polaris/locales/en.json'
 import '@shopify/polaris/build/esm/styles.css'
@@ -69,20 +69,18 @@ function SidebarNav({ planStatus, planTier, onMobileClose }) {
   if (planStatus === 'pending') return null
 
   // Close the mobile sheet on navigation (instead of a setState-in-effect).
-  const badge = (feature, soon) => {
-    const b = navBadge({ plans, planTier, feature, soon })
-    if (!b) return undefined
-    if (typeof b === 'string') return b
-    return <Badge tone="info" size="small">{b.soon ? `${b.plan} · Soon` : b.plan}</Badge>
+  // `feature` (a PLANS feature key) locks the item when the merchant's plan lacks it:
+  // a 🔒 badge and a click opens Plans (same as Commerce).
+  const item = (label, path, icon, feature) => {
+    const locked = navBadge({ plans, planTier, feature }) === 'locked'
+    return {
+      label, icon, selected: pathname === path, ...(locked ? { badge: '🔒' } : {}),
+      onClick: () => { onMobileClose(); navigate(locked ? '/plans' : path) },
+    }
   }
-  // `feature` (a PLANS feature key) adds a plan badge when the merchant's plan lacks it.
-  const item = (label, path, icon, feature) => ({
-    label, icon, selected: pathname === path, badge: badge(feature, false),
-    onClick: () => { onMobileClose(); navigate(path) },
-  })
   // Planned sections (utils/upcoming.js): shown with a "Soon" badge until they ship.
   const soon = section => UPCOMING.filter(u => u.section === section)
-    .map(u => ({ ...item(u.label, u.path, u.icon), badge: badge(u.items[0]?.feature, true) }))
+    .map(u => ({ ...item(u.label, u.path, u.icon), badge: 'Soon' }))
 
   return (
     <div className="prudix-sidebar-wrapper">
@@ -99,7 +97,15 @@ function SidebarNav({ planStatus, planTier, onMobileClose }) {
           />
           <Navigation.Section
             title="Gifting"
-            items={[item('Gift notes', '/notes', NoteIcon, 'ai_notes'), item('Gift wrap', '/wrap', PackageIcon, 'gift_wrap'), item('Arrive-by dates', '/delivery', CalendarIcon, 'arrive_by'), item('Voice & video', '/messages', MicrophoneIcon, 'voice_messages'), item('Registries', '/registries', ListBulletedIcon, 'registries'), ...soon('gifting')]}
+            items={[
+              item('Gift notes', '/notes', NoteIcon, 'ai_notes'),
+              item('Gift wrap', '/wrap', PackageIcon, 'gift_wrap'),
+              item('Arrive-by dates', '/delivery', CalendarIcon, 'arrive_by'),
+              item('Voice messages', '/messages/voice', MicrophoneIcon, 'voice_messages'),
+              item('Video messages', '/messages/video', CameraIcon, 'video_messages'),
+              item('Registries', '/registries', ListBulletedIcon, 'registries'),
+              ...soon('gifting'),
+            ]}
           />
           <Navigation.Section title="Orders" items={[item('Gift orders', '/orders', OrderIcon, 'gift_cards_print')]} />
           <Navigation.Section title="Insights" items={[item('Analytics', '/analytics', ChartVerticalIcon)]} />
@@ -144,7 +150,7 @@ function AppFooter() {
 }
 
 const TITLES = {
-  '/': APP_NAME, '/catalog': 'Catalog', '/playground': 'Try the gift finder', '/plans': 'Plans', '/settings': 'Settings', '/support': 'Support', '/storefront': 'Storefront', '/analytics': 'Analytics', '/notes': 'Gift notes', '/wrap': 'Gift wrap', '/orders': 'Gift orders', '/delivery': 'Arrive-by dates', '/messages': 'Voice & video', '/registries': 'Registries',
+  '/': APP_NAME, '/catalog': 'Catalog', '/playground': 'Try the gift finder', '/plans': 'Plans', '/settings': 'Settings', '/support': 'Support', '/storefront': 'Storefront', '/analytics': 'Analytics', '/notes': 'Gift notes', '/wrap': 'Gift wrap', '/orders': 'Gift orders', '/delivery': 'Arrive-by dates', '/messages/voice': 'Voice messages', '/messages/video': 'Video messages', '/registries': 'Registries',
   ...Object.fromEntries(UPCOMING.map(u => [u.path, u.title])),
 }
 
@@ -255,7 +261,9 @@ function AppShell() {
             <Route path="/notes" element={<GiftNotesPage />} />
             <Route path="/wrap" element={<GiftWrapPage />} />
             <Route path="/orders" element={<GiftOrdersPage />} />
-            <Route path="/messages" element={<MessagesPage />} />
+            <Route path="/messages" element={<Navigate to="/messages/voice" replace />} />
+            <Route path="/messages/voice" element={<MessagesPage kind="voice" />} />
+            <Route path="/messages/video" element={<MessagesPage kind="video" />} />
             <Route path="/registries" element={<RegistriesPage />} />
             <Route path="/delivery" element={<ArriveByPage />} />
             <Route path="/playground" element={<PlaygroundPage />} />

@@ -1,25 +1,13 @@
 /**
- * Sidebar plan badges, so merchants on lower plans see what they're missing.
- * Which plan includes a feature comes from /api/plans (app/config.py PLANS),
- * never hardcoded here.
- *
- *   included, built    → no badge
- *   included, planned  → "Soon"
- *   not included       → the lowest plan that has it ("Growth"), + "· Soon" if planned
+ * Sidebar badges, matching Commerce: a lock on features the merchant's plan
+ * lacks (no plan names), "Soon" on planned ones. Which plan includes a feature
+ * comes from /api/plans (app/config.py PLANS), never hardcoded here.
+ * Returns "locked" when the merchant's plan lacks `feature` (shown as 🔒; the
+ * item opens Plans), else null. Planned items get "Soon" in App.jsx.
  */
-const ORDER = ['starter', 'growth', 'pro']
-
-export function lowestPlanWith(plans, feature) {
-  return [...plans].sort((a, b) => ORDER.indexOf(a.tier) - ORDER.indexOf(b.tier))
-    .find(p => p.features.includes(feature)) || null
-}
-
-export function navBadge({ plans, planTier, feature, soon }) {
-  const soonText = soon ? 'Soon' : null
-  if (!plans || !feature) return soonText
+export function navBadge({ plans, planTier, feature }) {
+  if (!plans || !feature) return null
   const mine = plans.find(p => p.tier === planTier)
-  if (mine && mine.features.includes(feature)) return soonText
-  const needed = lowestPlanWith(plans, feature)
-  if (!needed) return soonText
-  return { plan: needed.name, soon }
+  if (mine && mine.features.includes(feature)) return null
+  return plans.some(p => p.features.includes(feature)) ? 'locked' : null
 }
