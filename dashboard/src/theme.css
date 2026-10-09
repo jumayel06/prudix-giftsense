@@ -765,6 +765,17 @@ body.prudix-no-nav .Polaris-Frame__Main .Polaris-Page {
   padding-inline-start: 20px !important;  /* matches Polaris --p-space-500 */
   padding-inline-end: 40px !important;    /* 40px gap on right of screen — matches left */
 }
+/* Theme warning above every page: same edges as the page's cards. */
+.prudix-theme-warning {
+  padding: 10px 40px 0 20px;
+}
+@media (max-width: 768px) {
+  /* Banner takes the page's hamburger clearance; the page below drops to a normal gap. */
+  .prudix-theme-warning { padding: 56px 16px 0; }
+  .Polaris-Frame__Main .prudix-theme-warning + .prudix-route-container .Polaris-Page {
+    padding-block-start: 0 !important;
+  }
+}
 
 /* Mobile hamburger trigger */
 .prudix-mobile-nav-trigger {

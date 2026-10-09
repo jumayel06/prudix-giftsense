@@ -9,8 +9,8 @@
   if (window.__giftsenseBoot) return;
   window.__giftsenseBoot = true;
 
-  var CFG_KEY = 'giftsense:config';
-  var CFG_TTL = 6 * 3600 * 1000;
+  var CFG_KEY = 'giftsense:config:v2';  // bump to drop stale copies
+  var CFG_TTL = 15 * 60 * 1000;         // Settings changes reach shoppers fast
   var CFG_OFF_TTL = 5 * 60 * 1000;
   var SID_KEY = 'giftsense:sid';
   var SID_TTL = 7 * 24 * 3600 * 1000;
@@ -165,6 +165,11 @@
       }
 
       function open(trigger) {
+        // Colors from the block whose button was clicked (the floating
+        // launcher sits outside any block: the app embed's), so each button's
+        // settings stay independent of the other blocks on the page.
+        var own = trigger.closest('[data-giftsense-root]') || document.getElementById('giftsense-embed') || main;
+        var css = getComputedStyle(own);
         trigger.setAttribute('aria-busy', 'true');
         loadUi(main).then(function (ui) {
           trigger.removeAttribute('aria-busy');
@@ -173,8 +178,8 @@
             api: api, config: config, sid: sessionId(), trigger: trigger,
             currency: main.getAttribute('data-currency') || 'USD',
             locale: main.getAttribute('data-locale') || document.documentElement.lang || 'en',
-            accent: getComputedStyle(main).getPropertyValue('--gs-accent') || '#111827',
-            onAccent: getComputedStyle(main).getPropertyValue('--gs-on-accent') || '#ffffff'
+            accent: css.getPropertyValue('--gs-accent') || '#111827',
+            onAccent: css.getPropertyValue('--gs-on-accent') || '#ffffff'
           });
         }).catch(function () { trigger.removeAttribute('aria-busy'); });
       }
@@ -190,19 +195,12 @@
         dj.async = true;
         document.head.appendChild(dj);
       }
-      if (embed) {
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'giftsense-launcher giftsense-launcher--' +
-          (embed.getAttribute('data-position') === 'left' ? 'left' : 'right');
-        btn.setAttribute('aria-haspopup', 'dialog');
-        btn.style.setProperty('--gs-accent', getComputedStyle(embed).getPropertyValue('--gs-accent'));
-        btn.style.setProperty('--gs-on-accent', getComputedStyle(embed).getPropertyValue('--gs-on-accent'));
-        btn.textContent = '🎁 ' + (embed.getAttribute('data-label') || 'Find a gift');
+      // Floating launcher: rendered (hidden) by the app embed, shown once the
+      // finder is on for this store.
+      var btn = document.getElementById('giftsense-launcher');
+      if (btn) {
+        btn.hidden = false;
         btn.addEventListener('click', function () { open(btn); });
-        var lift = parseInt(embed.getAttribute('data-offset'), 10) || 0;
-        if (lift) btn.style.bottom = 'calc(' + getComputedStyle(btn).bottom + ' + ' + lift + 'px)';
-        document.body.appendChild(btn);
         avoidOverlap(btn);
       }
 

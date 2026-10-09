@@ -18,6 +18,31 @@
   {%- assign gs_i18n_file = 'giftsense-i18n-' | append: gs_lang | append: '.js' -%}
   {%- assign gs_i18n = gs_i18n_file | asset_url -%}
 {%- endif -%}
+{%- comment -%} Button look from the block's Button settings (styled by assets/giftsense-buttons.css). Kept inline: Shopify wraps app snippet output in HTML comments, which break a tag or attribute they land in. {%- endcomment -%}
+{%- liquid
+  case block.settings.btn_style
+    when 'filled', 'outline', 'link'
+      assign gs_style = block.settings.btn_style
+    when 'theme_primary', 'theme_secondary'
+      assign gs_style = 'theme'
+    else
+      assign gs_style = 'auto'
+  endcase
+  case block.settings.btn_size
+    when 'small'
+      assign gs_pad = '8px 14px'
+    when 'large'
+      assign gs_pad = '16px 28px'
+    else
+      assign gs_pad = '12px 20px'
+  endcase
+-%}
+{%- capture gs_btn_class -%}gs-btn gs-s-{{ gs_style }} gs-k-outline{% if block.settings.btn_width == 'full' %} gs-btn--full{% endif %}{% if block.settings.btn_shadow %} gs-btn--shadow{% endif %}{% if block.settings.btn_style == 'theme_primary' %} button btn{% elsif block.settings.btn_style == 'theme_secondary' %} button button--secondary btn btn--secondary{% endif %}{%- endcapture -%}
+{%- capture gs_btn_style -%}--gs-btn-case: {{ block.settings.btn_case | default: 'none' }};{% if gs_style == 'filled' or gs_style == 'outline' or gs_style == 'link' %} --gs-btn-bg: {{ block.settings.btn_bg }}; --gs-btn-fg: {{ block.settings.btn_text }}; --gs-btn-radius: {{ block.settings.btn_radius }}px; --gs-btn-fs: {{ block.settings.btn_font_size }}px; --gs-btn-fw: {{ block.settings.btn_weight }}; --gs-btn-bw: {{ block.settings.btn_border }}px; --gs-btn-pad: {{ gs_pad }};{% endif %}{%- endcapture -%}
+{%- capture gs_accent -%}{% if gs_style == 'filled' or gs_style == 'outline' or gs_style == 'link' %}--gs-accent: {{ block.settings.btn_bg }}; --gs-on-accent: {{ block.settings.btn_text }};{% else %}--gs-accent: rgb(var(--color-button, 17, 24, 39)); --gs-on-accent: rgb(var(--color-button-text, 255, 255, 255));{% endif %}{%- endcapture -%}
+{%- comment -%} Line icon before the button text (Button setting "Icon"). {%- endcomment -%}
+{%- capture gs_icon -%}{% case block.settings.btn_icon %}{% when 'gift' %}<svg class="gs-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 11h16v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-9z"/><path d="M3 7h18v4H3z"/><path d="M12 7v14"/><path d="M12 7c-1.5-3-5-3.5-5-1.25C7 7 9.5 7 12 7zm0 0c1.5-3 5-3.5 5-1.25C17 7 14.5 7 12 7z"/></svg>{% when 'heart' %}<svg class="gs-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>{% when 'sparkle' %}<svg class="gs-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></svg>{% endcase %}{%- endcapture -%}
+{{ 'giftsense-buttons.css' | asset_url | stylesheet_tag }}
 <div
   class="giftsense-options"
   data-giftsense-root
@@ -35,51 +60,310 @@
     data-variant-id="{{ product.selected_or_first_available_variant.id }}"
     {% if product.tags contains 'no-gift-wrap' %}data-no-wrap{% endif %}
   {% endif %}
-  style="--gs-accent: {{ block.settings.accent }}; --gs-on-accent: {{ block.settings.on_accent }};"
+  style="{{ gs_accent }} text-align: {{ block.settings.btn_align }}; margin: {{ block.settings.margin_top }}px 0 {{ block.settings.margin_bottom }}px;"
   {{ block.shopify_attributes }}
 >
-  <button type="button" class="giftsense-options__button" data-giftsense-open>
-    {%- assign gs_product_label = block.settings.product_label -%}
-    {%- if gs_product_label == blank or gs_product_label == 'This is a gift' -%}{%- assign gs_product_label = 'options.this_is_a_gift' | t -%}{%- endif -%}
-    {%- assign gs_cart_label = block.settings.cart_label -%}
-    {%- if gs_cart_label == blank or gs_cart_label == 'Add a gift note' -%}{%- assign gs_cart_label = 'options.add_gift_note' | t -%}{%- endif -%}
-    {% if product %}{{ gs_product_label | escape }}{% else %}{{ gs_cart_label | escape }}{% endif %}
+  {%- comment -%} Merchant text escaped here; `t` output is already escaped. {%- endcomment -%}
+  {%- assign gs_product_label = block.settings.product_label | escape -%}
+  {%- if block.settings.product_label == blank or block.settings.product_label == 'This is a gift' -%}{%- assign gs_product_label = 'options.this_is_a_gift' | t -%}{%- endif -%}
+  {%- assign gs_cart_label = block.settings.cart_label | escape -%}
+  {%- if block.settings.cart_label == blank or block.settings.cart_label == 'Add a gift note' -%}{%- assign gs_cart_label = 'options.add_gift_note' | t -%}{%- endif -%}
+  <button type="button" class="{{ gs_btn_class }} giftsense-options__button" style="{{ gs_btn_style }}" data-giftsense-open>
+    {{- gs_icon -}}
+    <span>{% if product %}{{ gs_product_label }}{% else %}{{ gs_cart_label }}{% endif %}</span>
   </button>
   {% if product and block.settings.show_registry %}
-    <button type="button" class="giftsense-options__button giftsense-options__registry" hidden
+    {%- assign gs_registry_label = block.settings.registry_label | escape -%}
+    {%- if block.settings.registry_label == blank or block.settings.registry_label == 'Add to registry' -%}{%- assign gs_registry_label = 'options.add_to_registry' | t -%}{%- endif -%}
+    {%- comment -%} account_login_url already has a query string on Shopify's new customer accounts (?locale=en&region_country=CA), so return_url joins with & there. {%- endcomment -%}
+    {%- capture gs_heart -%}<svg class="gs-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>{%- endcapture -%}
+    {%- assign gs_login_sep = '?' -%}
+    {%- if routes.account_login_url contains '?' -%}{%- assign gs_login_sep = '&' -%}{%- endif -%}
+    <button type="button" class="{{ gs_btn_class }} giftsense-options__button giftsense-options__registry" style="{{ gs_btn_style }}" hidden
       data-giftsense-registry
       data-logged-in="{% if customer %}1{% endif %}"
-      data-login-url="{{ routes.account_login_url }}?return_url={{ product.url | url_encode }}"
+      data-login-url="{{ routes.account_login_url | escape }}{{ gs_login_sep }}return_url={{ product.url | url_encode }}"
       data-variant-ids="{{ product.variants | map: 'id' | json | escape }}"
       data-variant-titles="{{ product.variants | map: 'title' | json | escape }}">
-      {%- assign gs_registry_label = block.settings.registry_label -%}
-      {%- if gs_registry_label == blank or gs_registry_label == 'Add to registry' -%}{%- assign gs_registry_label = 'options.add_to_registry' | t -%}{%- endif -%}
-      {{ gs_registry_label | escape }}
+      {%- unless block.settings.btn_icon == 'none' -%}{{- gs_heart -}}{%- endunless -%}
+      <span>{{ gs_registry_label }}</span>
     </button>
   {% endif %}
 </div>
-<style>
-  .giftsense-options{margin:12px 0}
-  .giftsense-options__button{width:100%;padding:12px 18px;border:1px solid var(--gs-accent,#111827);border-radius:999px;
-    background:transparent;color:var(--gs-accent,#111827);font:600 15px/1.2 inherit;cursor:pointer}
-  .giftsense-options__button::before{content:"\1F381  "}
-  .giftsense-options__registry{margin-top:8px}.giftsense-options__registry::before{content:"\2661  "}
-  .giftsense-options__button:focus-visible{outline:3px solid var(--gs-accent,#111827);outline-offset:3px}
-</style>
 <script src="{{ 'giftsense.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
   "name": "Gift options",
   "target": "section",
-  "enabled_on": { "templates": ["product", "cart"] },
+  "enabled_on": {
+    "templates": [
+      "product",
+      "cart"
+    ]
+  },
   "settings": [
-    { "type": "text", "id": "product_label", "label": "Button text on product pages", "default": "This is a gift" },
-    { "type": "text", "id": "cart_label", "label": "Button text on the cart page", "default": "Add a gift note" },
-    { "type": "checkbox", "id": "show_registry", "label": "Show \"Add to registry\" on product pages (Pro)", "default": true },
-    { "type": "text", "id": "registry_label", "label": "Registry button text", "default": "Add to registry" },
-    { "type": "color", "id": "accent", "label": "Button color", "default": "#111827" },
-    { "type": "color", "id": "on_accent", "label": "Button text color", "default": "#ffffff" }
+    {
+      "type": "text",
+      "id": "product_label",
+      "label": "Button text on product pages",
+      "default": "This is a gift"
+    },
+    {
+      "type": "text",
+      "id": "cart_label",
+      "label": "Button text on the cart page",
+      "default": "Add a gift note"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_registry",
+      "label": "Show \"Add to registry\" on product pages (Pro)",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "registry_label",
+      "label": "Registry button text",
+      "default": "Add to registry"
+    },
+    {
+      "type": "header",
+      "content": "Button"
+    },
+    {
+      "type": "select",
+      "id": "btn_style",
+      "label": "Style",
+      "default": "auto",
+      "info": "\"Match my theme\" picks up your theme's button colors, font and corners. Choose Filled, Outline or Text link to set your own; the color, size and shape settings below apply to those.",
+      "options": [
+        {
+          "value": "auto",
+          "label": "Match my theme (recommended)"
+        },
+        {
+          "value": "filled",
+          "label": "Filled"
+        },
+        {
+          "value": "outline",
+          "label": "Outline"
+        },
+        {
+          "value": "link",
+          "label": "Text link"
+        },
+        {
+          "value": "theme_primary",
+          "label": "Use my theme's button"
+        },
+        {
+          "value": "theme_secondary",
+          "label": "Use my theme's secondary button"
+        }
+      ]
+    },
+    {
+      "type": "color",
+      "id": "btn_bg",
+      "label": "Button color",
+      "default": "#111827",
+      "info": "For Filled, Outline and Text link. Also the highlight color in the gift finder."
+    },
+    {
+      "type": "color",
+      "id": "btn_text",
+      "label": "Button text color",
+      "default": "#ffffff",
+      "info": "For Filled and Outline (on hover)."
+    },
+    {
+      "type": "select",
+      "id": "btn_icon",
+      "label": "Icon",
+      "default": "gift",
+      "options": [
+        {
+          "value": "gift",
+          "label": "Gift"
+        },
+        {
+          "value": "heart",
+          "label": "Heart"
+        },
+        {
+          "value": "sparkle",
+          "label": "Sparkle"
+        },
+        {
+          "value": "none",
+          "label": "None"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "btn_size",
+      "label": "Size",
+      "default": "medium",
+      "options": [
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        }
+      ]
+    },
+    {
+      "type": "range",
+      "id": "btn_font_size",
+      "label": "Text size",
+      "min": 12,
+      "max": 22,
+      "step": 1,
+      "unit": "px",
+      "default": 15
+    },
+    {
+      "type": "select",
+      "id": "btn_weight",
+      "label": "Text weight",
+      "default": "600",
+      "options": [
+        {
+          "value": "400",
+          "label": "Regular"
+        },
+        {
+          "value": "500",
+          "label": "Medium"
+        },
+        {
+          "value": "600",
+          "label": "Semibold"
+        },
+        {
+          "value": "700",
+          "label": "Bold"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "btn_case",
+      "label": "Letter case",
+      "default": "none",
+      "options": [
+        {
+          "value": "none",
+          "label": "As typed"
+        },
+        {
+          "value": "uppercase",
+          "label": "UPPERCASE"
+        },
+        {
+          "value": "capitalize",
+          "label": "Capitalize Each Word"
+        }
+      ]
+    },
+    {
+      "type": "range",
+      "id": "btn_radius",
+      "label": "Corner radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 40,
+      "info": "0 for square corners, 40 for fully rounded."
+    },
+    {
+      "type": "range",
+      "id": "btn_border",
+      "label": "Border thickness",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "unit": "px",
+      "default": 1
+    },
+    {
+      "type": "checkbox",
+      "id": "btn_shadow",
+      "label": "Shadow",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "btn_width",
+      "label": "Width",
+      "default": "full",
+      "options": [
+        {
+          "value": "auto",
+          "label": "Fit the text"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "btn_align",
+      "label": "Alignment",
+      "default": "center",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "margin_top",
+      "label": "Space above",
+      "min": -16,
+      "max": 60,
+      "step": 2,
+      "unit": "px",
+      "default": 12,
+      "info": "Below 0 pulls the button closer to the one above it."
+    },
+    {
+      "type": "range",
+      "id": "margin_bottom",
+      "label": "Space below",
+      "min": -16,
+      "max": 60,
+      "step": 2,
+      "unit": "px",
+      "default": 12
+    }
   ]
 }
 {% endschema %}

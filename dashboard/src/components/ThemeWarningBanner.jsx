@@ -34,7 +34,7 @@ export default function ThemeWarningBanner({ warning, shop, onNavigate }) {
     : `The gift finder isn't switched on in ${theme}`
 
   return (
-    <div style={{ margin: '0 auto 16px', maxWidth: 998, padding: '0 16px' }}>
+    <div className="prudix-theme-warning">
       <Banner
         tone="warning"
         title={title}

@@ -39,6 +39,35 @@ def test_block_schemas_are_valid_with_the_right_targets():
     assert gift_options["enabled_on"]["templates"] == ["product", "cart"]
 
 
+def renders_inside_tags(liquid: str) -> list[int]:
+    """Offsets of {% render %} tags that sit inside an HTML tag (attribute list
+    or attribute value), ignoring <, > inside other Liquid tags/outputs."""
+    text = re.sub(r"{%-?\s*comment\s*-?%}.*?{%-?\s*endcomment\s*-?%}", "", liquid, flags=re.S)
+    text = text.split("{% schema %}")[0]
+    in_tag, bad = False, []
+    for m in re.finditer(r"{%-?\s*render\b.*?-?%}|{{.*?}}|{%.*?%}|<(?=[A-Za-z/])|>", text, re.S):
+        token = m.group(0)
+        if re.match(r"{%-?\s*render\b", token):
+            if in_tag:
+                bad.append(m.start())
+        elif token == "<":
+            in_tag = True
+        elif token == ">":
+            in_tag = False
+    return bad
+
+
+def test_snippets_are_never_rendered_inside_a_tag():
+    # Shopify wraps app snippet output in <!-- BEGIN/END app snippet --> comments;
+    # inside a tag or attribute they break it and the rest prints as page text
+    # (2026-10-08: button attributes showed up on the dev store as visible text).
+    assert renders_inside_tags("<button {% render 'x' %} data-a>") == [8]
+    assert renders_inside_tags('<div style="{% render \'x\' %}">') == [12]
+    assert renders_inside_tags("<p>{%- render 'x', a: '<b>' -%}</p>") == []
+    for path in list((EXT / "blocks").glob("*.liquid")) + list((EXT / "snippets").glob("*.liquid")):
+        assert renders_inside_tags(path.read_text()) == [], f"{path.name}: snippet rendered inside a tag"
+
+
 def test_every_referenced_asset_exists():
     for block in BLOCKS:
         for asset in re.findall(r"'([\w.-]+)' \| asset_url", (EXT / "blocks" / block).read_text()):
