@@ -116,9 +116,21 @@ async def test_config_gives_the_widget_its_intake_and_branding(db_session):
 
 
 @pytest.mark.asyncio
-async def test_growth_can_hide_the_badge(db_session):
-    await seeded_shop(db_session, plan_tier="growth")
+async def test_growth_shows_the_badge_until_it_is_switched_off(db_session):
+    shop = await seeded_shop(db_session, plan_tier="growth")
+    assert call(db_session, "GET", "/api/storefront/config").json()["show_badge"] is True
+    shop.gift_settings = {"hide_branding": True}
+    await db_session.commit()
     assert call(db_session, "GET", "/api/storefront/config").json()["show_badge"] is False
+
+
+@pytest.mark.asyncio
+async def test_starter_always_shows_the_badge(db_session):
+    # e.g. switched off on Growth, then downgraded: the setting no longer applies.
+    shop = await seeded_shop(db_session, plan_tier="starter")
+    shop.gift_settings = {"hide_branding": True}
+    await db_session.commit()
+    assert call(db_session, "GET", "/api/storefront/config").json()["show_badge"] is True
 
 
 @pytest.mark.asyncio

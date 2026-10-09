@@ -13,6 +13,7 @@ export default function SettingsPage() {
   const [data, setData] = useState(null)
   const [aiTier, setAiTier] = useState(null)
   const [digestOptIn, setDigestOptIn] = useState(true)
+  const [showBranding, setShowBranding] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -22,9 +23,12 @@ export default function SettingsPage() {
         setData(d)
         setAiTier(d.ai_tier)
         setDigestOptIn(d.digest_email_opt_in)
+        setShowBranding(d.show_branding)
       })
       .catch(() => setError('Could not load settings. Please refresh.'))
   }, [])
+
+  const canHideBranding = Boolean(data?.features.includes('hide_branding'))
 
   async function save() {
     setSaving(true)
@@ -33,7 +37,8 @@ export default function SettingsPage() {
       const res = await shopifyFetch('/api/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ai_tier: aiTier, digest_email_opt_in: digestOptIn }),
+        body: JSON.stringify({ ai_tier: aiTier, digest_email_opt_in: digestOptIn,
+          ...(canHideBranding ? { show_branding: showBranding } : {}) }),
       })
       if (!res.ok) {
         let json = {}
@@ -41,7 +46,7 @@ export default function SettingsPage() {
         setError(parseApiError(json).message)
         return
       }
-      setData(d => ({ ...d, ai_tier: aiTier, digest_email_opt_in: digestOptIn }))
+      setData(d => ({ ...d, ai_tier: aiTier, digest_email_opt_in: digestOptIn, show_branding: showBranding }))
       showToast('Settings saved')
     } catch {
       setError('Could not save settings. Please try again.')
@@ -59,7 +64,7 @@ export default function SettingsPage() {
   }
 
   const hasWeeklyEmail = data.features.includes('weekly_email')
-  const dirty = aiTier !== data.ai_tier || digestOptIn !== data.digest_email_opt_in
+  const dirty = aiTier !== data.ai_tier || digestOptIn !== data.digest_email_opt_in || showBranding !== data.show_branding
 
   return (
     <Page
@@ -143,6 +148,31 @@ export default function SettingsPage() {
               {data.ai_tiers_available.length < Object.keys(data.ai_tiers).length && (
                 <InlineStack><Button onClick={() => navigate('/plans')}>See plans</Button></InlineStack>
               )}
+            </BlockStack>
+          </Card>
+        </Layout.AnnotatedSection>
+
+        <Layout.AnnotatedSection
+          title="Branding"
+          description="A small “Gift ideas by GiftSense” line with our logo at the bottom of the gift finder."
+        >
+          <Card>
+            <BlockStack gap="200">
+              <Checkbox
+                label={
+                  <InlineStack gap="200" blockAlign="center">
+                    <span>Show GiftSense branding in the gift finder</span>
+                    {!canHideBranding && <Badge tone="info" size="small">Hiding it: Growth and Pro</Badge>}
+                  </InlineStack>
+                }
+                helpText={canHideBranding
+                  ? 'Untick to hide it, so the gift finder carries only your store’s look.'
+                  : 'Always shown on your plan. Upgrade to Growth or Pro to hide it.'}
+                checked={canHideBranding ? showBranding : true}
+                disabled={!canHideBranding}
+                onChange={setShowBranding}
+              />
+              {!canHideBranding && <InlineStack><Button onClick={() => navigate('/plans')}>See plans</Button></InlineStack>}
             </BlockStack>
           </Card>
         </Layout.AnnotatedSection>

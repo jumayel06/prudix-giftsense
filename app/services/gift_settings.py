@@ -50,3 +50,16 @@ def update_note_settings(shop, update: GiftNotesUpdate) -> None:
     current = note_settings(shop)
     current.update(update.model_dump(exclude_none=True))
     shop.gift_settings = {**(shop.gift_settings or {}), "notes": current}
+
+
+def show_branding(shop) -> bool:
+    """The "Gift ideas by GiftSense" badge in the gift finder. Shown by default;
+    Growth and Pro (the hide_branding feature) can switch it off in Settings.
+    Starter always shows it, whatever is stored."""
+    from app.config import PLANS
+    features = PLANS.get(shop.plan_tier, PLANS["starter"])["features"]
+    return "hide_branding" not in features or not (shop.gift_settings or {}).get("hide_branding")
+
+
+def set_hide_branding(shop, hide: bool) -> None:
+    shop.gift_settings = {**(shop.gift_settings or {}), "hide_branding": bool(hide)}

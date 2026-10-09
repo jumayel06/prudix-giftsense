@@ -15,7 +15,8 @@ from app.config import PLANS
 from app.jobs import enqueue
 from app.services.wrap import WrapUpdate, create_image_upload, update_wrap_settings, wrap_settings
 from app.services.delivery import DeliveryUpdate, date_window, delivery_settings, update_delivery_settings
-from app.services.gift_settings import NOTE_TONES, GiftNotesUpdate, note_settings, update_note_settings
+from app.services.gift_settings import (NOTE_TONES, GiftNotesUpdate, note_settings, set_hide_branding, show_branding,
+                                        update_note_settings)
 from core.db.models import Shop
 from core.db.session import get_db
 from core.shopify_auth import get_valid_access_token
@@ -63,6 +64,8 @@ async def get_settings(
             if shop_record.scheduled_change_at else None
         ),
         "digest_email_opt_in": bool(shop_record.digest_email_opt_in),
+        # "Gift ideas by GiftSense" in the gift finder; only Growth+ may hide it.
+        "show_branding": show_branding(shop_record),
         "shop_domain": shop_record.shop_domain,
     }
 
@@ -78,6 +81,7 @@ def _ai_tier_catalog() -> dict:
 class SaveSettingsRequest(BaseModel):
     ai_tier: str | None = None
     digest_email_opt_in: bool | None = None
+    show_branding: bool | None = None
     gift_notes: GiftNotesUpdate | None = None
     gift_wrap: WrapUpdate | None = None
     delivery: DeliveryUpdate | None = None
@@ -101,6 +105,14 @@ async def save_settings(
 
     if payload.digest_email_opt_in is not None:
         shop_record.digest_email_opt_in = payload.digest_email_opt_in
+    if payload.show_branding is not None:
+        plan = PLANS.get(shop_record.plan_tier, PLANS["starter"])
+        if not payload.show_branding and "hide_branding" not in plan["features"]:
+            raise HTTPException(status_code=403, detail={
+                "code": "feature_not_available",
+                "message": f"Hiding GiftSense branding isn't available on the {plan['name']} plan. Upgrade to Growth to use it.",
+            })
+        set_hide_branding(shop_record, not payload.show_branding)
     if payload.gift_notes is not None:
         update_note_settings(shop_record, payload.gift_notes)
     if payload.delivery is not None:

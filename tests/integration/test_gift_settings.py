@@ -53,3 +53,25 @@ async def test_invalid_settings_rejected(db_session, bad):
     db_session.add(make_shop())
     await db_session.commit()
     assert call(db_session, "PUT", json={"gift_notes": bad}).status_code == 422
+
+
+# ── GiftSense branding in the gift finder (hide_branding: Growth+) ──────────
+
+@pytest.mark.asyncio
+async def test_growth_can_switch_branding_off_and_on(db_session):
+    db_session.add(make_shop(plan_tier="growth"))
+    await db_session.commit()
+    assert call(db_session, "GET").json()["show_branding"] is True
+    assert call(db_session, "PUT", json={"show_branding": False}).status_code == 200
+    assert call(db_session, "GET").json()["show_branding"] is False
+    call(db_session, "PUT", json={"show_branding": True})
+    assert call(db_session, "GET").json()["show_branding"] is True
+
+
+@pytest.mark.asyncio
+async def test_starter_cannot_hide_branding(db_session):
+    db_session.add(make_shop(plan_tier="starter"))
+    await db_session.commit()
+    resp = call(db_session, "PUT", json={"show_branding": False})
+    assert resp.status_code == 403 and resp.json()["detail"]["code"] == "feature_not_available"
+    assert call(db_session, "GET").json()["show_branding"] is True
