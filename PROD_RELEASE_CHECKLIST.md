@@ -80,4 +80,5 @@ Everything that must be flipped, set, rotated or verified before GiftSense goes 
 - [ ] Before lifetime revenue nears $1M (Shopify's 15% share starts): re-check `tests/regression/test_margin_guarantee.py` against 85% of price and adjust `ai_budget_usd` / prices
 - [ ] Replace the per-plan `hosting_usd` estimates in `app/config.py` with real Railway + Supabase + Redis cost per install once there are paying merchants
 - [ ] Prod migration `20261002000001_arrive_by` (gift_orders.arrive_by, ship_by, hold_status) before deploying the arrive-by code
+- [ ] Prod migration `20261009000001_counted_orders` before deploying the order reconcile: the orders/create webhook counter writes to it, so without it every order webhook fails
 - [ ] Verify one real hold + release on a test order in prod (merchant-managed location) after launch

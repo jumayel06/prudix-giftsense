@@ -21,7 +21,7 @@ from app.config import GRACE_PERIOD_DAYS, derive_tier_from_subscription_name
 from app.jobs import enqueue
 from app.purge import purge_shop_data
 from app.services import media
-from app.workers.orders import annotate_gift_order, release_due_holds, sync_wrap
+from app.workers.orders import annotate_gift_order, reconcile_orders, release_due_holds, sync_wrap
 from app.workers.theme import check_theme
 from app.workers.digest import send_weekly_digests
 from app.workers.catalog import (
@@ -29,7 +29,7 @@ from app.workers.catalog import (
     reconcile_catalogs,
 )
 from core.config import settings
-from core.db.models import BillingEvent, GiftEvent, GiftSession, ProcessedWebhook, Shop
+from core.db.models import BillingEvent, CountedOrder, GiftEvent, GiftSession, ProcessedWebhook, Shop
 from core.db.session import AsyncSessionLocal
 from core.shopify_auth import get_valid_access_token
 from core.shopify_graphql import shopify_graphql_post
@@ -97,6 +97,15 @@ async def cleanup_processed_webhooks(ctx: dict) -> None:
         )
         await db.commit()
     logger.info("processed_webhooks_cleaned", deleted=result.rowcount)
+
+
+async def cleanup_counted_orders(ctx: dict) -> None:
+    """counted_orders only needs to cover the reconcile's 48 h look-back; keep 7 days."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(delete(CountedOrder).where(CountedOrder.created_at < cutoff))
+        await db.commit()
+    logger.info("counted_orders_cleaned", deleted=result.rowcount)
 
 
 async def reconcile_uninstalled_shops(ctx: dict) -> None:
@@ -423,6 +432,9 @@ class WorkerSettings:
         cron(send_weekly_digests, weekday=0, hour=13, minute=0, timeout=1800),
         # Arrive-by: release fulfillment holds on their ship-by day. Hourly at :05.
         cron(release_due_holds, minute=5, timeout=600),
+        # Orders whose orders/create webhook never arrived (counted once, see counted_orders).
+        cron(reconcile_orders, minute=50, timeout=1800),
+        cron(cleanup_counted_orders, hour=4, minute=10),
         # First catalog sync for newly active shops + missed bulk_operations/finish.
         cron(kick_catalog_syncs, minute=set(range(0, 60, 5)), timeout=3600),
         # Nightly full re-export (missed product webhooks, deletions, upgrades).

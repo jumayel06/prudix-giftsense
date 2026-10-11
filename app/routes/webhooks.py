@@ -34,7 +34,8 @@ from app.services.gift_orders import message_tokens, metafield_value, note_sourc
 from app.routes.qr import qr_image_url
 from core.config import settings
 from core.db.models import (
-    BillingEvent, CatalogProductRow, GiftOrder, GiftSession, OrderCountDaily, ProcessedWebhook, Shop, SuppressedEmail,
+    BillingEvent, CatalogProductRow, CountedOrder, GiftOrder, GiftSession, OrderCountDaily, ProcessedWebhook, Shop,
+    SuppressedEmail,
 )
 from core.db.session import get_db
 
@@ -743,25 +744,41 @@ async def _handle_bulk_finished(shop_domain: str, payload: dict, db: AsyncSessio
 # Parse here (cheap) and store the gift_orders row; tagging + the order
 # metafield (Shopify calls) run in the annotate_gift_order job.
 
+def _order_day(payload: dict) -> date:
+    """The order's own creation day (UTC), so the webhook and the reconcile agree."""
+    try:
+        return datetime.fromisoformat(str(payload["created_at"]).replace("Z", "+00:00")).astimezone(timezone.utc).date()
+    except (KeyError, TypeError, ValueError):
+        return datetime.now(timezone.utc).date()
+
+
 async def _count_order(db: AsyncSession, shop: Shop, payload: dict) -> None:
-    """Every order counts toward the "gift orders vs all orders" denominator."""
+    """Every order counts toward the "gift orders vs all orders" denominator,
+    exactly once: the orders/create webhook and the hourly reconcile both come
+    here, and the counted_orders row (same transaction) decides who counts it."""
+    order_id = str(payload.get("id") or "")
+    if not order_id:
+        return
     try:
         total = round(float(payload.get("total_price") or 0), 2)
     except (TypeError, ValueError):
         total = 0.0
-    day = datetime.now(timezone.utc).date()
-    for _ in range(2):
+    shop_id, day = shop.id, _order_day(payload)
+    for _ in range(3):
+        if await db.get(CountedOrder, {"shop_id": shop_id, "order_id": order_id}):
+            return
+        db.add(CountedOrder(shop_id=shop_id, order_id=order_id))
         row = (await db.execute(select(OrderCountDaily).where(
-            OrderCountDaily.shop_id == shop.id, OrderCountDaily.day == day))).scalar_one_or_none()
+            OrderCountDaily.shop_id == shop_id, OrderCountDaily.day == day))).scalar_one_or_none()
         if row is None:
-            db.add(OrderCountDaily(shop_id=shop.id, day=day, orders=1, revenue=total))
+            db.add(OrderCountDaily(shop_id=shop_id, day=day, orders=1, revenue=total))
         else:
             row.orders = (row.orders or 0) + 1
             row.revenue = float(row.revenue or 0) + total
         try:
             await db.commit()
             return
-        except IntegrityError:      # another order created today's row first
+        except IntegrityError:      # counted concurrently, or another order created the day's row first
             await db.rollback()
 
 

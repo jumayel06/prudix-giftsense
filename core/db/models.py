@@ -329,6 +329,18 @@ class OrderCountDaily(Base):
     revenue: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
 
 
+class CountedOrder(Base):
+    """Orders already added to order_counts_daily, so the orders/create webhook
+    and the hourly reconcile (which re-reads recent orders from Shopify) each
+    count an order once. Kept 7 days: the reconcile looks back 48 hours."""
+    __tablename__ = "counted_orders"
+
+    shop_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("shops.id", ondelete="CASCADE"),
+                                               primary_key=True)
+    order_id: Mapped[str] = mapped_column(String, primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
 class GiftMedia(Base):
     """A shopper's voice or video message (docs/TECHNICAL_PLAN.md §6.6). The
     file lives in R2 at `storage_key`; the row holds no customer data.

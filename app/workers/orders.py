@@ -4,6 +4,8 @@ annotate_gift_order: tag the order "GiftSense" and write the
 $app:giftsense.gifts metafield; creates the metafield definition once per shop.
 sync_wrap: create/update the hidden Gift wrap product after a wrap settings save.
 release_due_holds (hourly cron): release arrive-by fulfillment holds on their ship-by day.
+reconcile_orders (hourly cron): orders from the last 48 h that no orders/create
+webhook brought in (delivery isn't guaranteed) go through the webhook's handler.
 """
 from datetime import datetime, timedelta, timezone
 
@@ -11,7 +13,7 @@ import structlog
 from sqlalchemy import select
 
 from app.services import delivery, gift_orders, holds, wrap
-from core.db.models import GiftOrder, Shop
+from core.db.models import CountedOrder, GiftOrder, Shop
 from core.db.session import AsyncSessionLocal
 from core.shopify_auth import get_valid_access_token
 from core.shopify_graphql import shopify_graphql_post
@@ -111,3 +113,102 @@ async def sync_wrap(ctx: dict, shop_domain: str) -> None:
             return
         shop.gift_settings = {**(shop.gift_settings or {}), "wrap": {**result, "enabled": now["enabled"]}}
         await db.commit()
+
+
+# ── Missed orders/create webhooks ─────────────────────────────────────────────
+RECONCILE_WINDOW = timedelta(hours=48)
+ORDER_IDS_QUERY = """
+query($q: String!, $after: String) {
+  orders(first: 250, after: $after, query: $q, sortKey: CREATED_AT) {
+    pageInfo { hasNextPage endCursor }
+    nodes { id legacyResourceId }
+  }
+}
+"""
+# Only the fields parse_gift_order and the counter read, renamed to the
+# orders/create webhook's shape below. 10 orders × 50 lines keeps the query
+# cost well under Shopify's 1,000-point limit.
+ORDERS_DETAIL_QUERY = """
+query($ids: [ID!]!) {
+  nodes(ids: $ids) {
+    ... on Order {
+      id legacyResourceId name createdAt
+      totalPriceSet { shopMoney { amount currencyCode } }
+      customAttributes { key value }
+      lineItems(first: 50) { nodes { quantity originalUnitPriceSet { shopMoney { amount } } customAttributes { key value } } }
+    }
+  }
+}
+"""
+
+
+def webhook_payload(order: dict) -> dict:
+    """A GraphQL Order → the orders/create webhook fields our handler reads."""
+    money = (order.get("totalPriceSet") or {}).get("shopMoney") or {}
+    pairs = lambda attrs: [{"name": a["key"], "value": a.get("value")} for a in attrs or []]
+    return {
+        "id": order["legacyResourceId"],
+        "admin_graphql_api_id": order["id"],
+        "name": order.get("name"),
+        "created_at": order.get("createdAt"),
+        "total_price": money.get("amount"),
+        "currency": money.get("currencyCode"),
+        "note_attributes": pairs(order.get("customAttributes")),
+        "line_items": [{"quantity": li.get("quantity"),
+                        "price": ((li.get("originalUnitPriceSet") or {}).get("shopMoney") or {}).get("amount"),
+                        "properties": pairs(li.get("customAttributes"))}
+                       for li in ((order.get("lineItems") or {}).get("nodes") or [])],
+    }
+
+
+async def _recent_order_ids(shop_domain: str, token: str, since: datetime) -> dict[str, str]:
+    """{numeric id: gid} of orders created since `since`."""
+    out, after = {}, None
+    q = f"created_at:>='{since.strftime('%Y-%m-%dT%H:%M:%SZ')}'"
+    while True:
+        resp = await shopify_graphql_post(shop_domain, token, ORDER_IDS_QUERY, {"q": q, "after": after})
+        data = ((resp.json() or {}).get("data") or {}).get("orders") if resp.status_code == 200 else None
+        if data is None:
+            raise RuntimeError(f"orders query failed: HTTP {resp.status_code}")
+        out.update({str(n["legacyResourceId"]): n["id"] for n in data["nodes"]})
+        if not data["pageInfo"]["hasNextPage"]:
+            return out
+        after = data["pageInfo"]["endCursor"]
+
+
+async def reconcile_orders(ctx: dict) -> None:
+    """Hourly: count (and record as gift orders) any order from the last 48 h
+    that hasn't been counted — its webhook was missed. Same handler as the
+    webhook, and counted_orders + gift_orders' unique order id make a second
+    pass a no-op, so nothing is ever counted twice."""
+    from app.routes.webhooks import _handle_order_created   # the webhook's own handler
+
+    async with AsyncSessionLocal() as db:
+        domains = [d for (d,) in (await db.execute(
+            select(Shop.shop_domain).where(Shop.plan_status.in_(("active", "trial_active"))))).all()]
+    since = datetime.now(timezone.utc) - RECONCILE_WINDOW
+    recovered = 0
+    for domain in domains:
+        try:
+            async with AsyncSessionLocal() as db:
+                shop = (await db.execute(select(Shop).where(Shop.shop_domain == domain))).scalar_one()
+                token = await get_valid_access_token(shop, db)
+                recent = await _recent_order_ids(domain, token, since)
+                if not recent:
+                    continue
+                counted = {o for (o,) in (await db.execute(select(CountedOrder.order_id).where(
+                    CountedOrder.shop_id == shop.id, CountedOrder.order_id.in_(list(recent))))).all()}
+                missing = [gid for oid, gid in recent.items() if oid not in counted]
+                for i in range(0, len(missing), 10):
+                    resp = await shopify_graphql_post(domain, token, ORDERS_DETAIL_QUERY, {"ids": missing[i:i + 10]})
+                    nodes = ((resp.json() or {}).get("data") or {}).get("nodes") if resp.status_code == 200 else None
+                    if nodes is None:
+                        raise RuntimeError(f"order details query failed: HTTP {resp.status_code}")
+                    for order in nodes:
+                        if order and order.get("legacyResourceId"):
+                            await _handle_order_created(domain, webhook_payload(order), db)
+                            recovered += 1
+        except Exception as e:  # noqa: BLE001 — one shop's failure mustn't stop the rest
+            logger.warning("reconcile_orders_failed", shop=domain, error=str(e)[:200])
+    if recovered:
+        logger.info("reconcile_orders_recovered", orders=recovered)

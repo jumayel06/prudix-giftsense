@@ -9,7 +9,7 @@ tests/integration/test_purge_completeness.py fails CI otherwise.
 Deletion order respects FK constraints (children before parents):
   usage_logs → jobs
   billing_events
-  catalog_products, catalog_syncs, gift_sessions, gift_orders, gift_events, order_counts_daily
+  catalog_products, catalog_syncs, gift_sessions, gift_orders, gift_events, order_counts_daily, counted_orders
   gift_media (R2 files first: a failed R2 call raises, so the purge retries)
   registry_items → registries, support_tickets
   then anonymise the shop row (kept so trial_used=True survives reinstall)
@@ -22,7 +22,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.db.models import (
-    BillingEvent, CatalogProductRow, CatalogSync, GiftEvent, GiftMedia, GiftOrder, GiftSession, Job, OrderCountDaily,
+    BillingEvent, CatalogProductRow, CatalogSync, CountedOrder, GiftEvent, GiftMedia, GiftOrder, GiftSession, Job, OrderCountDaily,
     Registry, RegistryItem, Shop, SupportTicket, UsageLog,
 )
 
@@ -43,6 +43,7 @@ async def purge_shop_data(shop_id: uuid.UUID, db: AsyncSession) -> None:
     await db.execute(delete(GiftOrder).where(GiftOrder.shop_id == shop_id))
     await db.execute(delete(GiftEvent).where(GiftEvent.shop_id == shop_id))
     await db.execute(delete(OrderCountDaily).where(OrderCountDaily.shop_id == shop_id))
+    await db.execute(delete(CountedOrder).where(CountedOrder.shop_id == shop_id))
     await db.execute(delete(RegistryItem).where(RegistryItem.shop_id == shop_id))
     await db.execute(delete(Registry).where(Registry.shop_id == shop_id))
     await db.execute(delete(SupportTicket).where(SupportTicket.shop_id == shop_id))
