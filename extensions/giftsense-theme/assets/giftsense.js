@@ -107,8 +107,7 @@
     document.head.appendChild(js);
   }
 
-  // Another app's floating button (chat, AI concierge…) in the same corner:
-  // look under our launcher (it's on top) and sit just above any fixed element.
+  // Another app's floating button in our corner: sit just above it.
   function fixedAncestor(n, own) {
     for (; n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
       if (n === own) return null;
@@ -150,8 +149,7 @@
         return;
       }
 
-      // Which kind of block opened the dialog: finder (default), a product
-      // page (gift panel for this product) or the cart page (order note).
+      // Which block opened the dialog: finder, product page or cart page.
       function entryFor(trigger) {
         var r = trigger.closest('[data-giftsense-entry]');
         if (!r) return null;
@@ -218,6 +216,14 @@
       for (var j = 0; j < buttons.length; j++) {
         (function (b) { b.addEventListener('click', function () { open(b); }); })(buttons[j]);
       }
+      // Back from a page the finder linked to: reopen it.
+      try {
+        if (sessionStorage.getItem('giftsense:back') === location.href) {
+          sessionStorage.removeItem('giftsense:back');
+          var again = btn || document.querySelector('[data-giftsense-inline] [data-giftsense-open]');
+          if (again && performance.getEntriesByType('navigation')[0].type === 'back_forward') open(again);
+        }
+      } catch (e) {}
     }).catch(function () { /* network error: stay invisible, never break the page */ });
   }
 

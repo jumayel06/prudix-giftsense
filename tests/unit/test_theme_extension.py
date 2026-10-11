@@ -178,3 +178,50 @@ def test_cart_guard_removes_a_greeting_card_whose_gift_is_gone():
     assert [c[1] for c in calls if c[0] == "/cart/change.js"] == [{"id": "c", "quantity": 0}]
     update = next(c[1] for c in calls if c[0] == "/cart/update.js")["attributes"]
     assert json.loads(update["_giftsense_gifts"]) == [{"id": "g1", "label": "Mom"}]
+
+
+# ── Finder starts fresh after an order (giftsense-ui.js checkCart) ───────────
+# Runs the real checkCart/freshStart source against a stub state: after an
+# order Shopify starts a new cart (new token), so a new token with none of our
+# products in it means "order placed"; everything less certain keeps state.
+RESET_HARNESS = r"""
+const fs = require('fs');
+const [saved, cart, file] = [JSON.parse(process.argv[1]), JSON.parse(process.argv[2]), process.argv[3]];
+const src = fs.readFileSync(file, 'utf8');
+const fn = name => { const s = src.indexOf('  function ' + name + '('); return src.slice(s, src.indexOf('\n  }\n', s) + 4); };
+const store = {};
+const state = saved;
+const api = new Function('state', 'save', 'localStorage', 'window', 'ctx',
+  fn('checkCart') + fn('freshStart') + '; return { checkCart };')(
+  state, () => {}, { setItem: (k, v) => { store[k] = v; } }, { crypto: { randomUUID: () => 'new-sid' } }, { sid: 'old' });
+const reset = api.checkCart(cart);
+const sid = store['giftsense:sid'] ? JSON.parse(store['giftsense:sid']).id : null;
+process.stdout.write(JSON.stringify({ reset, cart: state.cart, recipient: state.answers.recipient, sid }));
+"""
+SAVED_STATE = {"answers": {"recipient": "mom"}, "added": {"101": "gift"}, "cart": "T1", "lastPicks": [{}],
+               "shown": [], "refines": 1, "asked": [], "step": 3, "view": "results"}
+
+
+def run_reset(cart_now, **saved):
+    state = {**SAVED_STATE, **saved}
+    out = subprocess.run(["node", "-e", RESET_HARNESS, json.dumps(state), json.dumps(cart_now),
+                          str(EXT / "assets" / "giftsense-ui.js")], check=True, capture_output=True, text=True).stdout
+    return json.loads(out)
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
+@pytest.mark.parametrize("cart", [{"token": "T2", "items": []}, {"token": "T2", "items": [{"product_id": 999}]}])
+def test_finder_starts_fresh_after_an_order(cart):
+    assert run_reset(cart) == {"reset": True, "cart": None, "recipient": None, "sid": "new-sid"}
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
+@pytest.mark.parametrize("cart, saved, token_after", [
+    ({"token": "T1", "items": []}, {}, "T1"),                            # emptied by hand: same cart
+    ({"token": "T2", "items": [{"product_id": 101}]}, {}, "T2"),          # cart re-created, our item still in it
+    ({"token": "T2", "items": []}, {"cart": None, "added": {}}, None),    # never added anything here
+    (None, {}, "T1"),                                                     # cart.js failed
+    ({"items": []}, {}, "T1"),                                            # no token
+])
+def test_finder_keeps_state_when_not_sure_an_order_was_placed(cart, saved, token_after):
+    assert run_reset(cart, **saved) == {"reset": False, "cart": token_after, "recipient": "mom", "sid": None}

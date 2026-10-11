@@ -19,7 +19,7 @@
   // left off. Stays on the device; nothing here is sent anywhere.
   var SAVE_KEY = 'giftsense:finder';
   var SAVE_TTL = 12 * 3600 * 1000;
-  var SAVED = ['answers', 'shown', 'refines', 'asked', 'added', 'lastPicks', 'step', 'view'];
+  var SAVED = ['answers', 'shown', 'refines', 'asked', 'added', 'lastPicks', 'step', 'view', 'cart'];
   function save() {
     try {
       var out = { t: Date.now() };
@@ -35,6 +35,43 @@
     } catch (e) { /* unreadable: start fresh */ }
   })();
   var els = {};
+
+  // After an order Shopify starts a new cart (new token); emptying the cart by
+  // hand keeps the token. So: we put something in a cart (state.cart = its
+  // token), and later the cart has another token with none of those products
+  // in it → the order was placed: start fresh (no old answers, ideas or
+  // pre-selected "who/occasion"). Anything less certain keeps what we have.
+  function noteCart(r) {
+    if (!r || !r.ok) return null;
+    return r.json().then(function (c) { if (c && c.token) state.cart = c.token; }).catch(function () {});
+  }
+  function checkCart(cart) {
+    if (!state.cart || !cart || !cart.token || cart.token === state.cart) return false;
+    var ours = (cart.items || []).some(function (it) { return state.added[it.product_id]; });
+    if (ours) { state.cart = cart.token; save(); return false; }   // cart re-created (e.g. login), items still there
+    freshStart();
+    return true;
+  }
+  function resetView() {
+    var view = els.body && els.body.getAttribute('data-view');
+    if (els.overlay && !els.overlay.hidden && (view === 'intake' || view === 'results')) renderIntake();
+  }
+  function freshStart() {
+    state.answers = { recipient: null, occasion: null, budget_band: null, vibes: [], free_text: '' };
+    state.shown = []; state.refines = 0; state.asked = []; state.added = {};
+    state.lastPicks = null; state.step = 0; state.view = null; state.cart = null;
+    save();
+    // A new gifting trip gets a new widget session (searches, refine limit,
+    // Analytics); the placed order keeps the old one. Same key/format as the
+    // bootstrap's sessionId() in giftsense.js.
+    var id = window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID()
+      : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0;
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+      });
+    try { localStorage.setItem('giftsense:sid', JSON.stringify({ id: id, exp: Date.now() + 7 * 24 * 3600 * 1000 })); } catch (e) { /* private mode */ }
+    if (ctx) ctx.sid = id;
+  }
 
   // ── tiny DOM helpers ──────────────────────────────────────────────────────
   function el(tag, cls, text) {
@@ -112,10 +149,15 @@
 
   // Links used while browsing ideas open in a new tab: results live only in
   // this dialog, so leaving the page would lose them. Screen readers are told.
-  function newTab(a, label) {
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.setAttribute('aria-label', (label || a.textContent) + ' (' + tr('opens in a new tab') + ')');
+  // Links open in the same tab, like the rest of the store. Answers and ideas
+  // are saved, and the bootstrap (giftsense.js) reopens the finder on them when
+  // the shopper comes back with Back. Cmd/Ctrl/Shift/middle-click: the dialog stays.
+  function pageLink(a, label) {
+    if (label) a.setAttribute('aria-label', label);
+    a.addEventListener('click', function (e) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+      try { sessionStorage.setItem('giftsense:back', location.href); } catch (err) { /* private mode */ }
+    });
     return a;
   }
 
@@ -145,11 +187,17 @@
       make.type = 'button';
       make.addEventListener('click', function () { makeItAGift(pick, make); });
       slot.appendChild(make);
-      slot.appendChild(el('span', 'gs-in-cart', tr('In your cart \u2713')));
+    }
+    // One line under the button on every tile, so the buttons line up.
+    var meta = el('div', 'gs-cart-meta');
+    if (how !== 'gift') {
+      meta.appendChild(el('span', 'gs-in-cart', tr('In your cart \u2713')));
+      meta.appendChild(el('span', 'gs-sep', '\u00b7'));
     }
     var view = el('a', 'gs-link', tr('View cart'));
     view.href = root() + 'cart';
-    slot.appendChild(newTab(view));
+    meta.appendChild(pageLink(view));
+    slot.appendChild(meta);
   }
 
   // Gift panel for a pick that's already in the cart as a plain item: it uses
@@ -175,8 +223,10 @@
   // re-read it and redraw the ideas if anything changed.
   function syncCart() {
     var picks = state.lastPicks || [];
-    if (!picks.length) return;
+    if (!picks.length && !state.cart) return;
     fetch(root() + 'cart.js', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (cart) {
+      if (checkCart(cart)) { resetView(); return; }
+      if (!picks.length) return;
       var before = JSON.stringify(state.added);
       var added = {};
       picks.forEach(function (p) {
@@ -193,6 +243,11 @@
   }
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible' && els.overlay && !els.overlay.hidden) syncCart();
+  });
+  window.addEventListener('pageshow', function (e) {
+    if (!e.persisted) return;
+    try { sessionStorage.removeItem('giftsense:back'); } catch (err) { /* private mode */ }
+    if (els.overlay && !els.overlay.hidden) syncCart();
   });
 
   function cartButton(pick, slot) {
@@ -211,22 +266,20 @@
           slot.appendChild(sold);
           return;
         }
-        if (product.variants.length > 1) {
+        // Subscription-only products need the product page's plan picker.
+        if (product.requires_selling_plan) {
           var choose = el('a', 'gs-secondary gs-small', tr('Choose options'));
           choose.href = safeHref(pick.url);
-          newTab(choose);
+          pageLink(choose);
           slot.appendChild(choose);
           return;
         }
         var gift = el('button', 'gs-primary gs-small', tr('Add as a gift'));
         gift.type = 'button';
-        gift.addEventListener('click', function () { renderGiftPanel(pick, available[0].id); });
+        gift.addEventListener('click', function () {
+          renderGiftPanel(pick, available[0].id, product.variants.length > 1 ? { product: product } : null);
+        });
         slot.appendChild(gift);
-        // Secondary, in words: a plain "Add to cart" under the main action.
-        var add = el('button', 'gs-text-btn', tr('Add to cart'));
-        add.type = 'button';
-        add.addEventListener('click', function () { addToCart(available[0].id, add, slot, pick.product_id); });
-        slot.appendChild(add);
       })
       .catch(function () { /* the card link still works */ });
   }
@@ -257,37 +310,6 @@
   }
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') flush(); });
   window.addEventListener('pagehide', flush);
-
-  function addToCart(variantId, button, slot, productId) {
-    button.disabled = true;
-    button.textContent = tr('Adding\u2026');
-    var json = { 'Content-Type': 'application/json', Accept: 'application/json' };
-    fetch(root() + 'cart/add.js', {
-      method: 'POST', credentials: 'same-origin', headers: json,
-      body: JSON.stringify({ items: [{ id: variantId, quantity: 1,
-        properties: { _giftsense_gift: '1' } }] })
-    }).then(function (r) {
-      if (!r.ok) throw new Error('add');
-      return fetch(root() + 'cart/update.js', {
-        method: 'POST', credentials: 'same-origin', headers: json,
-        body: JSON.stringify({ attributes: { _giftsense_sid: ctx.sid } })
-      });
-    }).then(function () {
-      track('pick_atc', productId);
-      if (productId) {
-        state.added[productId] = state.added[productId] || 'cart';
-        save();
-        clear(slot);
-        addedState({ product_id: productId }, slot);
-      } else {
-        button.textContent = tr('Added \u2713');
-      }
-      document.dispatchEvent(new CustomEvent('giftsense:added-to-cart', { detail: { variantId: variantId } }));
-    }).catch(function () {
-      button.disabled = false;
-      button.textContent = tr('Try again');
-    });
-  }
 
   function sized(url, width) {
     if (typeof url !== 'string' || url.indexOf('https://') !== 0) return null;
@@ -357,6 +379,17 @@
     document.getElementById('gs-title').textContent = finder ? tr('Find the perfect gift') : tr('Gift options');
     els.subtitle.textContent = finder ? tr('Answer a few quick questions and get ideas picked for them')
       : tr('Add a gift note, wrapping and more');
+    if (!state.cart) { show(); return; }
+    clear(els.body);
+    var shown = false;
+    function once() { if (!shown) { shown = true; show(); } }
+    fetch(root() + 'cart.js', { credentials: 'same-origin' }).then(function (r) { return r.json(); })
+      .then(function (cart) { if (checkCart(cart) && shown && !els.overlay.hidden) show(); })
+      .catch(function () {}).then(once);
+    setTimeout(once, 1500);   // a slow cart never holds the dialog up
+  }
+
+  function show() {
     var entry = ctx.entry;
     if (entry && entry.type === 'product' && entry.product && entry.product.variant_id) {
       renderGiftPanel({ product_id: entry.product.product_id, title: entry.product.title, wrap: entry.product.wrap },
@@ -375,6 +408,8 @@
   function close() {
     if (!els.overlay) return;
     els.overlay.hidden = true;
+    if (cartChanged && onCartPage()) { location.reload(); return; }
+    cartChanged = false;
     document.documentElement.classList.remove('gs-lock');
     if (ctx && ctx.trigger) ctx.trigger.focus();
   }
@@ -459,6 +494,7 @@
   }
 
   function renderIntake() {
+    els.body.setAttribute('data-view', 'intake');
     var intake = ctx.config.intake;
     var all = steps();
     var n = Math.min(state.step || 0, all.length - 1);
@@ -637,6 +673,7 @@
 
   function renderQuestion(q) {
     clear(els.body);
+    els.body.setAttribute('data-view', 'results');
     var p = el('p', 'gs-status', tr(q.question));
     p.setAttribute('role', 'status');
     els.body.appendChild(p);
@@ -740,6 +777,7 @@
 
   // Cart page: one gift note for the whole order (direct mode), nothing added.
   function renderCartNote() {
+    els.body.setAttribute('data-view', 'cart');
     var g = { note: '', tone: (ctx.config.notes || {}).tone || 'warm', name: '', left: null };
     clear(els.body);
     els.body.appendChild(el('p', 'gs-status', tr('Add a gift note to your order')));
@@ -846,9 +884,39 @@
 
   // After changing cart lines: the cart page reloads; drawers get the common
   // refresh events (themes differ in what they listen for).
+  // The theme's own cart (header count, drawer) doesn't know we changed the
+  // cart. Re-render it with Shopify's Section Rendering API (Dawn-family
+  // section ids, as the theme does after its own add to cart; the sections
+  // come from the store itself and are parsed with DOMParser), and
+  // send the common refresh events for other themes. The cart page reloads.
+  var cartChanged = false;
+  function onCartPage() { return /\/cart\/?$/.test(location.pathname); }
   function refreshCart() {
-    if (/\/cart\/?$/.test(location.pathname)) { location.reload(); return; }
-    ['cart:refresh', 'cart:updated', 'cart:change'].forEach(function (n) { document.dispatchEvent(new CustomEvent(n)); });
+    if (onCartPage()) { location.reload(); return; }
+    // On <html>, bubbling: reaches themes listening there (Impact, Prestige…) and on document.
+    ['cart:refresh', 'cart:updated', 'cart:change'].forEach(function (n) {
+      document.documentElement.dispatchEvent(new CustomEvent(n, { bubbles: true }));
+    });
+    if (!window.DOMParser) return;
+    fetch(root() + '?sections=cart-icon-bubble,cart-drawer', { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (s) {
+        if (!s) return;
+        swapSection(s['cart-icon-bubble'], '.shopify-section', 'cart-icon-bubble');
+        if (swapSection(s['cart-drawer'], '#CartDrawer', 'CartDrawer')) {
+          // Dawn marks an empty cart on <cart-drawer>: mirror the fresh render.
+          var drawer = document.querySelector('cart-drawer');
+          var fresh = new DOMParser().parseFromString(s['cart-drawer'], 'text/html').querySelector('cart-drawer');
+          if (drawer && fresh) drawer.classList.toggle('is-empty', fresh.classList.contains('is-empty'));
+        }
+      }).catch(function () { /* the theme shows it on the next page */ });
+  }
+  function swapSection(html, from, id) {
+    var target = document.getElementById(id);
+    var src = html && target && new DOMParser().parseFromString(html, 'text/html').querySelector(from);
+    if (!src) return false;
+    target.replaceChildren.apply(target, Array.prototype.map.call(src.childNodes, function (n) { return document.importNode(n, true); }));
+    return true;
   }
 
   // Note box + "Write it for me" (tones, first name, rewrites left); edits g.note.
@@ -925,6 +993,7 @@
 
   function renderGiftPanel(pick, variantId, opts) {
     opts = opts || {};
+    els.body.setAttribute('data-view', 'gift');
     if (!opts.standalone) track('panel_open', pick.product_id);
     var notes = ctx.config.notes || { tone: 'warm', max_chars: 250, tones: [] };
     var g = { mode: 'direct', label: labelFor(state.answers.recipient), note: '', tone: notes.tone, name: '', left: null };
@@ -940,6 +1009,8 @@
       var at = current, seq = state.seq = (state.seq || 0) + 1;
       setTimeout(function () { if (state.seq === seq && current === at) show(at + 1); }, 180);
     }
+
+    if (opts.product) screens.push(optionsScreen(opts.product, pick.url, function (v) { variantId = v.id; }));
 
     var labelWrap = el('label', 'gs-group');
     var label = el('input', 'gs-note');
@@ -1042,6 +1113,100 @@
 
     renderFoot();
     show(0);
+  }
+
+  // Size / colour / … picked in the gift panel instead of on the product page
+  // (/products/<handle>.js: options, and each variant's option values, stock,
+  // price in cents and image). A value sold out with the other choices but in
+  // stock in another combination stays pickable and switches those choices;
+  // a value sold out everywhere is disabled. Theme swatches, other apps'
+  // fields and subscriptions stay on the product page (link below).
+  function optionsScreen(product, url, onPick) {
+    var variants = product.variants || [];
+    var names = (product.options || []).map(function (o) { return typeof o === 'string' ? o : o.name; });
+    var values = names.map(function (n, i) {
+      var o = product.options[i];
+      if (o && o.values) return o.values;
+      var seen = [];
+      variants.forEach(function (v) { var x = v['option' + (i + 1)]; if (x != null && seen.indexOf(x) === -1) seen.push(x); });
+      return seen;
+    });
+    var first = variants.filter(function (v) { return v.available; })[0] || variants[0];
+    var chosen = names.map(function (n, i) { return first['option' + (i + 1)]; });
+    var has = function (v, i, val) { return v['option' + (i + 1)] === val; };
+    var match = function (sel) { return variants.filter(function (v) { return sel.every(function (val, i) { return has(v, i, val); }); })[0]; };
+    var currency = (window.Shopify && window.Shopify.currency && window.Shopify.currency.active) || ctx.currency;
+    var cents = function (n) {
+      try { return new Intl.NumberFormat(ctx.locale, { style: 'currency', currency: currency }).format(n / 100); }
+      catch (e) { return currency + ' ' + (n / 100).toFixed(2); }
+    };
+
+    var wrap = el('div', 'gs-variant');
+    var head = el('div', 'gs-variant-head');
+    var img = el('img', 'gs-img');
+    img.alt = '';
+    var info = el('div', 'gs-text');
+    info.appendChild(el('span', 'gs-name', product.title));
+    var price = el('span', 'gs-price');
+    info.appendChild(price);
+    head.appendChild(img);
+    head.appendChild(info);
+    wrap.appendChild(head);
+    var groups = el('div');
+    wrap.appendChild(groups);
+    var href = safeHref(url);
+    if (href) {
+      var full = el('a', 'gs-link', tr('View full product page'));
+      full.href = href;
+      wrap.appendChild(pageLink(full));
+    }
+
+    function update() {
+      var v = match(chosen) || first;
+      clear(price);
+      price.appendChild(document.createTextNode(cents(v.price)));
+      if (v.compare_at_price > v.price) price.appendChild(el('s', 'gs-was', cents(v.compare_at_price)));
+      var src = (v.featured_image && v.featured_image.src) || product.featured_image || '';
+      if (src.indexOf('//') === 0) src = 'https:' + src;
+      var sizedSrc = sized(src, 160);
+      img.hidden = !sizedSrc;
+      if (sizedSrc) img.src = sizedSrc;
+      onPick(v);
+      clear(groups);
+      names.forEach(function (name, i) {
+        var fs = el('fieldset', 'gs-group');
+        fs.appendChild(el('legend', 'gs-label', name));
+        var row = el('div', 'gs-chips');
+        values[i].forEach(function (val) {
+          var trial = chosen.slice();
+          trial[i] = val;
+          var exact = match(trial);
+          var anyStock = variants.some(function (x) { return x.available && has(x, i, val); });
+          if (!exact && !anyStock && !variants.some(function (x) { return has(x, i, val); })) return;
+          var b = el('button', 'gs-chip', val);
+          b.type = 'button';
+          b.setAttribute('aria-pressed', chosen[i] === val ? 'true' : 'false');
+          b.disabled = !anyStock;
+          b.addEventListener('click', function () {
+            chosen[i] = val;
+            var m = match(chosen);
+            if (!m || !m.available) {
+              var alt = variants.filter(function (x) { return x.available && has(x, i, val); })[0];
+              if (alt) chosen = names.map(function (n, k) { return alt['option' + (k + 1)]; });
+            }
+            update();
+            var again = groups.querySelectorAll('fieldset')[i];
+            var pressed = again && again.querySelector('.gs-chip[aria-pressed="true"]');
+            if (pressed) pressed.focus();
+          });
+          row.appendChild(b);
+        });
+        fs.appendChild(row);
+        groups.appendChild(fs);
+      });
+    }
+    update();
+    return wrap;
   }
 
   // Voice (Growth+) / video (Pro) message: recorded in the browser, uploaded
@@ -1341,7 +1506,9 @@
           method: 'POST', credentials: 'same-origin', headers: json, body: JSON.stringify({ attributes: update })
         });
       });
-    }).then(function () {
+    }).then(noteCart).then(function () {
+      cartChanged = true;
+      if (!onCartPage()) refreshCart();
       clear(els.body);
       track('panel_submit', pick.product_id);
       if (pick.product_id) state.added[pick.product_id] = 'gift';
@@ -1352,7 +1519,7 @@
       var row = el('div', 'gs-actions');
       var view = el('a', 'gs-primary', tr('View cart'));
       view.href = root() + 'cart';
-      newTab(view);
+      pageLink(view);
       row.appendChild(view);
       var more = el('button', 'gs-secondary', tr('Keep looking'));
       more.type = 'button';
@@ -1382,6 +1549,7 @@
     var oldRow = els.body.querySelector('.gs-results');
     var keepScroll = replacing && oldRow ? oldRow.scrollLeft : 0;
     clear(els.body);
+    els.body.setAttribute('data-view', 'results');
     if (!picks.length) {
       renderMessage(state.shown.length
         ? tr('That\u2019s all we found for these answers. Try a different budget or occasion.')
@@ -1417,7 +1585,7 @@
       var card = el('div', 'gs-card');
       card.setAttribute('role', 'listitem');
       var link = el(href ? 'a' : 'div', 'gs-card-link');
-      if (href) newTab(link, p.title).href = href;
+      if (href) pageLink(link, p.title).href = href;
       var src = sized(p.image_url, 480);
       if (src) {
         var img = el('img', 'gs-img');
@@ -1431,7 +1599,7 @@
       card.appendChild(link);
       var text = el('div', 'gs-text');
       var name = el(href ? 'a' : 'span', 'gs-name', p.title);
-      if (href) newTab(name).href = href;
+      if (href) pageLink(name).href = href;
       (function (id) {
         [link, name].forEach(function (a) { if (a.href) a.addEventListener('click', function () { track('pick_click', id); flush(); }); });
       })(p.product_id);
