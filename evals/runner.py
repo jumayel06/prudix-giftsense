@@ -41,7 +41,7 @@ RESULTS = ROOT / "results"
 
 JUDGE_MODEL = "claude-sonnet-5"
 EST_ENRICH_USD = 0.001  # GPT-6 Luna ≈ $0.0003/product; kept conservative
-EST_SEARCH_USD = {"gpt-6-luna": 0.001, "gpt-6-sol": 0.012, "claude-sonnet-5": 0.02, "claude-sonnet-5-5": 0.02}
+EST_SEARCH_USD = {"instant": 0.0, "gpt-6-luna": 0.001, "gpt-6-sol": 0.012, "claude-sonnet-5": 0.02, "claude-sonnet-5-5": 0.02}
 EST_JUDGE_USD = 0.03
 POOL_TOP_K = 15
 REVIEW_SAMPLE_RATE = 0.2
@@ -152,9 +152,13 @@ class EvalRun:
         async with self.sem:
             self.ledger.check(EST_SEARCH_USD.get(model, 0.02))
             started = time.perf_counter()
-            rec = await recommend(intake, items, embedder=self.embedder, model=model, chat_fn=self.chat_fn)
+            # "instant": the storefront's free phase (same retrieval, no AI rerank, template reasons).
+            instant = model == "instant"
+            rec = await recommend(intake, items, embedder=self.embedder, model="gpt-6-luna" if instant else model,
+                                  chat_fn=self.chat_fn, use_llm=not instant)
             latency_ms = int((time.perf_counter() - started) * 1000)
-        self.ledger.charge(f"search:{model}", model, rec.input_tokens, rec.output_tokens)
+        if not instant:
+            self.ledger.charge(f"search:{model}", model, rec.input_tokens, rec.output_tokens)
         return {"persona": persona["id"], "model": model, "latency_ms": latency_ms, "mode": rec.mode,
                 "used_fallback": rec.used_fallback, "input_tokens": rec.input_tokens,
                 "output_tokens": rec.output_tokens,

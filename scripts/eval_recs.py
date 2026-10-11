@@ -4,7 +4,7 @@
     .venv/bin/python scripts/eval_recs.py --stores candles,general --models luna,sonnet --cap 6
 
 Stores: candles, jewelry, toys, kitchen, general.
-Models: luna (gpt-6-luna), sol (gpt-6-sol), sonnet (claude-sonnet-5), sonnet55 (claude-sonnet-5-5).
+Models: instant (no AI: the storefront's free phase), luna (gpt-6-luna), sol (gpt-6-sol), sonnet (claude-sonnet-5), sonnet55 (claude-sonnet-5-5).
 Outputs evals/results/report.md, report.json, review.html. Catalogs, profiles
 and judge labels are cached under evals/data/, so reruns only pay for searches.
 """
@@ -21,7 +21,7 @@ from evals.catalogs import STORES  # noqa: E402
 from evals.ledger import BudgetExceeded, Ledger  # noqa: E402
 from evals.runner import DATA, RESULTS, EvalRun  # noqa: E402
 
-MODELS = {"luna": "gpt-6-luna", "sol": "gpt-6-sol", "sonnet": "claude-sonnet-5", "sonnet55": "claude-sonnet-5-5"}
+MODELS = {"instant": "instant", "luna": "gpt-6-luna", "sol": "gpt-6-sol", "sonnet": "claude-sonnet-5", "sonnet55": "claude-sonnet-5-5"}
 
 
 def main() -> int:

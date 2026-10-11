@@ -7,12 +7,12 @@ from app.services.gifting import vocab
 PERSONAS = json.loads((Path(__file__).resolve().parents[2] / "evals" / "personas.json").read_text())
 
 
-def test_ten_personas_per_store_with_unique_ids_and_valid_vocabulary():
+def test_at_least_ten_personas_per_store_with_unique_ids_and_valid_vocabulary():
     ids = set()
     for store, personas in PERSONAS.items():
         if store.startswith("_"):
             continue
-        assert len(personas) == 10, store
+        assert len(personas) >= 10, store   # add briefs rather than edit them
         for p in personas:
             assert p["id"] not in ids
             ids.add(p["id"])
