@@ -49,7 +49,7 @@ const INFO = {
   'Gift finder sessions': 'How many times shoppers opened the gift finder on your store.',
   'Completion rate': 'Of the shoppers who opened the gift finder, the share who answered the questions and got gift ideas.',
   'Gift orders': 'Orders that used any GiftSense gift option, like a gift note, gift wrap or marking an item as a gift.',
-  'Sales from the gift finder': 'The full total of every order placed by a shopper who used the gift finder first, including anything else in their cart.',
+  'Sales from the gift finder': 'The full total of orders where the shopper added something to their cart from the gift finder, including anything else in that cart.',
   'Search to order': 'Of the shoppers who got gift ideas, the share who then placed an order.',
   'Sales of gifts': "Just the products shoppers marked as gifts, in any order. Other items in the same cart aren't counted. Example: a $40 gift plus $20 for themselves counts $40.",
   'Gift orders with a note': 'The share of gift orders that included a gift note.',
