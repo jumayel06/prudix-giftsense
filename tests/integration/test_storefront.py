@@ -115,6 +115,39 @@ async def test_config_gives_the_widget_its_intake_and_branding(db_session):
     assert {"value": "friend", "label": "Friend"} in data["intake"]["recipients"]
 
 
+async def config_budgets(db_session, prices, row_kw=None):
+    shop = make_shop()
+    db_session.add(shop)
+    await db_session.flush()
+    db_session.add_all([row(shop, str(i), price=p, **(row_kw or {}).get(i, {})) for i, p in enumerate(prices)])
+    await db_session.commit()
+    return [b["value"] for b in call(db_session, "GET", "/api/storefront/config").json()["intake"]["budgets"]]
+
+
+@pytest.mark.asyncio
+async def test_config_only_offers_budgets_the_store_can_fill(db_session):
+    # $30 counts for $25–50 and (40% floor slack) $50–100; under $25 and $100+ have nothing.
+    assert await config_budgets(db_session, [30, 30, 30, 30]) == ["25_50", "50_100"]
+
+
+@pytest.mark.asyncio
+async def test_cheap_store_gets_only_the_low_budget(db_session):
+    assert await config_budgets(db_session, [8, 10, 12]) == ["under_25"]
+
+
+@pytest.mark.asyncio
+async def test_tiny_catalog_still_gets_a_budget_to_pick(db_session):
+    # Fewer than 3 anywhere: fall back to any band with a product, never an empty question.
+    assert await config_budgets(db_session, [500]) == ["200_plus"]
+
+
+@pytest.mark.asyncio
+async def test_excluded_and_sold_out_products_dont_count_for_budgets(db_session):
+    budgets = await config_budgets(db_session, [10, 10, 10, 30, 30, 30],
+                                   {0: {"excluded": True}, 1: {"available": False}})
+    assert "under_25" not in budgets and "25_50" in budgets
+
+
 @pytest.mark.asyncio
 async def test_growth_shows_the_badge_until_it_is_switched_off(db_session):
     shop = await seeded_shop(db_session, plan_tier="growth")
@@ -197,10 +230,23 @@ async def test_exclude_ids_skip_products_already_shown(db_session, models):
 # ── Abuse limits ─────────────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
-async def test_session_limit_returns_429_after_10_searches(db_session, models):
+async def test_session_limit_returns_429_after_20_ai_searches(db_session, models):
     await seeded_shop(db_session)
-    codes = [call(db_session, "POST", "/api/storefront/search", json=BRIEF).status_code for _ in range(11)]
-    assert codes[:10] == [200] * 10 and codes[10] == 429
+    codes = [call(db_session, "POST", "/api/storefront/search", json=BRIEF).status_code for _ in range(21)]
+    assert codes[:20] == [200] * 20 and codes[20] == 429
+
+
+@pytest.mark.asyncio
+async def test_past_the_ai_limit_the_free_instant_picks_still_come(db_session, models):
+    # The widget shows the instant picks when the AI request is refused, so a
+    # keen shopper never hits a dead end; only bot-level volume is stopped.
+    await seeded_shop(db_session)
+    for _ in range(20):
+        call(db_session, "POST", "/api/storefront/search", json=BRIEF)
+    assert call(db_session, "POST", "/api/storefront/search", json=BRIEF).status_code == 429
+    instant = [call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "phase": "instant"}).status_code
+               for _ in range(61)]
+    assert instant[:60] == [200] * 60 and instant[60] == 429
 
 
 @pytest.mark.asyncio
@@ -208,8 +254,8 @@ async def test_ip_limit_applies_across_sessions(db_session, models):
     await seeded_shop(db_session)
     ip = {"X-Forwarded-For": "203.0.113.9, 162.158.1.1"}
     codes = [call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "sid": str(uuid.uuid4())},
-                  headers=ip).status_code for _ in range(31)]
-    assert codes.count(200) == 30 and codes[-1] == 429
+                  headers=ip).status_code for _ in range(61)]
+    assert codes.count(200) == 60 and codes[-1] == 429
     other = {"X-Forwarded-For": "198.51.100.7"}
     assert call(db_session, "POST", "/api/storefront/search", json=BRIEF, headers=other).status_code == 200
 
@@ -236,7 +282,7 @@ async def test_default_phase_is_the_metered_ai_search(db_session, models):
 async def test_instant_and_ai_calls_have_separate_session_limits(db_session, models):
     # One search = one instant + one AI request; the pair must not count twice.
     await seeded_shop(db_session)
-    for _ in range(10):
+    for _ in range(20):
         assert call(db_session, "POST", "/api/storefront/search", json={**BRIEF, "phase": "instant"}).status_code == 200
         assert call(db_session, "POST", "/api/storefront/search", json=BRIEF).status_code == 200
     assert call(db_session, "POST", "/api/storefront/search", json=BRIEF).status_code == 429

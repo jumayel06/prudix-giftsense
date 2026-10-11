@@ -71,15 +71,19 @@ def _delivery_window(shop: Shop) -> dict | None:
 
 
 @router.get("/config")
-async def widget_config(shop: Shop = Depends(storefront_shop)):
+async def widget_config(shop: Shop = Depends(storefront_shop), db: AsyncSession = Depends(get_db)):
     if not may_generate(shop):
         return _no_store({"enabled": False})
     features = PLANS.get(shop.plan_tier, PLANS["starter"])["features"]
     notes = note_settings(shop)
+    intake = intake_options()
+    # Only budgets this store can fill (budget filters picks; an empty band is a dead end).
+    bands = await catalog_index.available_budget_bands(db, shop.id)
+    intake["budgets"] = [b for b in intake["budgets"] if b["value"] in bands]
     return _no_store({
         "enabled": True,
         "show_badge": show_branding(shop),
-        "intake": intake_options(),
+        "intake": intake,
         # Banned words stay server-side; the draft endpoint enforces them.
         "notes": {"tone": notes["tone"], "max_chars": notes["max_chars"],
                   "tones": [{"value": k, "label": v} for k, v in NOTE_TONES.items()]},
@@ -133,12 +137,14 @@ SLOW_DOWN = "You've searched a lot in a short time. Please try again in a little
 
 
 async def _within_abuse_limits(request: Request, shop: Shop, sid: uuid.UUID, phase: str) -> bool:
-    # Separate counters per phase, so one search (instant + ai) counts once in each.
-    if not await rate_limit.hit(f"{phase}:sid:{shop.id}:{sid}", rate_limit.SEARCHES_PER_SID_PER_HOUR, rate_limit.HOUR):
+    # Separate counters per phase, so one search (instant + ai) counts once in
+    # each. An AI request over its limit gets a 429 and the widget shows the
+    # instant picks it fetched alongside; only the instant limit stops a shopper.
+    limits = rate_limit.SEARCH_LIMITS[phase]
+    if not await rate_limit.hit(f"{phase}:sid:{shop.id}:{sid}", limits["sid"], rate_limit.HOUR):
         return False
     ip = rate_limit.shopper_ip(request.headers.get("x-forwarded-for"))
-    if ip and not await rate_limit.hit(f"{phase}:ip:{shop.id}:{rate_limit.ip_hash(ip)}",
-                                       rate_limit.SEARCHES_PER_IP_PER_HOUR, rate_limit.HOUR):
+    if ip and not await rate_limit.hit(f"{phase}:ip:{shop.id}:{rate_limit.ip_hash(ip)}", limits["ip"], rate_limit.HOUR):
         return False
     return True
 

@@ -129,3 +129,21 @@ def test_cheaper_items_top_up_when_the_band_is_thin():
     items = [item("in", "Candle", price=30), item("cheap", "Tea Candle", price=16)]
     ids = [r.product.product_id for r in run(items, BASE, limit=3)]
     assert ids[0] == "in" and "cheap" in ids
+
+
+def test_note_matches_get_shortlist_slots_past_the_variety_rules():
+    # 20 candles and 3 books: diversity alone would leave room for 1-2 books.
+    items = [item(f"c{i}", f"Soy Candle {i}") for i in range(20)] + \
+            [item(f"b{i}", f"Paperback novel {i}", ptype="Books", pitch="A paperback novel to read.") for i in range(3)]
+    emb = FakeEmbedder()
+    intake = Intake(**{**BASE.__dict__, "free_text": "she wants a book"})
+    out = retrieve(intake, index(items), emb.embed_sync(query_text(intake)),
+                   note_vector=emb.embed_sync("paperback novel book to read"))
+    matched = [c for c in out if c.note_match]
+    assert {c.product.product_id for c in matched} >= {"b0", "b1", "b2"}
+    assert len(out) == len({c.product.product_id for c in out})      # no duplicates
+
+
+def test_no_note_no_reserved_slots():
+    out = run([item(f"c{i}", f"Candle {i}") for i in range(15)], BASE)
+    assert not any(c.note_match for c in out)

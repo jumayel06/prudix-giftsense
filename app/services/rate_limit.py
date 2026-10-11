@@ -18,8 +18,15 @@ from core.config import settings
 
 logger = structlog.get_logger()
 
-SEARCHES_PER_SID_PER_HOUR = 10
-SEARCHES_PER_IP_PER_HOUR = 30
+# Gift searches per hour, per widget session and per shopper IP (a shared
+# office/home IP gets more). Past the AI limit the widget shows the free
+# instant picks instead (same retrieval, template reasons: 62% vs 72% of the
+# best possible picks in the 2026-10-10 eval), so a keen shopper is never
+# stuck; the instant limit is set where only bots get to.
+SEARCH_LIMITS = {
+    "ai":      {"sid": 20, "ip": 60},
+    "instant": {"sid": 60, "ip": 150},
+}
 HOUR = 3600
 
 

@@ -24,6 +24,10 @@ WEIGHTS = {"similarity": 0.55, "recipient_occasion": 0.20, "vibes": 0.15, "gifta
 MMR_LAMBDA = 0.7
 CANDIDATE_POOL = 60
 DEFAULT_LIMIT = 12
+# Shortlist slots kept for the products closest to the shopper's note on its
+# own: the variety rules (MMR, type cap) otherwise leave room for only one or
+# two of the kind they asked for.
+NOTE_SLOTS = 5
 
 
 @dataclass
@@ -52,6 +56,9 @@ class Candidate:
     vector: list[float]
     score: float
     similarity: float
+    # Among the best matches for the shopper's own note ("a book", "clothes"):
+    # kept in the shortlist and exempt from the per-type variety cap.
+    note_match: bool = False
 
 
 def query_text(intake: Intake) -> str:
@@ -69,12 +76,15 @@ def query_text(intake: Intake) -> str:
     return ". ".join(p for p in parts if p)
 
 
-def in_budget(p: CatalogProduct, budget_band: str) -> bool:
+def price_in_budget(price_min: float, price_max: float | None, budget_band: str) -> bool:
     lo, hi = vocab.budget_range(budget_band)
-    price_max = p.price_max or p.price_min
-    if hi is not None and p.price_min > hi:
+    if hi is not None and price_min > hi:
         return False
-    return price_max >= lo * BUDGET_FLOOR_SLACK
+    return (price_max or price_min) >= lo * BUDGET_FLOOR_SLACK
+
+
+def in_budget(p: CatalogProduct, budget_band: str) -> bool:
+    return price_in_budget(p.price_min, p.price_max, budget_band)
 
 
 def passes_filters(item: IndexedProduct, intake: Intake) -> bool:
@@ -130,6 +140,7 @@ def retrieve(
     query_vector: list[float],
     limit: int = DEFAULT_LIMIT,
     pool_size: int = CANDIDATE_POOL,
+    note_vector: list[float] | None = None,
 ) -> list[Candidate]:
     scored = []
     for it in items:
@@ -141,6 +152,19 @@ def retrieve(
     # Items under the band floor (allowed by BUDGET_FLOOR_SLACK) only top up a
     # thin band; a "$25-50" shopper shouldn't see $16 gifts ahead of $30 ones.
     lo, _ = vocab.budget_range(intake.budget_band)
+    if note_vector:
+        pool = [c for c in scored if (c.product.price_max or c.product.price_min) >= lo] or scored
+        reserved = sorted(pool, key=lambda c: cosine(note_vector, c.vector), reverse=True)[:min(NOTE_SLOTS, limit)]
+        for c in reserved:
+            c.note_match = True
+        rest = [c for c in scored if not c.note_match]
+        return reserved + _diversified(rest, lo, limit - len(reserved), pool_size)
+    return _diversified(scored, lo, limit, pool_size)
+
+
+def _diversified(scored: list[Candidate], lo: float, limit: int, pool_size: int) -> list[Candidate]:
+    if limit <= 0:
+        return []
     in_band = [c for c in scored if (c.product.price_max or c.product.price_min) >= lo]
     if len(in_band) >= limit:
         return diversify(in_band[:pool_size], limit)
